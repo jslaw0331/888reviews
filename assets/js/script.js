@@ -119,7 +119,7 @@ function bonusDetailPath(slug) {
 
 /** Guide or strategy article: `/guide/{slug}` (Express serves `post.html`; legacy `post.html?slug=` redirects). */
 function guideDetailPath(slug) {
-    if (!slug) return '/guides.html';
+    if (!slug) return '/guides';
     return `/guide/${encodeURIComponent(String(slug).trim())}`;
 }
 
@@ -3011,7 +3011,7 @@ function injectGuidesItemListJsonLd(rows, pageOffset) {
         const a = postEntryAttr(row);
         const slug = postSlugValue(a);
         const title = postTitlePlain(a);
-        const url = slug ? `${origin}${guideDetailPath(slug)}` : `${origin}/guides.html`;
+        const url = slug ? `${origin}${guideDetailPath(slug)}` : `${origin}/guides`;
         return {
             '@type': 'ListItem',
             position: base + i + 1,
@@ -3041,7 +3041,7 @@ function injectNewsItemListJsonLd(rows, pageOffset) {
         const a = postEntryAttr(row);
         const slug = postSlugValue(a);
         const title = postTitlePlain(a);
-        const url = slug ? `${origin}${guideDetailPath(slug)}` : `${origin}/news.html`;
+        const url = slug ? `${origin}${guideDetailPath(slug)}` : `${origin}/news`;
         return {
             '@type': 'ListItem',
             position: base + i + 1,
@@ -3386,7 +3386,7 @@ async function populateFooterRelatedPosts(loadedGuidePostAttr) {
                 'More casinos',
                 'Explore other operators from our editorial directory: rankings, bonuses, and review notes.',
                 'Browse all casinos',
-                '/casinos.html',
+                '/casinos',
                 'Related casinos',
             );
             rows = await fetchRecentCasinosForFooter(ex, 3);
@@ -3397,7 +3397,7 @@ async function populateFooterRelatedPosts(loadedGuidePostAttr) {
                 'More slots',
                 'Discover more titles from our slot review library: RTP, volatility, and provider notes.',
                 'Browse all slots',
-                '/slots.html',
+                '/slots',
                 'Related slots',
             );
             rows = await fetchRecentSlotsForFooter(ex, 3);
@@ -3408,7 +3408,7 @@ async function populateFooterRelatedPosts(loadedGuidePostAttr) {
                 'More providers',
                 'Compare studios and portfolios: flagship games, expertise, and editorial ratings.',
                 'Browse all providers',
-                '/providers.html',
+                '/providers',
                 'Related providers',
             );
             rows = await fetchRecentProvidersForFooter(ex, 3);
@@ -3428,7 +3428,7 @@ async function populateFooterRelatedPosts(loadedGuidePostAttr) {
                     'Related news',
                     'More headlines and editor commentary from the 888reviews news desk.',
                     'Browse all news',
-                    '/news.html',
+                    '/news',
                     'Related news',
                 );
                 rows = await fetchRecentNewsEntriesForSidebar(slug, 3);
@@ -3438,7 +3438,7 @@ async function populateFooterRelatedPosts(loadedGuidePostAttr) {
                     'Related posts',
                     'More editorial picks from our library: guides, strategies, and how-tos you can read next.',
                     'Browse all guides',
-                    '/guides.html',
+                    '/guides',
                     'Related guides',
                 );
                 rows = await fetchRecentGuideEntriesForSidebar(slug, 3);
@@ -3449,7 +3449,7 @@ async function populateFooterRelatedPosts(loadedGuidePostAttr) {
                 'Related posts',
                 'More editorial picks from our library: guides, strategies, and how-tos you can read next.',
                 'Browse all guides',
-                '/guides.html',
+                '/guides',
                 'Featured guides',
             );
             rows = await fetchRecentGuideEntriesForSidebar(currentGuideSlugFromPathForFooter(), 3);
@@ -4543,7 +4543,7 @@ function populateBonusDetailPage(attr, slug) {
                 '@type': 'ListItem',
                 position: 2,
                 name: 'Casino bonuses',
-                item: `${pub}/bonuses.html`,
+                item: `${pub}/bonuses`,
             },
             { '@type': 'ListItem', position: 3, name: name, item: absoluteUrl },
         ],

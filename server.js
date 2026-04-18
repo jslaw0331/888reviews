@@ -55,16 +55,16 @@ app.get('/sitemap.xml', (req, res) => {
     const base = sitePublicOrigin(req);
     const paths = [
         '/',
-        '/casinos.html',
-        '/bonuses.html',
-        '/slots.html',
-        '/providers.html',
-        '/guides.html',
-        '/news.html',
-        '/about.html',
-        '/privacy.html',
-        '/terms.html',
-        '/contact.html',
+        '/casinos',
+        '/bonuses',
+        '/slots',
+        '/providers',
+        '/guides',
+        '/news',
+        '/about',
+        '/privacy',
+        '/terms',
+        '/contact',
     ];
     const lines = paths.map((p) => {
         const loc = `${base}${p === '/' ? '/' : p}`;
@@ -78,7 +78,10 @@ app.get('/sitemap.xml', (req, res) => {
     res.send(body);
 });
 
-/** Root HTML pages (only these are served; avoids exposing .env, package.json, etc.) */
+/**
+ * Root HTML pages (only these are served; avoids exposing .env, package.json, etc.).
+ * Public URLs omit `.html` (e.g. `/bonuses`); `/bonuses.html` 301s to `/bonuses`.
+ */
 const ROOT_HTML = [
     'index.html',
     'bonuses.html',
@@ -111,7 +114,7 @@ app.use((req, res, next) => {
         res.redirect(301, `/bonus/${encodeURIComponent(String(slug).trim())}`);
         return;
     }
-    res.redirect(302, '/bonuses.html');
+    res.redirect(302, '/bonuses');
 });
 
 /**
@@ -334,7 +337,7 @@ app.get('/post.html', (req, res) => {
         res.redirect(301, `/guide/${encodeURIComponent(String(slug).trim())}`);
         return;
     }
-    res.redirect(302, '/guides.html');
+    res.redirect(302, '/guides');
 });
 
 app.get('/provider.html', (req, res) => {
@@ -359,11 +362,15 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 app.get('/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.redirect(301, '/');
 });
 ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
-    app.get(`/${name}`, (req, res) => {
+    const pretty = `/${name.replace(/\.html$/, '')}`;
+    app.get(pretty, (req, res) => {
         res.sendFile(path.join(__dirname, name));
+    });
+    app.get(`/${name}`, (req, res) => {
+        res.redirect(301, pretty);
     });
 });
 

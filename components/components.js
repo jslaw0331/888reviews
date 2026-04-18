@@ -14,14 +14,22 @@ class SiteHeader extends HTMLElement {
     async connectedCallback() {
         this.innerHTML = await loadComponent('/components/header.html');
         
-        // Setup Active Navigation State Dynamically
+        // Setup Active Navigation State Dynamically (pretty URLs: /bonuses not /bonuses.html)
         const currentPath = window.location.pathname;
-        const filename = currentPath.split('/').pop() || 'index.html';
+        const parts = currentPath.split('/').filter(Boolean);
+        const lastSeg = (parts.length ? parts[parts.length - 1] : '').replace(/\.html$/i, '');
+        const currentKey = (lastSeg || 'index').toLowerCase();
+        const hrefToKey = (href) => {
+            if (!href || href === '#') return '';
+            if (href === '/' || href === '/index.html') return 'index';
+            return href.replace(/^\//, '').replace(/\.html$/, '').toLowerCase();
+        };
         const links = this.querySelectorAll('.main-nav a');
-        
-        links.forEach(link => {
+
+        links.forEach((link) => {
             const href = link.getAttribute('href');
-            if (href === filename || (href === 'index.html' && filename === '')) {
+            const key = hrefToKey(href);
+            if (key && key === currentKey) {
                 link.classList.add('active');
             } else {
                 link.classList.remove('active');
