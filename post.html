@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="description" id="gp-meta-description" content="">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" id="gp-canonical" href="">
+    <meta property="og:type" content="article">
+    <meta property="og:title" id="gp-og-title" content="">
+    <meta property="og:description" id="gp-og-description" content="">
+    <meta property="og:url" id="gp-og-url" content="">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:image" id="gp-og-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="gp-twitter-title" content="">
+    <meta name="twitter:description" id="gp-twitter-description" content="">
+    <meta name="twitter:image" id="gp-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <title>Guide | 888reviews</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/components/components.js"></script>
+</head>
+<body class="page-guide-post post-page">
+    <site-header></site-header>
+
+    <div id="gp-error" class="bonus-detail-error container" hidden>
+        <p class="bonus-detail-error__text">We could not load this guide.</p>
+        <a href="/guides.html" class="btn btn-primary">Browse all guides</a>
+    </div>
+
+    <main class="post-page" id="gp-page-root" style="opacity:0;transition:opacity .35s ease">
+        <section class="post-hero post-hero--guide post-hero--guide-fit reveal">
+            <div class="post-hero__guide-inner">
+                <div class="ph-layout ph-layout--guide-hero">
+                    <div class="ph-content">
+                        <nav class="gp-breadcrumb reveal" aria-label="Breadcrumb">
+                            <ol class="gp-breadcrumb__list">
+                                <li><a href="/index.html">Home</a></li>
+                                <li aria-hidden="true">/</li>
+                                <li><a href="/guides.html">Guides</a></li>
+                                <li aria-hidden="true">/</li>
+                                <li id="gp-crumb-current" aria-current="page">Loading…</li>
+                            </ol>
+                        </nav>
+                        <div class="ph-meta">
+                            <span class="ph-pill" id="gp-pill">GUIDE</span>
+                            <span class="ph-meta-text" id="gp-read-time">… min read</span>
+                        </div>
+                        <h1 class="ph-title" id="gp-title">Loading…</h1>
+                        <p class="ph-subtitle" id="gp-dek" hidden></p>
+                        <div class="ph-author">
+                            <img src="https://ui-avatars.com/api/?name=Editorial&background=0D8ABC&color=fff" alt="" class="pha-img" id="gp-author-img" width="48" height="48">
+                            <div class="pha-info">
+                                <span class="pha-name" id="gp-author-name">888reviews Editorial</span>
+                                <span class="pha-date" id="gp-date" hidden></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ph-hero-visual" id="gp-hero-visual" hidden>
+                        <img src="" alt="" class="ph-hero-cover-img" id="gp-hero-img" width="800" height="600" loading="eager" decoding="async" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- No .reveal here: transform on an ancestor breaks position:sticky on the sidebar -->
+        <section class="post-main-container container">
+            <div class="post-layout">
+                <aside class="post-share-sidebar" hidden aria-hidden="true">
+                    <div class="share-sticky">
+                        <span class="share-lbl">SHARE</span>
+                        <button type="button" class="share-btn" aria-label="Share"><i data-lucide="share-2"></i></button>
+                    </div>
+                </aside>
+
+                <article class="post-core-content cr-article" id="gp-content-article">
+                    <div id="gp-body" class="gp-article-body"></div>
+                </article>
+            </div>
+        </section>
+
+        <section class="gp-related-latest-section" aria-labelledby="gp-related-heading">
+            <div class="container gp-related-latest-inner">
+                <header class="gp-related-latest-head">
+                    <h2 class="gp-related-title" id="gp-related-heading">Latest</h2>
+                    <p class="gp-related-dek">Guides &amp; strategies</p>
+                </header>
+                <ul class="gp-related-list gp-related-list--grid" id="gp-related-list"></ul>
+                <div class="gp-related-latest-foot">
+                    <a href="/guides.html" class="gp-related-all">View all guides <i data-lucide="arrow-right" aria-hidden="true"></i></a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <site-footer></site-footer>
+    <script src="/assets/js/script.js"></script>
+</body>
+</html>

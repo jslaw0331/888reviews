@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="description" id="sv-meta-description" content="">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" id="sv-canonical" href="">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:title" id="sv-og-title" content="">
+    <meta property="og:description" id="sv-og-description" content="">
+    <meta property="og:url" id="sv-og-url" content="">
+    <meta property="og:image" id="sv-og-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="sv-twitter-title" content="">
+    <meta name="twitter:description" id="sv-twitter-description" content="">
+    <meta name="twitter:image" id="sv-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <title>Slot review | 888reviews</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/components/components.js"></script>
+</head>
+<body class="page-slot-detail">
+    <site-header></site-header>
+
+    <div id="slot-error" class="container" style="display:none;padding:100px 24px;text-align:center;">
+        <p style="font-size:1.125rem;color:var(--text-muted);margin-bottom:20px;">We couldn’t find that slot review.</p>
+        <a href="/slots.html" class="btn btn-primary">Browse all slots</a>
+    </div>
+
+    <main class="slot-page" id="slot-page-root">
+        <!-- Hero: populated by initSlotDetailPage() from the API -->
+        <section class="slot-hero slot-hero--surface reveal">
+            <div class="container slot-hero-inner">
+                <div class="sh-left">
+                    <div class="sh-left-panel">
+                        <div class="sh-meta">
+                            <span class="sh-meta-kicker">SLOT REVIEW</span>
+                            <span class="meta-divider" aria-hidden="true">·</span>
+                            <span class="sh-meta-provider" id="sv-provider-line">…</span>
+                        </div>
+                        <h1 class="sh-title" id="sv-title">Loading…</h1>
+                        <p class="sh-excerpt" id="sv-excerpt" hidden></p>
+                        <p class="sh-compliance">18+ | T&amp;Cs Apply</p>
+                        <div class="sh-cta">
+                            <a href="#" class="sh-btn-play btn btn-primary" id="sv-play-btn" target="_blank" rel="noopener noreferrer" style="display:none;">PLAY</a>
+                            <div class="sh-cta-block">
+                                <a href="/casinos.html" class="sh-btn-where">
+                                    WHERE TO PLAY
+                                    <i data-lucide="arrow-right" class="sh-btn-where-icon" aria-hidden="true"></i>
+                                </a>
+                                <p class="sh-responsible">Safer play: set limits before you deposit. See each operator for tools and help.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sh-right reveal delay-200">
+                    <div class="slot-hero-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1596203597022-b5eefceca167?w=800&amp;auto=format&amp;fit=crop" alt="" class="slot-hero-image" id="sv-hero-image" width="800" height="800">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slot-highlight-strip container reveal delay-150" id="sv-highlight-wrap" hidden>
+            <div class="slot-highlight-inner">
+                <span class="slot-highlight-label" id="sv-highlight-label"></span>
+                <blockquote class="slot-highlight-quote" id="sv-highlight-quote"></blockquote>
+            </div>
+        </section>
+
+        <!-- Stats Bar -->
+        <section class="slot-stats-bar container reveal delay-300">
+            <div class="ss-grid ss-grid--slot ss-grid--slot-extended">
+                <div class="ss-item">
+                    <i data-lucide="percent"></i>
+                    <span class="ss-lbl">RETURN TO PLAYER</span>
+                    <span class="ss-val" id="sv-stat-rtp">-</span>
+                </div>
+                <div class="ss-item">
+                    <i data-lucide="trending-up"></i>
+                    <span class="ss-lbl">VOLATILITY</span>
+                    <span class="ss-val" id="sv-stat-vol">-</span>
+                </div>
+                <div class="ss-item">
+                    <i data-lucide="layout-grid"></i>
+                    <span class="ss-lbl">REELS</span>
+                    <span class="ss-val" id="sv-stat-reels">-</span>
+                </div>
+                <div class="ss-item">
+                    <i data-lucide="trophy"></i>
+                    <span class="ss-lbl">MAX WIN</span>
+                    <span class="ss-val" id="sv-stat-maxwin">-</span>
+                </div>
+                <div class="ss-item ss-item--theme">
+                    <i data-lucide="palette"></i>
+                    <span class="ss-lbl">THEME</span>
+                    <span class="ss-val ss-val--theme" id="sv-stat-theme">-</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Destinations (static placeholder; optional future block) -->
+        <section class="slot-destinations container reveal" style="display:none;" aria-hidden="true">
+            <div class="sd-header">
+                <h2>Top Destinations for This Slot</h2>
+                <p>Our curation team has vetted these platforms for their payout speed, licensing, and specific Pragmatic Play bonus compatibility.</p>
+            </div>
+            
+            <div class="sd-list">
+                <!-- Casino 1 -->
+                <div class="sd-card">
+                    <div class="sd-logo-box">C1</div>
+                    <div class="sd-info">
+                        <h4>Luxury Reels Casino</h4>
+                        <div class="sd-pills">
+                            <span>MGA LICENSED</span>
+                            <span>FAST PAYOUT</span>
+                        </div>
+                    </div>
+                    <div class="sd-bonus">
+                        <div class="sdb-lbl">EXCLUSIVE BONUS</div>
+                        <div class="sdb-val">100% Up to &euro;500 + 50 Spins</div>
+                    </div>
+                    <div class="sd-action">
+                        <button class="btn btn-primary btn-small">VISIT SITE</button>
+                        <span class="sd-tc">T&Cs Apply | 18+</span>
+                    </div>
+                </div>
+
+                <!-- Casino 2 -->
+                <div class="sd-card">
+                    <div class="sd-logo-box">E8</div>
+                    <div class="sd-info">
+                        <h4>Elite 888 Vegas</h4>
+                        <div class="sd-pills">
+                            <span>UKGC LICENSED</span>
+                            <span>CRYPTO SUPPORT</span>
+                        </div>
+                    </div>
+                    <div class="sd-bonus">
+                        <div class="sdb-lbl">WELCOME OFFER</div>
+                        <div class="sdb-val">&euro;1000 Welcome Package</div>
+                    </div>
+                    <div class="sd-action">
+                        <button class="btn btn-primary btn-small">VISIT SITE</button>
+                        <span class="sd-tc">T&Cs Apply | 18+</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Content Split Layout -->
+        <section class="slot-content-split container reveal">
+            <div class="provider-layout">
+                <!-- Reusing provider-layout from provider.html for the split -->
+                
+                <div class="provider-main slot-main-content">
+                    <h2>Expert review</h2>
+                    <p class="slot-last-reviewed" id="sv-last-reviewed" hidden></p>
+                    <div class="provider-body" id="sv-review-body">
+                        <p style="color:var(--text-muted);">Loading review…</p>
+                    </div>
+
+                    <div class="slot-bonus-box" id="sv-bonus-box" style="display:none;">
+                        <h3 id="sv-bonus-box-heading">Key features</h3>
+                        <div class="sbb-grid" id="sv-bonus-features"></div>
+                    </div>
+                </div>
+
+                <aside class="provider-sidebar slot-sidebar">
+                    <div class="expert-verdict-card">
+                        <h3 class="evc-title">Expert Verdict</h3>
+                        
+                        <div class="vm-section">
+                            <div class="vm-heading text-blue">WHAT WE LIKED</div>
+                            <ul class="vm-list gold-checks" id="sv-pros-list">
+                                <li><i data-lucide="check-circle-2"></i> …</li>
+                            </ul>
+                        </div>
+
+                        <div class="vm-section mt-24">
+                            <div class="vm-heading text-red">AREAS FOR IMPROVEMENT</div>
+                            <ul class="vm-list red-crosses" id="sv-cons-list">
+                                <li><i data-lucide="x-circle"></i> …</li>
+                            </ul>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- FAQ Section (static; hidden until editorial content exists) -->
+        <section class="slot-faq-section container reveal" style="display:none;" aria-hidden="true">
+            <h2 class="faq-title">Frequently Asked Questions</h2>
+            <div class="accordion">
+                <div class="acc-item">
+                    <div class="acc-header">What is the RTP of Gates of Olympus 1000? <i data-lucide="chevron-down"></i></div>
+                    <div class="acc-body">
+                        <div class="acc-content">
+                            The default RTP for Gates of Olympus 1000 is typically set at 96.50%. However, casinos can choose lower RTP variations, so verifying the exact rate at your chosen platform is recommended.
+                        </div>
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header">Can I play this slot on mobile? <i data-lucide="chevron-down"></i></div>
+                    <div class="acc-body">
+                        <div class="acc-content">
+                            Yes, absolutely. Pragmatic Play develops their games using HTML5 technology natively, ensuring seamless cross-device compatibility across Android, iOS, and tablets.
+                        </div>
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header">How do the multipliers work? <i data-lucide="chevron-down"></i></div>
+                    <div class="acc-body">
+                        <div class="acc-content">
+                            Multiplier orbs can land randomly during any spin or tumble sequence, carrying values up to 1,000x. If a spin yields a win, all multiplier values currently on screen are grouped and applied to the total win of that sequence.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- More Games (static; hidden) -->
+        <section class="more-games-section container reveal" style="display:none;" aria-hidden="true">
+            <h2 class="mg-title">More From Pragmatic Play</h2>
+            <div class="mg-grid">
+                
+                <div class="mg-card">
+                    <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=400&auto=format&fit=crop" alt="Game" class="mg-img">
+                    <h4 class="mg-name">Sweet Bonanza 1000</h4>
+                    <span class="mg-meta">HIGH VOLATILITY &bull; 96.53% RTP</span>
+                </div>
+                
+                <div class="mg-card">
+                    <img src="https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&auto=format&fit=crop" alt="Game" class="mg-img">
+                    <h4 class="mg-name">Big Bass Amazon Xtreme</h4>
+                    <span class="mg-meta">MED-HIGH VOLATILITY &bull; 96.0% RTP</span>
+                </div>
+                
+                <div class="mg-card">
+                    <img src="https://images.unsplash.com/photo-1542171221-39e1f579979c?w=400&auto=format&fit=crop" alt="Game" class="mg-img">
+                    <h4 class="mg-name">John Hunter: Book of Tut</h4>
+                    <span class="mg-meta">HIGH VOLATILITY &bull; 96.5% RTP</span>
+                </div>
+                
+                <div class="mg-card">
+                    <img src="https://images.unsplash.com/photo-1596203597022-b5eefceca167?w=400&auto=format&fit=crop" alt="Game" class="mg-img">
+                    <h4 class="mg-name">Sugar Rush 1000</h4>
+                    <span class="mg-meta">HIGH VOLATILITY &bull; 96.5% RTP</span>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <site-footer></site-footer>
+    <script src="/assets/js/script.js"></script>
+</body>
+</html>

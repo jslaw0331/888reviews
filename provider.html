@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="description" id="pv-meta-description" content="">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" id="pv-canonical" href="">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:title" id="pv-og-title" content="">
+    <meta property="og:description" id="pv-og-description" content="">
+    <meta property="og:url" id="pv-og-url" content="">
+    <meta property="og:image" id="pv-og-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="pv-twitter-title" content="">
+    <meta name="twitter:description" id="pv-twitter-description" content="">
+    <meta name="twitter:image" id="pv-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <title>Provider | 888reviews</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/components/components.js"></script>
+</head>
+
+<body class="page-provider-detail">
+    <site-header></site-header>
+
+    <main class="provider-page" id="provider-content">
+        <nav class="pv-breadcrumb container" aria-label="Breadcrumb">
+            <a class="pv-bc-link" href="/">Home</a>
+            <span class="pv-bc-sep" aria-hidden="true">/</span>
+            <a class="pv-bc-link" href="/providers.html">Providers</a>
+            <span class="pv-bc-sep" aria-hidden="true">/</span>
+            <span class="pv-bc-current" id="pv-bc-current">Provider</span>
+        </nav>
+
+        <section class="provider-hero provider-hero--refined container reveal">
+            <div class="ph-left">
+                <div class="ph-chip-row" id="pv-chip-row">
+                    <span class="ph-chip ph-chip--tier" id="pv-tier-chip" hidden></span>
+                    <span class="ph-chip ph-chip--top" id="pv-top-chip" hidden>
+                        <i data-lucide="award" aria-hidden="true"></i>
+                        <span>Top provider</span>
+                    </span>
+                </div>
+                <h1 class="ph-title" id="pv-title">Loading…</h1>
+                <p class="ph-desc" id="pv-summary"></p>
+                <div class="ph-actions" id="pv-actions" hidden>
+                    <a id="pv-dossier-link" class="btn btn-primary ph-btn-site" href="#" target="_blank"
+                        rel="noopener noreferrer">
+                        <span>Visit official site</span>
+                        <i data-lucide="external-link" aria-hidden="true"></i>
+                    </a>
+                    <a href="#pv-review" class="ph-btn-anchor">Read full review</a>
+                </div>
+            </div>
+            <aside class="ph-right" aria-label="Editorial summary">
+                <div class="ph-score-card">
+                    <div class="ph-score-card__top">
+                        <div class="ph-score-card__col ph-score-card__col--logo">
+                            <div class="ph-score-card__brand">
+                                <div class="pc-image-wrap ph-score-card__logo-mat" id="pv-hero-score-logo-mat">
+                                    <img class="pc-image" id="pv-hero-score-logo-img" src="" alt="" width="200"
+                                        height="112" loading="eager" decoding="async">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ph-score-card__col ph-score-card__col--score">
+                            <span class="ph-score-card__label">Editorial score</span>
+                            <div class="ph-score-card__headline">
+                                <span class="ph-score-num" id="pv-score-num">—</span>
+                                <span class="ph-score-denom">/ 5</span>
+                            </div>
+                            <div class="ph-score-card__stars" id="pv-score-stars" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                    <dl class="ph-score-card__meta">
+                        <div class="ph-score-meta-row">
+                            <dt>Rank</dt>
+                            <dd id="pv-rank">—</dd>
+                        </div>
+                        <div class="ph-score-meta-row">
+                            <dt>Library</dt>
+                            <dd id="pv-portfolio">—</dd>
+                        </div>
+                        <div class="ph-score-meta-row">
+                            <dt>Founded</dt>
+                            <dd id="pv-founded">—</dd>
+                        </div>
+                        <div class="ph-score-meta-row">
+                            <dt>HQ</dt>
+                            <dd id="pv-headquarters">—</dd>
+                        </div>
+                    </dl>
+                </div>
+            </aside>
+        </section>
+
+        <section class="pv-facts-strip container reveal delay-75" aria-label="Key facts">
+            <div class="pv-facts">
+                <div class="pv-fact">
+                    <span class="pv-fact__label">Rank</span>
+                    <span class="pv-fact__value" id="pv-fact-rank">—</span>
+                </div>
+                <div class="pv-fact">
+                    <span class="pv-fact__label">Score</span>
+                    <span class="pv-fact__value" id="pv-fact-score">—</span>
+                </div>
+                <div class="pv-fact">
+                    <span class="pv-fact__label">Library</span>
+                    <span class="pv-fact__value" id="pv-fact-library">—</span>
+                </div>
+                <div class="pv-fact">
+                    <span class="pv-fact__label">Founded</span>
+                    <span class="pv-fact__value" id="pv-fact-founded">—</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="pv-signature-section container reveal delay-100" id="pv-signature-section" hidden
+            aria-labelledby="pv-signature-heading">
+            <header class="pv-signature-head">
+                <h2 class="pv-section-title" id="pv-signature-heading">Signature games</h2>
+                <p class="pv-signature-desc" id="pv-signature-desc"></p>
+            </header>
+            <ul class="pv-signature-grid" id="pv-signature-grid" role="list"></ul>
+        </section>
+
+        <section class="provider-content-section container reveal delay-150" id="pv-review"
+            aria-labelledby="pv-review-heading">
+            <div class="provider-layout">
+                <article class="provider-main">
+                    <header class="pv-review-head">
+                        <h2 id="pv-review-heading">Full review</h2>
+                        <p class="pv-review-meta" id="pv-review-meta"></p>
+                    </header>
+                    <div class="provider-body" id="pv-perspective-body">
+                        <p>Loading…</p>
+                    </div>
+                </article>
+                <aside class="provider-sidebar pv-summary-aside" aria-label="Quick summary">
+                    <div class="pv-summary-card">
+                        <div class="pv-summary-card__top">
+                            <div class="pv-summary-card__col pv-summary-card__col--logo">
+                                <div class="pv-summary-logo-row">
+                                    <div class="pc-image-wrap pv-summary-logo-mat" id="pv-summary-logo-mat">
+                                        <img class="pc-image" id="pv-summary-logo-img" src="" alt="" width="200"
+                                            height="112" loading="lazy" decoding="async">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pv-summary-card__col pv-summary-card__col--score">
+                                <span class="pv-summary-label">Summary</span>
+                                <div class="pv-summary-score">
+                                    <span class="pv-summary-num" id="pv-summary-num">—</span>
+                                    <span class="pv-summary-denom">/ 5</span>
+                                </div>
+                                <div class="pv-summary-stars" id="pv-summary-stars" aria-hidden="true"></div>
+                            </div>
+                        </div>
+                        <dl class="pv-summary-meta">
+                            <div>
+                                <dt>Rank</dt>
+                                <dd id="pv-summary-rank">—</dd>
+                            </div>
+                            <div>
+                                <dt>Library</dt>
+                                <dd id="pv-summary-portfolio">—</dd>
+                            </div>
+                            <div>
+                                <dt>Founded</dt>
+                                <dd id="pv-summary-founded">—</dd>
+                            </div>
+                            <div>
+                                <dt>HQ</dt>
+                                <dd id="pv-summary-hq">—</dd>
+                            </div>
+                        </dl>
+                        <a class="btn btn-primary btn-block pv-summary-cta" id="pv-summary-cta" href="#" target="_blank"
+                            rel="noopener noreferrer" hidden>
+                            <span>Visit official site</span>
+                            <i data-lucide="external-link" aria-hidden="true"></i>
+                        </a>
+                        <p class="pv-summary-updated" id="pv-summary-updated"></p>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <div id="provider-error" class="container" style="display: none; text-align: center; padding: 120px 0;">
+        <h2 style="font-family: var(--font-serif); margin-bottom: 24px;">Provider not found</h2>
+        <p>We could not load this provider dossier.</p>
+        <a href="/providers.html" class="btn btn-outline" style="margin-top: 32px;">View all providers</a>
+    </div>
+
+    <site-footer></site-footer>
+    <script src="/assets/js/script.js"></script>
+</body>
+
+</html>

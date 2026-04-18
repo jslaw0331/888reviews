@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="description" content="" id="cr-meta-description">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" id="cr-canonical" href="">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:title" id="cr-og-title" content="">
+    <meta property="og:description" id="cr-og-description" content="">
+    <meta property="og:url" id="cr-og-url" content="">
+    <meta property="og:image" id="cr-og-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="cr-twitter-title" content="">
+    <meta name="twitter:description" id="cr-twitter-description" content="">
+    <meta name="twitter:image" id="cr-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <title>Casino review | 888reviews</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/components/components.js"></script>
+</head>
+
+<body>
+    <site-header></site-header>
+
+    <main class="cr-page" id="cr-page" style="opacity:0;transition:opacity .4s ease">
+
+        <!-- Breadcrumb -->
+        <nav class="cr-breadcrumb" aria-label="Breadcrumb">
+            <div class="container">
+                <ol class="cr-crumbs">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/casinos.html">Casinos</a></li>
+                    <li aria-current="page" id="cr-crumb-name"></li>
+                </ol>
+            </div>
+        </nav>
+
+        <!-- Hero -->
+        <section class="cr-hero-section" id="cr-hero-section">
+            <div class="container cr-hero-grid" id="cr-hero-grid">
+
+                <!-- Left: image (hidden when logo is shown inline on the heading) -->
+                <div class="cr-hero-media" id="cr-hero-visual">
+                    <div class="cr-hero-frame">
+                        <img src="" alt="" class="cr-hero-img" id="cr-hero-img" width="800" height="800">
+                    </div>
+                </div>
+
+                <!-- Center: text -->
+                <div class="cr-hero-body">
+                    <div class="cr-hero-status">
+                        <span class="cr-status-tag" id="cr-badge"><i data-lucide="award"></i> <span
+                                id="cr-badge-text"></span></span>
+                    </div>
+
+                    <h1 class="cr-heading" id="cr-heading">
+                        <span class="cr-heading-logo-wrap" id="cr-heading-logo-wrap" hidden>
+                            <img class="cr-heading-logo" id="cr-heading-logo" alt="" width="48" height="48"
+                                loading="eager" decoding="async" referrerpolicy="no-referrer" />
+                        </span>
+                        <span id="cr-name"></span>
+                    </h1>
+                    <p class="cr-slogan" id="cr-slogan"></p>
+                    <p class="cr-excerpt" id="cr-excerpt"></p>
+
+                    <div class="cr-hero-cta">
+                        <a href="#" class="cr-btn-visit" id="cr-play"><i data-lucide="external-link"></i> Visit
+                            Casino</a>
+                        <a href="#" class="cr-terms-link" id="cr-terms"><i data-lucide="scroll-text"></i> Bonus T&amp;Cs
+                            apply</a>
+                    </div>
+                </div>
+
+                <!-- Right: curator score -->
+                <aside class="cr-hero-sidebar">
+                    <div class="cr-score-card" id="cr-score-wrap">
+                        <div class="cr-stars" id="cr-stars"></div>
+                        <div class="cr-score-ring">
+                            <svg viewBox="0 0 120 120" class="cr-ring-svg">
+                                <circle cx="60" cy="60" r="52" class="cr-ring-track" />
+                                <circle cx="60" cy="60" r="52" class="cr-ring-fill" id="cr-ring-fill" />
+                            </svg>
+                            <div class="cr-score-inner">
+                                <div class="cr-score-main">
+                                    <span class="cr-score-val" id="cr-score"></span>
+                                    <span class="cr-score-max" id="cr-score-max">/5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="cr-score-label">Curator Score</span>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- Sticky section nav -->
+        <nav class="cr-section-nav" id="cr-section-nav">
+            <div class="container">
+                <ul class="cr-nav-links" id="cr-nav-links">
+                    <li><a href="#cr-hero-section" class="active">Overview</a></li>
+                    <li><a href="#cr-info-section">Info</a></li>
+                    <li id="cr-nav-analysis" hidden><a href="#cr-analysis-section">Analysis</a></li>
+                    <li id="cr-nav-gallery" hidden><a href="#cr-gallery-section">Gallery</a></li>
+                    <li id="cr-nav-proscons" hidden><a href="#cr-pros-cons">Pros &amp; Cons</a></li>
+                    <li><a href="#cr-verdict-section">Verdict</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Quick-facts info panel -->
+        <section class="cr-info-section" id="cr-info-section">
+            <div class="container">
+                <h2 class="cr-section-heading"><i data-lucide="info"></i> Casino Information</h2>
+                <div class="cr-info-grid" id="cr-info-grid">
+                    <div class="cr-info-item" id="cr-info-license" hidden>
+                        <span class="cr-info-icon"><i data-lucide="shield-check"></i></span>
+                        <span class="cr-info-label">License</span>
+                        <span class="cr-info-value" id="cr-val-license"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-founded" hidden>
+                        <span class="cr-info-icon"><i data-lucide="calendar"></i></span>
+                        <span class="cr-info-label">Founded</span>
+                        <span class="cr-info-value" id="cr-val-founded"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-owner" hidden>
+                        <span class="cr-info-icon"><i data-lucide="building-2"></i></span>
+                        <span class="cr-info-label">Owner</span>
+                        <span class="cr-info-value" id="cr-val-owner"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-games" hidden>
+                        <span class="cr-info-icon"><i data-lucide="gamepad-2"></i></span>
+                        <span class="cr-info-label">Games</span>
+                        <span class="cr-info-value" id="cr-val-games"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-payout" hidden>
+                        <span class="cr-info-icon"><i data-lucide="zap"></i></span>
+                        <span class="cr-info-label">Payout Speed</span>
+                        <span class="cr-info-value" id="cr-val-payout"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-mindeposit" hidden>
+                        <span class="cr-info-icon"><i data-lucide="coins"></i></span>
+                        <span class="cr-info-label">Min. Deposit</span>
+                        <span class="cr-info-value" id="cr-val-mindeposit"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-languages" hidden>
+                        <span class="cr-info-icon"><i data-lucide="globe"></i></span>
+                        <span class="cr-info-label">Languages</span>
+                        <span class="cr-info-value" id="cr-val-languages"></span>
+                    </div>
+                    <div class="cr-info-item" id="cr-info-payments" hidden>
+                        <span class="cr-info-icon"><i data-lucide="credit-card"></i></span>
+                        <span class="cr-info-label">Payments</span>
+                        <span class="cr-info-value cr-info-chips" id="cr-val-payments"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ad slot: replace src with your banner asset (PNG/JPG/WebP) -->
+        <div class="cr-ad-banner-wrap" id="cr-cta-wrap" data-ad-slot="review-inline-1">
+            <img class="cr-ad-banner__img"
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 160' width='1200' height='160'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232dd4bf'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='160' fill='url(%23g)'/%3E%3C/svg%3E"
+                alt="" width="1200" height="160" loading="lazy" decoding="async" />
+        </div>
+
+        <!-- Analysis -->
+        <section class="cr-analysis-section" id="cr-analysis-section" hidden>
+            <div class="container">
+                <h2 class="cr-section-heading"><i data-lucide="bar-chart-3"></i> <span
+                        id="cr-analysis-title">Analysis</span></h2>
+                <p class="cr-section-dek" id="cr-analysis-dek"></p>
+                <div class="cr-analysis-grid" id="cr-analysis-grid"></div>
+            </div>
+        </section>
+
+        <!-- Gallery -->
+        <section class="cr-gallery-section" id="cr-gallery-section" hidden aria-labelledby="cr-gallery-title">
+            <div class="container">
+                <h2 class="cr-section-heading"><i data-lucide="images"></i> <span id="cr-gallery-title">Gallery</span>
+                </h2>
+                <p class="cr-section-dek" id="cr-gallery-dek"></p>
+                <div class="cr-gallery-grid" id="cr-gallery-grid"></div>
+            </div>
+        </section>
+
+        <!-- At a glance (pros & cons), before verdict -->
+        <section class="cr-at-a-glance-section" id="cr-pros-cons" aria-label="At a glance" hidden>
+            <div class="container">
+                <div class="cr-pros-cons">
+                    <div class="cr-pros-cons-label"><i data-lucide="sparkles" aria-hidden="true"></i> At a glance</div>
+                    <div class="cr-pros-cons-grid">
+                        <div class="cr-pc-col cr-pc-pros" id="cr-col-pros" hidden>
+                            <div class="cr-pc-header">
+                                <i data-lucide="thumbs-up"></i>
+                                <h4 class="cr-pc-heading">Highlights</h4>
+                            </div>
+                            <ul class="cr-pc-list" id="cr-pros-list"></ul>
+                        </div>
+                        <div class="cr-pc-col cr-pc-cons" id="cr-col-cons" hidden>
+                            <div class="cr-pc-header">
+                                <i data-lucide="thumbs-down"></i>
+                                <h4 class="cr-pc-heading">Room for growth</h4>
+                            </div>
+                            <ul class="cr-pc-list" id="cr-cons-list"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Verdict article -->
+        <article class="cr-article cr-verdict-article" id="cr-verdict-section">
+            <div class="container cr-article-layout cr-article-layout--verdict-split">
+                <div class="cr-verdict-row" id="cr-verdict-flow">
+                    <aside class="cr-verdict-bonus-sidebar" id="cr-verdict-bonus-sidebar" aria-label="Welcome offer">
+                        <div class="cr-verdict-bonus-sidebar__inner">
+                            <div class="cr-verdict-bonus-sidebar__brand">
+                                <div class="cr-verdict-bonus-sidebar__logo-wrap" id="cr-vb-logo-wrap" hidden>
+                                    <img class="cr-verdict-bonus-sidebar__logo" id="cr-vb-logo" alt="" width="48"
+                                        height="48" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                                </div>
+                                <p class="cr-verdict-bonus-sidebar__name" id="cr-vb-name"></p>
+                            </div>
+                            <p class="cr-verdict-bonus-sidebar__label" id="cr-vb-label"></p>
+                            <p class="cr-verdict-bonus-sidebar__amount" id="cr-vb-amount"></p>
+                            <p class="cr-verdict-bonus-sidebar__terms" id="cr-vb-terms"></p>
+                            <a href="#" class="cr-btn-visit cr-btn-visit--sm cr-verdict-bonus-cta" id="cr-vb-cta"><i
+                                    data-lucide="external-link"></i> Visit casino</a>
+                        </div>
+                    </aside>
+                    <div class="cr-verdict-shell">
+                        <header class="cr-verdict-header">
+                            <p class="cr-verdict-kicker">
+                                <i data-lucide="book-open-check" aria-hidden="true"></i>
+                                <span>Expert review</span>
+                            </p>
+                            <h2 class="cr-verdict-title" id="cr-verdict-title"></h2>
+                            <p class="cr-verdict-sub">
+                                Bonuses, payouts, game choice, and trust, distilled so you can decide quickly, with the
+                                full story below.
+                            </p>
+                        </header>
+                        <section class="cr-verdict-panel cr-verdict-panel--main" aria-labelledby="cr-verdict-title">
+                            <h3 class="cr-verdict-panel-h">The review</h3>
+                            <div id="cr-body-top"></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container cr-article-layout" id="cr-verdict-secondary-wrap" hidden>
+                <div class="cr-verdict-shell cr-verdict-shell--secondary-only">
+                    <div class="cr-verdict-flow">
+                        <section class="cr-verdict-panel cr-verdict-panel--secondary" id="cr-panel-bottom">
+                            <h3 class="cr-verdict-panel-h">Also worth knowing</h3>
+                            <div id="cr-body-bottom"></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Trust -->
+        <section class="cr-trust-section" id="cr-trust-section" hidden>
+            <div class="container cr-trust-inner" id="cr-trust-badges"></div>
+        </section>
+    </main>
+
+    <div id="cr-error" class="container cr-error-state" style="display:none">
+        <div class="cr-error-icon"><i data-lucide="search-x"></i></div>
+        <h2 class="cr-error-title">Review not found</h2>
+        <p class="cr-error-text">This casino review could not be loaded from our curators.</p>
+        <a href="/casinos.html" class="btn btn-outline cr-error-btn">Browse all casinos</a>
+    </div>
+
+    <site-footer></site-footer>
+    <script src="/assets/js/script.js?v=33"></script>
+</body>
+
+</html>

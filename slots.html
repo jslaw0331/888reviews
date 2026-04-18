@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <title>Online Slot Reviews &amp; Game Library | RTP, Volatility &amp; Features | 888reviews</title>
+    <meta name="description"
+        content="Browse independent online slot reviews with RTP, volatility, and software provider data. Search our slot library, read full write-ups, and compare games before you play at a licensed operator.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://888reviews.com/slots.html">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Online Slot Reviews &amp; Game Library | 888reviews">
+    <meta property="og:description"
+        content="Independent online slot reviews with RTP, volatility, and provider data. Search titles and open full write-ups.">
+    <meta property="og:url" content="https://888reviews.com/slots.html">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Online Slot Reviews &amp; Game Library | 888reviews">
+    <meta name="twitter:description"
+        content="Independent online slot reviews with RTP, volatility, and provider data. Search titles and open full write-ups.">
+    <meta name="twitter:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "Online Slot Reviews and Game Library | 888reviews",
+        "url": "https://888reviews.com/slots.html",
+        "description": "Independent online slot reviews with RTP, volatility, and software provider data. Searchable slot library with links to full reviews.",
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": "888reviews",
+            "url": "https://888reviews.com/"
+        }
+    }
+    </script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/components/components.js"></script>
+</head>
+<body class="page-slots">
+    <site-header></site-header>
+
+    <main class="slots-page" id="main-content">
+        <!-- Hero Section -->
+        <section class="slots-hero container reveal" aria-labelledby="slots-page-h1">
+            <span class="dh-badge"><i data-lucide="check-circle"></i> INDEPENDENT SLOT REVIEWS</span>
+            <h1 id="slots-page-h1" class="slots-hero-title">Online Slot Reviews<br>&amp; Game Library</h1>
+            <p class="slots-hero-desc">Search <strong class="text-blue"><span id="slots-hero-total">-</span> online slot games</strong> with RTP, volatility, and provider notes. Every card links to a full slot review so you can compare mechanics, max win, and bonus features before you play for real money at a licensed operator.</p>
+        </section>
+
+        <!-- Filter Bar -->
+        <section class="slots-filter-section container reveal delay-100">
+            <div class="slots-filter-bar">
+                <div class="sf-search">
+                    <label for="slots-search-input">SEARCH SLOT GAMES</label>
+                    <div class="sf-input-wrap">
+                        <i data-lucide="search" aria-hidden="true"></i>
+                        <input type="search" id="slots-search-input" name="q" autocomplete="off" placeholder="Search by slot title or provider…" aria-label="Search online slots by title or provider" inputmode="search">
+                    </div>
+                </div>
+                <div class="sf-dropdowns">
+                    <div class="sf-dropdown sf-dropdown--field">
+                        <label class="sf-dropdown-label" for="slots-filter-provider">Provider</label>
+                        <select id="slots-filter-provider" class="sf-select" aria-label="Filter by provider">
+                            <option value="">All providers</option>
+                        </select>
+                    </div>
+                    <div class="sf-dropdown sf-dropdown--field">
+                        <label class="sf-dropdown-label" for="slots-filter-volatility">Volatility</label>
+                        <select id="slots-filter-volatility" class="sf-select" aria-label="Filter by volatility">
+                            <option value="">All</option>
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="EXTREME">Extreme</option>
+                        </select>
+                    </div>
+                    <div class="sf-dropdown sf-dropdown--field">
+                        <label class="sf-dropdown-label" for="slots-filter-rtp">RTP range</label>
+                        <select id="slots-filter-rtp" class="sf-select" aria-label="Filter by RTP range">
+                            <option value="">All</option>
+                            <option value="under94">Under 94%</option>
+                            <option value="94-96">94% – 96%</option>
+                            <option value="over96">96%+</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="sf-actions">
+                    <button type="button" class="sf-clear-btn" id="slots-clear-btn">CLEAR ALL</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slots Grid (populated via GET /api/slots) -->
+        <section class="slots-grid-section container reveal delay-200" aria-labelledby="slots-library-heading">
+            <header class="slots-listing-seo">
+                <h2 id="slots-library-heading">Browse online slot reviews by RTP and volatility</h2>
+                <p>Use the search to find a game or provider. Each tile shows RTP and volatility where we publish them; open <strong>Read review</strong> for the full slot review, features, and safer-play context. <strong>Play</strong> (when shown) sends you to an operator; real-money play is always subject to that site’s licence and terms.</p>
+            </header>
+            <div class="slots-grid" id="slots-listing-grid">
+                <p style="grid-column: 1 / -1; text-align: center; padding: 48px; color: var(--text-muted);">Loading slots…</p>
+            </div>
+            <nav id="slots-pagination-wrap" class="container listing-pager" style="display: none;" aria-label="Slot results pagination">
+                <div class="listing-pager__main">
+                    <button type="button" id="slots-btn-first" class="listing-pager__btn listing-pager__btn--first"
+                        aria-label="First page">
+                        <i data-lucide="chevrons-left" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="slots-btn-prev" class="listing-pager__btn" aria-label="Previous page">
+                        <i data-lucide="chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <div id="slots-page-numbers" class="listing-pager__numbers" role="group" aria-label="Jump to page"></div>
+                    <button type="button" id="slots-btn-next" class="listing-pager__btn" aria-label="Next page">
+                        <i data-lucide="chevron-right" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="slots-btn-last" class="listing-pager__btn listing-pager__btn--last"
+                        aria-label="Last page">
+                        <i data-lucide="chevrons-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="listing-pager__goto">
+                    <label for="slots-page-input" class="listing-pager__goto-label">Go to page</label>
+                    <input type="number" id="slots-page-input" class="listing-pager__goto-input" min="1" step="1" inputmode="numeric" autocomplete="off" />
+                    <span class="listing-pager__goto-total" id="slots-page-total-hint">of 1</span>
+                    <button type="button" id="slots-page-go" class="listing-pager__goto-btn">Go</button>
+                </div>
+            </nav>
+            <p class="slots-grid-disclaimer">18+ | T&amp;Cs Apply | Play Responsibly. Gambling can be addictive.</p>
+        </section>
+
+        <section class="seo-accordion slots-faq reveal delay-300" aria-labelledby="slots-faq-heading">
+            <div class="container">
+                <div class="section-header center">
+                    <h2 id="slots-faq-heading">Online slots FAQ: RTP, volatility, and reviews</h2>
+                    <p>How our online slot library works, what RTP and volatility mean, and how to use our slot reviews before you play.</p>
+                </div>
+
+                <div class="accordion accordion--two-cols">
+                    <div class="accordion-col">
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">What does RTP mean for online slots?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>RTP (return to player) is a theoretical long run payout percentage published by the studio or operator. It is not a guarantee of short session results. Use it to compare titles, not to predict what you will win in one sitting.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">What is slot volatility?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Volatility describes how swingy a game tends to be: higher volatility often means larger but less frequent hits; lower volatility tends toward smaller, more frequent outcomes. Labels on cards are editorial summaries; check each game’s rules in the lobby.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">How do I find a slot game in this library?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Use the search box to filter by title. Results update as you type. For deeper filters (provider, RTP band), use the slot review page and operator lobbies. This index prioritizes fast browsing and consistent data fields.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-col">
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">How often is the list updated?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Listings load fresh each time you open or refresh this page. New titles and field updates appear after we publish them. If something looks wrong, cross check the provider or casino site.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">Does “Play” mean I play on 888reviews?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>No. Play links go to operators or game wrappers we surface from data. You always play under that operator’s terms, licence, and safer gambling tools. We do not run real money games on this site.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">Is gambling safe?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Only gamble with money you can afford to lose. Set limits, take breaks, and use national helplines or self exclusion if you need support. 18+ | T&amp;Cs apply | play responsibly.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <site-footer></site-footer>
+    <script src="/assets/js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <title>Online Casino Reviews &amp; Directory | Compare Licensed Sites | 888reviews</title>
+    <meta name="description"
+        content="Browse independent online casino reviews, bonus summaries, and payout notes. Compare licensed operators, sort by name or our editorial rank, and open full reviews before you play.">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://888reviews.com/casinos.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content="Online Casino Reviews &amp; Directory | Compare Licensed Sites | 888reviews">
+    <meta property="og:description"
+        content="Browse independent online casino reviews, bonus summaries, and payout notes. Compare licensed operators, sort by rank, and open full reviews before you play.">
+    <meta property="og:url" content="https://888reviews.com/casinos.html">
+    <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Online Casino Reviews &amp; Directory | 888reviews">
+    <meta name="twitter:description"
+        content="Independent casino directory: compare licensed sites, bonuses, and payout notes—then read full reviews.">
+    <meta name="twitter:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="page-casinos">
+    <!-- Components -->
+    <script src="/components/components.js"></script>
+    <site-header></site-header>
+
+    <!-- Casino Listing Layout: DOM order = title, filters, cards (stacked). Grid on desktop = sidebar left, header+cards right. -->
+    <main class="container listing-layout">
+        <div class="listing-header-wrap reveal delay-200">
+            <div class="listing-header">
+                <h1>Online casino reviews and directory</h1>
+                <p>Compare licensed online casinos using our editorial rankings, bonus lines, payout speed labels, and
+                    game coverage notes. Each listing links to a full review. Showing <strong
+                        id="results-count">…</strong>
+                    results.</p>
+            </div>
+        </div>
+
+        <!-- Sidebar Filters -->
+        <aside class="listing-sidebar reveal delay-100">
+            <div class="listing-filters-card">
+                <h2 class="filter-title" id="casinos-filters-heading">Filter results</h2>
+                <div class="listing-filters-grid" role="group" aria-labelledby="casinos-filters-heading">
+                    <div class="filter-group">
+                        <h4 class="filter-heading">Tier</h4>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="filter-tier-one" value="tierOne">
+                            <span class="checkmark"></span>
+                            <span class="filter-label">Tier One only</span>
+                        </label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-heading">Sort by</h4>
+                        <label class="custom-radio">
+                            <input type="radio" name="sort" value="Rank:asc" checked>
+                            <span class="radiomark"></span>
+                            <span class="filter-label">Our ranking</span>
+                        </label>
+                        <label class="custom-radio">
+                            <input type="radio" name="sort" value="Name:asc">
+                            <span class="radiomark"></span>
+                            <span class="filter-label">Name (A to Z)</span>
+                        </label>
+                        <label class="custom-radio">
+                            <input type="radio" name="sort" value="Name:desc">
+                            <span class="radiomark"></span>
+                            <span class="filter-label">Name (Z to A)</span>
+                        </label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-heading">Results per page</h4>
+                        <label class="custom-radio">
+                            <input type="radio" name="pageSize" value="5" checked>
+                            <span class="radiomark"></span>
+                            <span class="filter-label">5</span>
+                        </label>
+                        <label class="custom-radio">
+                            <input type="radio" name="pageSize" value="10">
+                            <span class="radiomark"></span>
+                            <span class="filter-label">10</span>
+                        </label>
+                        <label class="custom-radio">
+                            <input type="radio" name="pageSize" value="25">
+                            <span class="radiomark"></span>
+                            <span class="filter-label">25</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guarantee-box">
+                <div class="guarantee-icon"><i data-lucide="shield-check"></i></div>
+                <h4>Editor's Guarantee</h4>
+                <p>Every listed provider undergoes a 48 hour rigorous audit for compliance and player safety.</p>
+            </div>
+        </aside>
+
+        <section class="listing-main reveal delay-200">
+            <!-- Cards Container: populated by script.js initCasinosListingPage() -->
+            <div class="listing-cards" id="casinos-listing-container">
+                <p style="text-align:center; padding: 60px; color: #64748b;">Loading casinos…</p>
+            </div>
+
+            <!-- Pagination: populated by script.js renderPagination() -->
+            <div class="pagination" id="pagination-container" style="display:none;">
+                <a href="#" class="prev disabled" id="btn-prev"><i data-lucide="arrow-left"></i> PREVIOUS</a>
+                <div class="page-numbers" id="page-numbers"></div>
+                <a href="#" class="next" id="btn-next">NEXT <i data-lucide="arrow-right"></i></a>
+            </div>
+        </section>
+    </main>
+
+    <section class="casinos-seo" aria-labelledby="casinos-seo-heading">
+        <div class="container">
+            <h2 id="casinos-seo-heading">How we review online casinos</h2>
+            <p>
+                Our listings rank licensed operators using the same editorial framework across every review: we check
+                regulatory credentials, ownership, payment rails and typical withdrawal times, bonus terms in plain
+                language, game coverage and software partners, and how support behaves when something goes wrong.
+                Rankings reflect ongoing monitoring, not one time marketing claims.
+            </p>
+            <p>
+                Use this directory to compare offers and product fit before you sign up. Always read the operator’s
+                terms, confirm that you are eligible to play from your region, and gamble only with money you can afford
+                to lose. If you need help with safer gambling tools, use the resources linked from our site footer.
+            </p>
+        </div>
+    </section>
+
+    <section class="seo-accordion casinos-faq reveal" aria-labelledby="casinos-faq-heading">
+        <div class="container">
+            <div class="section-header center">
+                <h2 id="casinos-faq-heading">Frequently asked questions</h2>
+                <p>Common questions about how this directory works and how to use it safely.</p>
+            </div>
+
+            <div class="accordion accordion--two-cols">
+                <div class="accordion-col">
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header" aria-expanded="false">
+                            <span class="accordion-title">What does the ranking on this page represent?</span>
+                            <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+                                <p>Rankings reflect our editorial score and review data: licensing, payments, games,
+                                    bonuses, and support. They are not paid placement. Operators can move up or down
+                                    when terms or
+                                    products change.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header" aria-expanded="false">
+                            <span class="accordion-title">How often is this list updated?</span>
+                            <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+                                <p>We fetch the latest list each time you load this page. Bonus lines and key facts can
+                                    change
+                                    when operators update offers; always confirm details on the operator’s site before
+                                    you deposit.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header" aria-expanded="false">
+                            <span class="accordion-title">What does “Tier One only” do in the filters?</span>
+                            <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+                                <p>It limits results to operators we flag as Tier One in our database. These are
+                                    typically stronger
+                                    scores across trust, payments, and product. It is a shortcut, not a guarantee for
+                                    your
+                                    jurisdiction or play style.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-col">
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header" aria-expanded="false">
+                            <span class="accordion-title">Are the bonuses shown here guaranteed?</span>
+                            <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+                                <p>No. Bonus text is summarized from available data and may omit rules that vary by
+                                    country,
+                                    payment exclusions, or time limits. Read the operator’s terms and eligibility before
+                                    you claim any offer.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header" aria-expanded="false">
+                            <span class="accordion-title">How should I compare payout speed between casinos?</span>
+                            <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+                                <p>Use our labels as a guide, then check recent player reports and the operator’s own
+                                    processing times for your withdrawal method. Verification and first time cashouts
+                                    often take longer than repeat withdrawals.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header" aria-expanded="false">
+                            <span class="accordion-title">Can I play from my country?</span>
+                            <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+                                <p>Licensing and availability vary by territory. A casino may appear in our directory
+                                    but
+                                    restrict registration or payments where you live. Confirm in the operator’s terms
+                                    and
+                                    geo checks during sign up.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <site-footer></site-footer>
+    <!-- All JS lives in script.js; no inline script needed -->
+    <script src="/assets/js/script.js?v=42"></script>
+</body>
+
+</html>

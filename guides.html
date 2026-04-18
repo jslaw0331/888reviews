@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="public-base-url" content="https://888reviews.com">
+    <title>iGaming Guides &amp; Strategies | How-To Articles &amp; Expert Tips | 888reviews</title>
+    <meta name="description"
+        content="Expert iGaming guides and strategies: bankroll management, game mechanics, payments, licensing, and responsible play. Editorial how-tos and deep dives from 888reviews. Always verify terms with licensed operators.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://888reviews.com/guides.html">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="iGaming Guides &amp; Strategies | 888reviews">
+    <meta property="og:description"
+        content="How-to guides and strategy articles for online casino and slots play: mechanics, payments, regulation, and safer gambling, curated by our editorial team.">
+    <meta property="og:url" content="https://888reviews.com/guides.html">
+    <meta property="og:site_name" content="888reviews">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="iGaming Guides &amp; Strategies | 888reviews">
+    <meta name="twitter:description"
+        content="Editorial guides and strategies for casino and slots: expert tips, payments, licensing, and responsible gaming.">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "iGaming Guides & Strategies | 888reviews",
+        "description": "Editorial collection of how-to guides and strategy articles covering online casino play, slots, payments, licensing, and responsible gambling.",
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": "888reviews",
+            "url": "https://888reviews.com/"
+        }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://888reviews.com/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Guides & strategies",
+                "item": "https://888reviews.com/guides.html"
+            }
+        ]
+    }
+    </script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/components/components.js"></script>
+</head>
+<body class="page-guides">
+    <site-header></site-header>
+
+    <main class="guides-page" id="main-content">
+        <nav class="bonuses-breadcrumb container" aria-label="Breadcrumb">
+            <ol class="bonuses-breadcrumb__list">
+                <li><a href="/index.html">Home</a></li>
+                <li aria-current="page">Guides &amp; strategies</li>
+            </ol>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="guides-hero container reveal" aria-labelledby="guides-hero-h1">
+            <h1 class="gh-title" id="guides-hero-h1">Expert iGaming <em>Guides</em><br>&amp; <em>Strategies</em></h1>
+            <p class="gh-desc">Practical how-tos and strategy pieces on casino games, bankroll discipline, payments, and regulation, written for players who want clarity, not hype. Always check the operator’s terms and your local rules before you play.</p>
+
+            <div class="gh-filters" role="group" aria-label="Filter guides by type">
+                <button type="button" class="gh-filter-btn active" data-guides-filter="all">All</button>
+                <button type="button" class="gh-filter-btn" data-guides-filter="guide">Guides</button>
+                <button type="button" class="gh-filter-btn" data-guides-filter="strategy">Strategies</button>
+            </div>
+        </section>
+
+        <p id="guides-status" class="container bonuses-grid-loading" role="status" aria-live="polite">Loading guides…</p>
+
+        <!-- Guides grid -->
+        <section class="guides-grid-section container reveal delay-200" aria-labelledby="guides-directory-heading">
+            <header class="guides-directory-header">
+                <h2 id="guides-directory-heading">Browse guides &amp; strategies</h2>
+                <p class="guides-directory-dek">Open any title for the full article. Content is editorial; offers and rules change. Confirm details on the operator’s site.</p>
+            </header>
+            <div class="guides-grid" id="guides-grid"></div>
+            <p id="guides-empty" class="container" hidden style="padding: 2rem 0; color: #64748b;">No guides match this filter yet. Try &ldquo;All&rdquo; or check back soon.</p>
+            <nav id="guides-pagination-wrap" class="guides-pagination-wrap listing-pager container"
+                aria-label="Guides pagination" hidden>
+                <div class="listing-pager__main">
+                    <button type="button" id="guides-btn-first" class="listing-pager__btn listing-pager__btn--first"
+                        aria-label="First page">
+                        <i data-lucide="chevrons-left" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="guides-btn-prev" class="listing-pager__btn" aria-label="Previous page">
+                        <i data-lucide="chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <div id="guides-page-numbers" class="listing-pager__numbers" role="group"
+                        aria-label="Jump to page"></div>
+                    <button type="button" id="guides-btn-next" class="listing-pager__btn" aria-label="Next page">
+                        <i data-lucide="chevron-right" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="guides-btn-last" class="listing-pager__btn listing-pager__btn--last"
+                        aria-label="Last page">
+                        <i data-lucide="chevrons-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="listing-pager__goto">
+                    <label for="guides-page-input" class="listing-pager__goto-label">Go to page</label>
+                    <input type="number" id="guides-page-input" class="listing-pager__goto-input" min="1" step="1"
+                        inputmode="numeric" autocomplete="off" />
+                    <span class="listing-pager__goto-total" id="guides-page-total-hint">of 1</span>
+                    <button type="button" id="guides-page-go" class="listing-pager__goto-btn">Go</button>
+                </div>
+            </nav>
+        </section>
+
+        <!-- Interstitial CTA -->
+        <section class="guides-interstitial container reveal" aria-label="Casino rankings">
+            <div class="gi-card">
+                <div class="gi-content">
+                    <h3>Curated for You: <em>Top Casino Recommendations</em></h3>
+                    <p>Our experts review licensed operators for safety, game variety, and payout experience.</p>
+                </div>
+                <div class="gi-action">
+                    <a href="/casinos.html" class="btn btn-primary">VIEW RANKINGS</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="seo-accordion guides-faq reveal delay-300" aria-labelledby="guides-faq-heading">
+            <div class="container">
+                <div class="section-header center">
+                    <h2 id="guides-faq-heading">Guides &amp; strategies FAQ</h2>
+                    <p>How this editorial library works, what “guide” vs “strategy” means here, and how to use these articles responsibly.</p>
+                </div>
+
+                <div class="accordion accordion--two-cols">
+                    <div class="accordion-col">
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">What is the difference between a guide and a strategy?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon" aria-hidden="true"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p><strong>Guides</strong> focus on how things work: rules, mechanics, payments, licences, and what to check before you play. <strong>Strategies</strong> focus on decision-making: bankroll discipline, volatility, session planning, and safer play habits. Both are editorial; they are not personalised advice.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">How do you write and update these articles?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon" aria-hidden="true"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Our team researches public sources, operator terms, and industry context, then publishes clear explainers. Offers, rules, and products change. Always confirm critical details on the operator’s site before you deposit or claim a bonus.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">Is this legal or financial advice?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon" aria-hidden="true"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>No. Laws vary by country and region. Nothing here is legal, tax, or investment advice. You are responsible for complying with local rules. If you are unsure, check official regulators or a qualified professional.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-col">
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">How do I read a full article?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon" aria-hidden="true"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Click any card in the list above to open the full piece. Use the filters (All, Guides, Strategies) to narrow the directory. Pagination appears when there are multiple pages of results.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">Do guides guarantee winnings or bonus outcomes?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon" aria-hidden="true"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>No. Gambling outcomes are uncertain. We explain concepts and risks; we do not promise profit. Bonus eligibility, wagering, and caps depend on the operator’s current terms and your jurisdiction.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <button type="button" class="accordion-header" aria-expanded="false">
+                                <span class="accordion-title">Where can I get help with problem gambling?</span>
+                                <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon" aria-hidden="true"></i></div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-inner">
+                                    <p>Use safer-gambling tools on licensed sites (limits, cool-off, self-exclusion). If you need support, contact a national helpline or organisation such as <a href="https://www.begambleaware.org" rel="noopener noreferrer" target="_blank">BeGambleAware</a> (UK) or an equivalent service where you live. 18+ | Play responsibly.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <site-footer></site-footer>
+    <script src="/assets/js/script.js"></script>
+</body>
+</html>
