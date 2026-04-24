@@ -28,7 +28,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/components/components.js"></script>
 </head>
-<body class="page-guide-post post-page">
+<body class="page-guide-post">
     <site-header></site-header>
 
     <div id="gp-error" class="bonus-detail-error container" hidden>
@@ -36,7 +36,7 @@
         <a href="/guides" class="btn btn-primary">Browse all guides</a>
     </div>
 
-    <main class="post-page" id="gp-page-root" style="opacity:0;transition:opacity .35s ease">
+    <main class="post-page" id="gp-page-root">
         <section class="post-hero post-hero--guide post-hero--guide-fit reveal">
             <div class="post-hero__guide-inner">
                 <div class="ph-layout ph-layout--guide-hero">
@@ -84,19 +84,6 @@
                 <article class="post-core-content cr-article" id="gp-content-article">
                     <div id="gp-body" class="gp-article-body"></div>
                 </article>
-            </div>
-        </section>
-
-        <section class="gp-related-latest-section" aria-labelledby="gp-related-heading">
-            <div class="container gp-related-latest-inner">
-                <header class="gp-related-latest-head">
-                    <h2 class="gp-related-title" id="gp-related-heading">Latest</h2>
-                    <p class="gp-related-dek">Guides &amp; strategies</p>
-                </header>
-                <ul class="gp-related-list gp-related-list--grid" id="gp-related-list"></ul>
-                <div class="gp-related-latest-foot">
-                    <a href="/guides" class="gp-related-all">View all guides <i data-lucide="arrow-right" aria-hidden="true"></i></a>
-                </div>
             </div>
         </section>
     </main>

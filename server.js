@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const serverSeo = require('./server-seo');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,32 +51,45 @@ app.get('/robots.txt', (req, res) => {
     );
 });
 
-/** SEO: static indexable routes (CMS detail URLs are discovered via internal links). */
-app.get('/sitemap.xml', (req, res) => {
-    const base = sitePublicOrigin(req);
-    const paths = [
-        '/',
-        '/casinos',
-        '/bonuses',
-        '/slots',
-        '/providers',
-        '/guides',
-        '/news',
-        '/about',
-        '/privacy',
-        '/terms',
-        '/contact',
-    ];
-    const lines = paths.map((p) => {
-        const loc = `${base}${p === '/' ? '/' : p}`;
-        const priority = p === '/' ? '1.0' : '0.8';
-        return `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
-    });
-    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
-        '\n',
-    )}\n</urlset>\n`;
-    res.type('application/xml');
-    res.send(body);
+/**
+ * SEO: hub URLs + CMS detail URLs when STRAPI_API_URL and STRAPI_API_TOKEN are set.
+ * Falls back to hub-only lines if Strapi pagination fails.
+ */
+app.get('/sitemap.xml', async (req, res) => {
+    try {
+        const lines = await serverSeo.collectSitemapUrlLines(req, escapeXml, sitePublicOrigin);
+        const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
+            '\n',
+        )}\n</urlset>\n`;
+        res.type('application/xml');
+        res.send(body);
+    } catch (e) {
+        console.error('[sitemap]', e);
+        const base = sitePublicOrigin(req);
+        const hubPaths = [
+            '/',
+            '/casinos',
+            '/bonuses',
+            '/slots',
+            '/providers',
+            '/guides',
+            '/news',
+            '/about',
+            '/how-we-rate',
+            '/privacy',
+            '/terms',
+            '/contact',
+        ];
+        const lines = hubPaths.map((p) => {
+            const loc = `${base}${p === '/' ? '/' : p}`;
+            const priority = p === '/' ? '1.0' : '0.8';
+            return `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
+        });
+        const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
+            '\n',
+        )}\n</urlset>\n`;
+        res.type('application/xml').send(body);
+    }
 });
 
 /**
@@ -91,6 +105,7 @@ const ROOT_HTML = [
     'guides.html',
     'news.html',
     'about.html',
+    'how-we-rate.html',
     'privacy.html',
     'terms.html',
     'contact.html',
@@ -115,6 +130,22 @@ app.use((req, res, next) => {
         return;
     }
     res.redirect(302, '/bonuses');
+});
+
+/** Legacy WordPress-style provider hub → pretty URL (preserves inbound links and SEO). */
+app.get('/casino-gaming-provider', (req, res) => {
+    res.redirect(301, '/providers');
+});
+app.get('/casino-gaming-provider/', (req, res) => {
+    res.redirect(301, '/providers');
+});
+
+/** Legacy WordPress slot hub (`/casino-slots-game/`) → pretty URL. */
+app.get('/casino-slots-game', (req, res) => {
+    res.redirect(301, '/slots');
+});
+app.get('/casino-slots-game/', (req, res) => {
+    res.redirect(301, '/slots');
 });
 
 /**
@@ -237,11 +268,15 @@ app.get('/api/media-proxy', async (req, res) => {
 // Takes any request to /api/... and forwards it to Strapi with the secure token
 app.get('/api/:endpoint', async (req, res) => {
     try {
-        const { endpoint } = req.params;
-        
+        let { endpoint } = req.params;
+        /** Strapi REST uses plural collection URLs; singular `/api/review` does not exist (404). */
+        if (endpoint === 'review') {
+            endpoint = 'reviews';
+        }
+
         // Grab any query parameters (like ?populate=*) from the incoming request
         const queryParams = req.url.split('?')[1] || '';
-        
+
         // Build the literal target URL to your secure Strapi server
         const targetUrl = `${process.env.STRAPI_API_URL}/api/${endpoint}?${queryParams}`;
 
@@ -282,7 +317,7 @@ app.get('/casino/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    res.sendFile(path.join(__dirname, 'review.html'));
+    serverSeo.sendDetailPage(res, __dirname, 'casino', raw, sitePublicOrigin(req));
 });
 
 app.get('/review.html', (req, res) => {
@@ -300,7 +335,7 @@ app.get('/provider/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    res.sendFile(path.join(__dirname, 'provider.html'));
+    serverSeo.sendDetailPage(res, __dirname, 'provider', raw, sitePublicOrigin(req));
 });
 
 app.get('/slot/:slug', (req, res) => {
@@ -309,7 +344,7 @@ app.get('/slot/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    res.sendFile(path.join(__dirname, 'slot.html'));
+    serverSeo.sendDetailPage(res, __dirname, 'slot', raw, sitePublicOrigin(req));
 });
 
 app.get('/bonus/:slug', (req, res) => {
@@ -318,7 +353,7 @@ app.get('/bonus/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    res.sendFile(path.join(__dirname, 'bonus.html'));
+    serverSeo.sendDetailPage(res, __dirname, 'bonus', raw, sitePublicOrigin(req));
 });
 
 /** Guide / strategy article (Strapi `posts`); legacy `post.html?slug=` → `/guide/:slug`. */
@@ -328,7 +363,7 @@ app.get('/guide/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    res.sendFile(path.join(__dirname, 'post.html'));
+    serverSeo.sendDetailPage(res, __dirname, 'guide', raw, sitePublicOrigin(req));
 });
 
 app.get('/post.html', (req, res) => {

@@ -34,7 +34,7 @@
 <body>
     <site-header></site-header>
 
-    <main class="cr-page" id="cr-page" style="opacity:0;transition:opacity .4s ease">
+    <main class="cr-page" id="cr-page">
 
         <!-- Breadcrumb -->
         <nav class="cr-breadcrumb" aria-label="Breadcrumb">
@@ -47,61 +47,49 @@
             </div>
         </nav>
 
-        <!-- Hero -->
-        <section class="cr-hero-section" id="cr-hero-section">
-            <div class="container cr-hero-grid" id="cr-hero-grid">
+        <!-- Hero: banner + identity strip -->
+        <section class="cr-hero-section cr-hero-v2" id="cr-hero-section">
+            <div class="cr-hero-banner" id="cr-hero-banner">
+                <img src="" alt="" class="cr-hero-banner__img" id="cr-hero-banner-img" width="1600" height="420"
+                    loading="eager" decoding="async" referrerpolicy="no-referrer" />
+            </div>
 
-                <!-- Left: image (hidden when logo is shown inline on the heading) -->
-                <div class="cr-hero-media" id="cr-hero-visual">
-                    <div class="cr-hero-frame">
-                        <img src="" alt="" class="cr-hero-img" id="cr-hero-img" width="800" height="800">
-                    </div>
+            <div class="container cr-hero-strip">
+                <div class="cr-hero-logo-v2" id="cr-hero-logo-wrap-v2">
+                    <img src="" alt="" class="cr-hero-logo-v2__img" id="cr-hero-logo-v2" width="160" height="160"
+                        loading="eager" decoding="async" referrerpolicy="no-referrer" />
                 </div>
 
-                <!-- Center: text -->
-                <div class="cr-hero-body">
+                <div class="cr-hero-identity">
                     <div class="cr-hero-status">
                         <span class="cr-status-tag" id="cr-badge"><i data-lucide="award"></i> <span
                                 id="cr-badge-text"></span></span>
                     </div>
-
                     <h1 class="cr-heading" id="cr-heading">
-                        <span class="cr-heading-logo-wrap" id="cr-heading-logo-wrap" hidden>
-                            <img class="cr-heading-logo" id="cr-heading-logo" alt="" width="48" height="48"
-                                loading="eager" decoding="async" referrerpolicy="no-referrer" />
-                        </span>
                         <span id="cr-name"></span>
                     </h1>
-                    <p class="cr-slogan" id="cr-slogan"></p>
-                    <p class="cr-excerpt" id="cr-excerpt"></p>
-
-                    <div class="cr-hero-cta">
-                        <a href="#" class="cr-btn-visit" id="cr-play"><i data-lucide="external-link"></i> Visit
-                            Casino</a>
-                        <a href="#" class="cr-terms-link" id="cr-terms"><i data-lucide="scroll-text"></i> Bonus T&amp;Cs
-                            apply</a>
-                    </div>
                 </div>
 
-                <!-- Right: curator score -->
-                <aside class="cr-hero-sidebar">
-                    <div class="cr-score-card" id="cr-score-wrap">
-                        <div class="cr-stars" id="cr-stars"></div>
-                        <div class="cr-score-ring">
-                            <svg viewBox="0 0 120 120" class="cr-ring-svg">
-                                <circle cx="60" cy="60" r="52" class="cr-ring-track" />
-                                <circle cx="60" cy="60" r="52" class="cr-ring-fill" id="cr-ring-fill" />
-                            </svg>
-                            <div class="cr-score-inner">
-                                <div class="cr-score-main">
-                                    <span class="cr-score-val" id="cr-score"></span>
-                                    <span class="cr-score-max" id="cr-score-max">/5</span>
-                                </div>
-                            </div>
-                        </div>
-                        <span class="cr-score-label">Curator Score</span>
+                <div class="cr-hero-ratings" id="cr-hero-ratings">
+                    <div class="cr-rating cr-rating--curator">
+                        <span class="cr-rating-label">Our Rating</span>
+                        <span class="cr-rating-value">
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator"
+                                aria-hidden="true"></i>
+                            <strong id="cr-score">-</strong><span class="cr-rating-max">/5</span>
+                            <a href="#cr-verdict-section" class="cr-rating-link">CasinoRank</a>
+                        </span>
                     </div>
-                </aside>
+                    <div class="cr-rating cr-rating--player">
+                        <span class="cr-rating-label">Player Rating</span>
+                        <span class="cr-rating-value">
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player"
+                                aria-hidden="true"></i>
+                            <strong id="cr-player-score">-</strong><span class="cr-rating-max">/5</span>
+                            <a href="#pr-section" class="cr-rating-link" id="cr-player-reviews-link">0 reviews</a>
+                        </span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -114,7 +102,8 @@
                     <li id="cr-nav-analysis" hidden><a href="#cr-analysis-section">Analysis</a></li>
                     <li id="cr-nav-gallery" hidden><a href="#cr-gallery-section">Gallery</a></li>
                     <li id="cr-nav-proscons" hidden><a href="#cr-pros-cons">Pros &amp; Cons</a></li>
-                    <li><a href="#cr-verdict-section">Verdict</a></li>
+                    <li id="cr-nav-verdict"><a href="#cr-verdict-section">Verdict</a></li>
+                    <li id="cr-nav-reviews"><a href="#pr-section">Reviews</a></li>
                 </ul>
             </div>
         </nav>
@@ -220,8 +209,8 @@
             </div>
         </section>
 
-        <!-- Verdict article -->
-        <article class="cr-article cr-verdict-article" id="cr-verdict-section">
+        <!-- Expert verdict + player reviews: one row so the sticky bonus spans both columns -->
+        <section class="cr-verdict-article cr-review-page-combined" aria-label="Expert verdict and player reviews">
             <div class="container cr-article-layout cr-article-layout--verdict-split">
                 <div class="cr-verdict-row" id="cr-verdict-flow">
                     <aside class="cr-verdict-bonus-sidebar" id="cr-verdict-bonus-sidebar" aria-label="Welcome offer">
@@ -240,37 +229,127 @@
                                     data-lucide="external-link"></i> Visit casino</a>
                         </div>
                     </aside>
-                    <div class="cr-verdict-shell">
-                        <header class="cr-verdict-header">
-                            <p class="cr-verdict-kicker">
-                                <i data-lucide="book-open-check" aria-hidden="true"></i>
-                                <span>Expert review</span>
-                            </p>
-                            <h2 class="cr-verdict-title" id="cr-verdict-title"></h2>
-                            <p class="cr-verdict-sub">
-                                Bonuses, payouts, game choice, and trust, distilled so you can decide quickly, with the
-                                full story below.
-                            </p>
-                        </header>
-                        <section class="cr-verdict-panel cr-verdict-panel--main" aria-labelledby="cr-verdict-title">
-                            <h3 class="cr-verdict-panel-h">The review</h3>
-                            <div id="cr-body-top"></div>
-                        </section>
-                    </div>
-                </div>
-            </div>
+                    <div class="cr-review-page__main">
+                        <article class="cr-article" id="cr-verdict-section">
+                            <div class="cr-verdict-shell">
+                                <header class="cr-verdict-header">
+                                    <p class="cr-verdict-kicker">
+                                        <i data-lucide="book-open-check" aria-hidden="true"></i>
+                                        <span>Expert review</span>
+                                    </p>
+                                    <h2 class="cr-verdict-title" id="cr-verdict-title"></h2>
+                                    <p class="cr-verdict-sub">
+                                        Bonuses, payouts, game choice, and trust, distilled so you can decide quickly,
+                                        with the full story below.
+                                    </p>
+                                </header>
+                                <section class="cr-verdict-panel cr-verdict-panel--main"
+                                    aria-labelledby="cr-verdict-title">
+                                    <h3 class="cr-verdict-panel-h">The review</h3>
+                                    <div id="cr-body-top"></div>
+                                </section>
+                            </div>
 
-            <div class="container cr-article-layout" id="cr-verdict-secondary-wrap" hidden>
-                <div class="cr-verdict-shell cr-verdict-shell--secondary-only">
-                    <div class="cr-verdict-flow">
-                        <section class="cr-verdict-panel cr-verdict-panel--secondary" id="cr-panel-bottom">
-                            <h3 class="cr-verdict-panel-h">Also worth knowing</h3>
-                            <div id="cr-body-bottom"></div>
+                            <div class="container cr-article-layout" id="cr-verdict-secondary-wrap" hidden>
+                                <div class="cr-verdict-shell cr-verdict-shell--secondary-only">
+                                    <div class="cr-verdict-flow">
+                                        <section class="cr-verdict-panel cr-verdict-panel--secondary" id="cr-panel-bottom">
+                                            <h3 class="cr-verdict-panel-h">Also worth knowing</h3>
+                                            <div id="cr-body-bottom"></div>
+                                        </section>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+
+                        <section class="pr-section" id="pr-section" aria-labelledby="pr-title">
+                            <div class="cr-verdict-shell pr-main-shell">
+                                <header class="cr-verdict-header pr-reviews-header">
+                                    <p class="cr-verdict-kicker pr-kicker">
+                                        <i data-lucide="message-square-quote" aria-hidden="true"></i>
+                                        <span>Player feedback</span>
+                                    </p>
+                                    <h2 class="cr-verdict-title" id="pr-title">Player reviews <span class="pr-count"
+                                            id="pr-count"></span></h2>
+                                    <p class="cr-verdict-sub pr-reviews-sub">
+                                        Ratings, pros and cons, and what stood out: real voices from the community.
+                                    </p>
+                                </header>
+
+                                <div class="pr-summary" id="pr-summary" hidden>
+                                    <div class="pr-summary__grid">
+                                        <div class="pr-summary-score">
+                                            <p class="pr-summary-kicker">Average rating</p>
+                                            <div class="pr-summary-rating-line">
+                                                <span class="pr-summary-avg" id="pr-summary-avg"></span>
+                                                <span class="pr-summary-max" aria-hidden="true">/ 5</span>
+                                            </div>
+                                            <div class="pr-summary-stars" id="pr-summary-stars"></div>
+                                            <p class="pr-summary-total" id="pr-summary-total"></p>
+                                        </div>
+                                        <div class="pr-summary-distribution">
+                                            <p class="pr-summary-kicker">Rating breakdown</p>
+                                            <ul class="pr-summary-bars" id="pr-summary-bars" role="list"></ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <section class="cr-verdict-panel cr-verdict-panel--main pr-reviews-panel"
+                                    aria-labelledby="pr-panel-heading">
+                                    <div class="pr-panel-head">
+                                        <h3 class="cr-verdict-panel-h" id="pr-panel-heading">What players say</h3>
+                                    </div>
+                                    <ul class="pr-list" id="pr-list" role="list" aria-live="polite"></ul>
+                                    <div class="pr-empty" id="pr-empty" hidden>
+                                        <div class="pr-empty__inner" role="status">
+                                            <div class="pr-empty__icon-wrap" aria-hidden="true">
+                                                <i data-lucide="message-circle-plus"></i>
+                                            </div>
+                                            <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No reviews yet</p>
+                                            <p class="pr-empty__dek">No player reviews yet. Be the first to share your experience.</p>
+                                        </div>
+                                    </div>
+                                    <nav id="pr-pagination-wrap" class="listing-pager" style="display: none;"
+                                        aria-label="Review pages">
+                                        <div class="listing-pager__main">
+                                            <button type="button" id="pr-btn-first"
+                                                class="listing-pager__btn listing-pager__btn--first"
+                                                aria-label="First page">
+                                                <i data-lucide="chevrons-left" aria-hidden="true"></i>
+                                            </button>
+                                            <button type="button" id="pr-btn-prev" class="listing-pager__btn"
+                                                aria-label="Previous page">
+                                                <i data-lucide="chevron-left" aria-hidden="true"></i>
+                                            </button>
+                                            <div id="pr-page-numbers" class="listing-pager__numbers" role="group"
+                                                aria-label="Jump to page"></div>
+                                            <button type="button" id="pr-btn-next" class="listing-pager__btn"
+                                                aria-label="Next page">
+                                                <i data-lucide="chevron-right" aria-hidden="true"></i>
+                                            </button>
+                                            <button type="button" id="pr-btn-last"
+                                                class="listing-pager__btn listing-pager__btn--last"
+                                                aria-label="Last page">
+                                                <i data-lucide="chevrons-right" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        <div class="listing-pager__goto">
+                                            <label for="pr-page-input" class="listing-pager__goto-label">Go to
+                                                page</label>
+                                            <input type="number" id="pr-page-input" class="listing-pager__goto-input"
+                                                min="1" step="1" inputmode="numeric" autocomplete="off" />
+                                            <span class="listing-pager__goto-total" id="pr-page-total-hint">of 1</span>
+                                            <button type="button" id="pr-page-go"
+                                                class="listing-pager__goto-btn">Go</button>
+                                        </div>
+                                    </nav>
+                                </section>
+                            </div>
                         </section>
                     </div>
                 </div>
             </div>
-        </article>
+        </section>
 
         <!-- Trust -->
         <section class="cr-trust-section" id="cr-trust-section" hidden>
@@ -286,7 +365,8 @@
     </div>
 
     <site-footer></site-footer>
-    <script src="/assets/js/script.js?v=33"></script>
+    <script src="/assets/js/script.js?v=40"></script>
+    <script src="/assets/js/player-reviews.js?v=12"></script>
 </body>
 
 </html>

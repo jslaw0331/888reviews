@@ -2,33 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Lucide icons
     lucide.createIcons();
 
-    // Scroll reveal animation
-    const revealElements = document.querySelectorAll('.reveal');
-    
-    // Check if browser supports IntersectionObserver
-    if ('IntersectionObserver' in window) {
-        const revealObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, {
-            root: null,
-            threshold: 0.1,
-            rootMargin: "0px 0px -50px 0px"
-        });
-
-        // Add a slight delay to header elements to trigger animation on load smoothly
-        setTimeout(() => {
-            revealElements.forEach(el => revealObserver.observe(el));
-        }, 100);
-    } else {
-        // Fallback for older browsers
-        revealElements.forEach(el => el.classList.add('active'));
-    }
-
     // Filter logic removed as filters were removed from UI.
 
     // Accordion Logic
@@ -503,6 +476,46 @@ function plainTextToParagraphsHtml(text) {
     return chunks.map((c) => `<p>${escapeHtml(c)}</p>`).join('');
 }
 
+function decodeHtmlEntitiesLight(s) {
+    if (typeof document === 'undefined') return String(s ?? '');
+    const ta = document.createElement('textarea');
+    ta.innerHTML = s;
+    return ta.value;
+}
+
+/** True when the string likely contains Markdown (headings, hr, lists, blockquote). */
+function looksLikeMarkdown(s) {
+    const t = String(s ?? '').trim();
+    if (!t) return false;
+    const lines = t.split('\n');
+    for (let i = 0; i < Math.min(lines.length, 80); i++) {
+        const L = lines[i].trim();
+        if (!L) continue;
+        if (/^#{1,6}\s+/.test(L)) return true;
+        if (/^(\*{3}|-{3}|_{3})(\s*)$/.test(L)) return true;
+        if (/^[-*+]\s+/.test(L)) return true;
+        if (/^\d+\.\s+/.test(L)) return true;
+        if (/^>\s+/.test(L)) return true;
+    }
+    return false;
+}
+
+/**
+ * Strapi / CMS sometimes saves Markdown inside one or more HTML <p> wrappers.
+ * Unwrap so `marked` can see real `#` headings and block structure.
+ */
+function unwrapMarkdownWrappedInParagraphHtml(t) {
+    const s = String(t).trim();
+    if (!s) return s;
+    if (!/^(\s*<p(\s[^>]*)?>[\s\S]*?<\/p>\s*)+$/i.test(s)) return s;
+    const collapsed = s
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>\s*<p(\s[^>]*)?>/gi, '\n\n')
+        .replace(/^<p(\s[^>]*)?>/i, '')
+        .replace(/<\/p>\s*$/i, '');
+    return decodeHtmlEntitiesLight(collapsed.trim());
+}
+
 /**
  * Rich text from API: Blocks (object), HTML string, JSON string of blocks, or plain text.
  */
@@ -627,7 +640,8 @@ function setReviewCanonicalAndSocial(name) {
     if (twDesc && desc) twDesc.setAttribute('content', desc);
 
     let imageAbs = `${absBase}/assets/img/888review-siteicon.png`;
-    const heroImg = document.getElementById('cr-hero-img');
+    const heroImg =
+        document.getElementById('cr-hero-banner-img') || document.getElementById('cr-hero-img');
     const src = heroImg && heroImg.getAttribute('src');
     if (src && /^https?:\/\//i.test(src)) imageAbs = src;
     else if (src && src.startsWith('/')) imageAbs = `${absBase}${src}`;
@@ -912,6 +926,11 @@ const BONUSES_PAGE_SIZE = 50;
 /** Built from GET /api/bonuses so each casino slug/id maps to its Bonus entry (correct card + hero copy). */
 let casinoBonusSlugMapCache = null;
 let bonusesListRowsCache = null;
+
+/** /bonuses listing: cached rows + UI state for client-side filter and sort. */
+let bonusesPageRawList = null;
+let bonusesPageFilter = 'all';
+let bonusesPageSort = 'newest';
 
 /** Slots list sort. Use `Rank:asc` only after adding a Rank field to the Slot type in Strapi (otherwise Strapi returns 400). */
 const SLOTS_LIST_SORT = 'publishedAt:desc';
@@ -1339,6 +1358,19 @@ function wireTierProsConsExpand(root) {
     });
 }
 
+/** Homepage tier cards: info icon expands clamped bonus terms (when present). */
+function wireTierCasinoBonusPanels(root) {
+    root.querySelectorAll('.tier-card--casino .tier-bonus .info-btn').forEach((btn) => {
+        const panel = btn.closest('.tier-bonus');
+        const terms = panel && panel.querySelector('.bonus-terms');
+        if (!terms || !String(terms.textContent || '').trim()) return;
+        btn.addEventListener('click', () => {
+            const expanded = terms.classList.toggle('bonus-terms--expanded');
+            btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        });
+    });
+}
+
 /** Flatten Strapi string / number / rich-text blocks to plain text for parsing. */
 function ratingLabelToString(label) {
     if (label == null || label === '') return '';
@@ -1600,6 +1632,35 @@ async function loadCasinos() {
             const visitRel = casinoVisitSiteIsExternal(attr)
                 ? ' target="_blank" rel="noopener noreferrer"'
                 : '';
+            const hasPromo = casinoListedPromoHasDetail(attr);
+            const amtRaw = String(casinoBonusAmountDisplay(attr) || '').trim();
+            const termsRaw = casinoBonusTermsDisplay(attr);
+            const termsTrim = String(termsRaw || '').trim();
+            const labelLine = String(casinoBonusLabelDisplay(attr) || '').trim() || 'Welcome offer';
+            const amountHtml = amtRaw
+                ? `<h4 class="bonus-amount">${escapeHtml(amtRaw)}</h4>`
+                : '';
+            const termsHtml = termsTrim
+                ? `<p class="terms bonus-terms">${escapeHtml(termsRaw)}</p>`
+                : '';
+            const infoBtn = termsTrim
+                ? `<button type="button" class="info-btn" aria-label="Show full bonus terms" aria-expanded="false" title="Bonus terms"><i data-lucide="info"></i></button>`
+                : '';
+            const bonusColHtml = hasPromo
+                ? `<div class="tier-bonus__top-icon" aria-hidden="true"><i data-lucide="gift"></i></div>
+                        <span class="bonus-label">${escapeHtml(labelLine)}</span>
+                        ${amountHtml}
+                        <div class="bonus-actions">
+                            <a href="${visitHref}" class="btn btn-primary btn-block btn-visit-site"${visitRel}><i data-lucide="external-link" aria-hidden="true"></i><span>VISIT SITE</span></a>
+                            ${infoBtn}
+                        </div>
+                        ${termsHtml}`
+                : `<div class="tier-bonus__top-icon tier-bonus__top-icon--muted" aria-hidden="true"><i data-lucide="circle-alert"></i></div>
+                        <span class="tier-bonus__eyebrow">No welcome offer on file</span>
+                        <p class="tier-bonus__no-offer-msg">We don’t list a bonus for this operator. Check their site for current promotions.</p>
+                        <div class="bonus-actions bonus-actions--solo">
+                            <a href="${visitHref}" class="btn btn-primary btn-block btn-visit-site"${visitRel}><i data-lucide="external-link" aria-hidden="true"></i><span>VISIT SITE</span></a>
+                        </div>`;
             return `
                 <div class="tier-card tier-card--casino active${homeTierCardPodiumClass(listPos)}">
                     <div class="tier-rank-logo-col">
@@ -1636,20 +1697,15 @@ async function loadCasinos() {
                         </div>
                         ${prosConsHtml}
                     </div>
-                    <div class="tier-bonus">
-                        <span class="bonus-label">${escapeHtml(casinoBonusLabelDisplay(attr))}</span>
-                        <h4 class="bonus-amount">${escapeHtml(casinoBonusAmountDisplay(attr))}</h4>
-                        <div class="bonus-actions">
-                            <a href="${visitHref}" class="btn btn-primary btn-block"${visitRel}>VISIT SITE</a>
-                            <button type="button" class="info-btn" title="Bonus terms summary" aria-label="Bonus terms and conditions"><i data-lucide="info"></i></button>
-                        </div>
-                        <p class="terms bonus-terms">${escapeHtml(casinoBonusTermsDisplay(attr))}</p>
+                    <div class="tier-bonus${hasPromo ? '' : ' tier-bonus--no-offer'}">
+                        ${bonusColHtml}
                     </div>
                 </div>
             `;
         }).join('');
         container.innerHTML = html;
         wireTierProsConsExpand(container);
+        wireTierCasinoBonusPanels(container);
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (e) {
         console.error(e);
@@ -1688,6 +1744,25 @@ async function loadProviders() {
             const badgeClass = providerTierBadgeClass(attr);
             const nameSafe = escapeHtml(attr.Name || '');
             const logoMatClass = providerLogoMatIsDark(attr) ? 'tier-logo--mat-dark' : 'tier-logo--mat-light';
+            const portfolioCount = String(attr.GamePortfolioCount || '').trim();
+            const hasPortfolioCount = !!portfolioCount;
+            const dossierHref = attr.Slug
+                ? escapeHtml(providerPath(attr.Slug))
+                : escapeHtml(String(attr.DossierLink || '#'));
+            const dossierRel = attr.Slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+            const portfolioColHtml = hasPortfolioCount
+                ? `<div class="tier-bonus__top-icon tier-bonus__top-icon--provider" aria-hidden="true"><i data-lucide="library-big"></i></div>
+                        <span class="bonus-label">Game portfolio</span>
+                        <h4 class="bonus-amount">${escapeHtml(portfolioCount)}</h4>
+                        <div class="bonus-actions bonus-actions--solo">
+                            <a href="${dossierHref}" class="btn btn-outline btn-block btn-dossier"${dossierRel}><i data-lucide="book-open" aria-hidden="true"></i><span>READ DOSSIER</span></a>
+                        </div>`
+                : `<div class="tier-bonus__top-icon tier-bonus__top-icon--muted" aria-hidden="true"><i data-lucide="library-big"></i></div>
+                        <span class="tier-bonus__eyebrow">Portfolio size</span>
+                        <p class="tier-bonus__no-offer-msg">We don’t have a game count on file. Open the dossier for flagship titles and expertise.</p>
+                        <div class="bonus-actions bonus-actions--solo">
+                            <a href="${dossierHref}" class="btn btn-outline btn-block btn-dossier"${dossierRel}><i data-lucide="book-open" aria-hidden="true"></i><span>READ DOSSIER</span></a>
+                        </div>`;
 
             return `
                 <div class="tier-card tier-card--provider active${homeTierCardPodiumClass(listPos)}">
@@ -1719,12 +1794,8 @@ async function loadProviders() {
                         <span class="col-label mt">EXPERTISE</span>
                         <div class="icon-row">${icons}</div>
                     </div>
-                    <div class="tier-bonus">
-                        <span class="bonus-label">GAME PORTFOLIO</span>
-                        <h4 class="bonus-amount">${escapeHtml(String(attr.GamePortfolioCount || '').trim())}</h4>
-                        <div class="bonus-actions">
-                            <a href="${attr.Slug ? escapeHtml(providerPath(attr.Slug)) : escapeHtml(String(attr.DossierLink || '#'))}" class="btn btn-outline btn-block" ${attr.Slug ? '' : 'target="_blank" rel="noopener noreferrer"'}>READ DOSSIER</a>
-                        </div>
+                    <div class="tier-bonus tier-bonus--provider${hasPortfolioCount ? '' : ' tier-bonus--no-offer'}">
+                        ${portfolioColHtml}
                     </div>
                 </div>
             `;
@@ -2067,6 +2138,20 @@ function postBodyToHtmlForGuide(raw) {
                 /* fall through */
             }
         }
+        const unwrapped = unwrapMarkdownWrappedInParagraphHtml(t);
+        const markdownSource = looksLikeMarkdown(unwrapped)
+            ? unwrapped
+            : looksLikeMarkdown(t)
+              ? t
+              : null;
+        if (
+            markdownSource &&
+            typeof marked !== 'undefined' &&
+            marked &&
+            typeof marked.parse === 'function'
+        ) {
+            return marked.parse(markdownSource, { breaks: true, gfm: true });
+        }
         if (/<[a-z][\s\S]*>/i.test(t)) return t;
         if (typeof marked !== 'undefined' && marked && typeof marked.parse === 'function') {
             return marked.parse(t, { breaks: true, gfm: true });
@@ -2302,6 +2387,15 @@ function casinoBonusTermsDisplay(attr) {
     return '';
 }
 
+/** True when Strapi / slug map exposes any promo line we can show (homepage tier column + hero). */
+function casinoListedPromoHasDetail(attr) {
+    return !!(
+        String(casinoBonusAmountDisplay(attr) || '').trim() ||
+        String(casinoBonusTermsDisplay(attr) || '').trim() ||
+        String(casinoBonusLabelDisplay(attr) || '').trim()
+    );
+}
+
 /**
  * Fetch /api/casinos with the given query string only.
  * Do not append populate[bonuses] etc. - Strapi returns 400 if those relations are not defined on the schema.
@@ -2355,6 +2449,7 @@ function applySimpleHeroFromAttr(attr) {
     const heroLink = document.getElementById('hero-link');
     const logoEl = document.getElementById('hero-logo');
     const brandNameEl = document.getElementById('hero-brand-name');
+    const heroCard = document.getElementById('hero-casino-card');
 
     // Apply logo FIRST - even if other parts fail, the logo still shows.
     if (logoEl) {
@@ -2365,6 +2460,9 @@ function applySimpleHeroFromAttr(attr) {
     if (!headlineEl || !heroLink) return;
 
     const name = String(attr.Name || '').trim();
+    const hasPromo = casinoListedPromoHasDetail(attr);
+    if (heroCard) heroCard.classList.toggle('hero-card--no-offer', !hasPromo);
+
     if (brandNameEl) {
         if (name) {
             brandNameEl.textContent = name;
@@ -2380,24 +2478,34 @@ function applySimpleHeroFromAttr(attr) {
     const termsEl = document.getElementById('hero-terms');
 
     try {
-        const labelLine = casinoBonusLabelDisplay(attr) || 'Welcome offer';
-        if (labelEl) labelEl.textContent = labelLine.toUpperCase();
-        headlineEl.textContent = name ? `${name} Welcome Bonus` : 'Welcome Bonus';
+        if (hasPromo) {
+            const labelLine = casinoBonusLabelDisplay(attr) || 'Welcome offer';
+            if (labelEl) labelEl.textContent = labelLine.toUpperCase();
+            headlineEl.textContent = name ? `${name} Welcome Bonus` : 'Welcome Bonus';
+        } else {
+            if (labelEl) labelEl.textContent = 'FEATURED CASINO';
+            headlineEl.textContent = name || 'Featured operator';
+        }
     } catch (err) { console.error('[hero] headline error:', err); }
 
     try {
         if (dekEl) {
-            const terms = casinoBonusTermsDisplay(attr);
-            dekEl.textContent =
-                terms ||
-                'Minimum deposit required with wagering requirements applied before withdrawal.';
+            if (hasPromo) {
+                const terms = casinoBonusTermsDisplay(attr);
+                dekEl.textContent =
+                    terms ||
+                    'Minimum deposit required with wagering requirements applied before withdrawal.';
+            } else {
+                dekEl.textContent =
+                    'No welcome offer on file in our editorial database. Open the site to see current promotions and eligibility.';
+            }
         }
     } catch (err) { console.error('[hero] dek error:', err); }
 
     try {
         if (amountEl) {
             const amt = String(casinoBonusAmountDisplay(attr) || '').trim();
-            if (amt) {
+            if (amt && hasPromo) {
                 amountEl.textContent = amt;
                 amountEl.hidden = false;
             } else {
@@ -2444,23 +2552,17 @@ function applySidebarBrandLogo(logoWrap, logoImg, nameEl, attr) {
     }
 }
 
-/** Sticky bonus column beside “Our Verdict” on casino review pages (review.html). */
-function applyVerdictBonusSidebar(attr, bonusTag, bonusAmt, bonusDesc) {
-    const aside = document.getElementById('cr-verdict-bonus-sidebar');
-    const flow = document.getElementById('cr-verdict-flow');
-    const nameEl = document.getElementById('cr-vb-name');
-    const labelEl = document.getElementById('cr-vb-label');
-    const amountEl = document.getElementById('cr-vb-amount');
-    const termsEl = document.getElementById('cr-vb-terms');
-    const ctaEl = document.getElementById('cr-vb-cta');
-    if (!aside || !flow || !amountEl || !ctaEl) return;
-
-    const terms = casinoBonusTermsDisplay(attr);
-    const show =
-        !!(String(bonusAmt || '').trim() ||
-            String(bonusTag || '').trim() ||
-            String(bonusDesc || '').trim() ||
-            String(terms || '').trim());
+/**
+ * Sticky welcome-offer card (logo, bonus lines, visit CTA) beside Expert Verdict.
+ * @param {string} asideId e.g. cr-verdict-bonus-sidebar
+ * @param {string} prefix e.g. cr-vb → cr-vb-name, cr-vb-cta, …
+ */
+function applyBonusSidebarSlot(asideId, prefix, attr, bonusTag, bonusAmt, bonusDesc, terms, show) {
+    const aside = document.getElementById(asideId);
+    if (!aside) return;
+    const amountEl = document.getElementById(`${prefix}-amount`);
+    const ctaEl = document.getElementById(`${prefix}-cta`);
+    if (!amountEl || !ctaEl) return;
 
     if (!show) {
         aside.hidden = true;
@@ -2469,10 +2571,14 @@ function applyVerdictBonusSidebar(attr, bonusTag, bonusAmt, bonusDesc) {
 
     aside.removeAttribute('hidden');
 
+    const nameEl = document.getElementById(`${prefix}-name`);
+    const labelEl = document.getElementById(`${prefix}-label`);
+    const termsEl = document.getElementById(`${prefix}-terms`);
+
     if (nameEl) {
         applySidebarBrandLogo(
-            document.getElementById('cr-vb-logo-wrap'),
-            document.getElementById('cr-vb-logo'),
+            document.getElementById(`${prefix}-logo-wrap`),
+            document.getElementById(`${prefix}-logo`),
             nameEl,
             attr,
         );
@@ -2498,6 +2604,18 @@ function applyVerdictBonusSidebar(attr, bonusTag, bonusAmt, bonusDesc) {
         ctaEl.target = '_self';
         ctaEl.removeAttribute('rel');
     }
+}
+
+/** Sticky bonus column beside “Our Verdict” on casino review pages (single card; not duplicated in Player reviews). */
+function applyVerdictBonusSidebar(attr, bonusTag, bonusAmt, bonusDesc) {
+    const terms = casinoBonusTermsDisplay(attr);
+    const show =
+        !!(String(bonusAmt || '').trim() ||
+            String(bonusTag || '').trim() ||
+            String(bonusDesc || '').trim() ||
+            String(terms || '').trim());
+
+    applyBonusSidebarSlot('cr-verdict-bonus-sidebar', 'cr-vb', attr, bonusTag, bonusAmt, bonusDesc, terms, show);
 }
 
 /**
@@ -3061,420 +3179,6 @@ function injectNewsItemListJsonLd(rows, pageOffset) {
     document.head.appendChild(script);
 }
 
-/** Latest guide/strategy posts for single-article sidebar (excludes current slug). */
-async function fetchRecentGuideEntriesForSidebar(excludeSlug, want = 3) {
-    const ex = String(excludeSlug || '').trim().toLowerCase();
-    const out = [];
-    let page = 1;
-    const maxPages = 10;
-    while (out.length < want && page <= maxPages) {
-        const { rows } = await fetchGuidesPage(page, 'all');
-        if (!rows || rows.length === 0) break;
-        for (const row of rows) {
-            const a = postEntryAttr(row);
-            if (!a) continue;
-            if (!postCategorySlugForFilter(a)) continue;
-            const s = postSlugValue(a).toLowerCase();
-            if (s && s === ex) continue;
-            out.push(row);
-            if (out.length >= want) break;
-        }
-        if (out.length >= want) break;
-        if (rows.length < GUIDES_PAGE_SIZE) break;
-        page += 1;
-    }
-    return out.slice(0, want);
-}
-
-/** Latest news posts for footer (same shape as guides). */
-async function fetchRecentNewsEntriesForSidebar(excludeSlug, want = 3) {
-    const ex = String(excludeSlug || '').trim().toLowerCase();
-    const out = [];
-    let page = 1;
-    const maxPages = 10;
-    while (out.length < want && page <= maxPages) {
-        const { rows } = await fetchNewsPage(page);
-        if (!rows || rows.length === 0) break;
-        for (const row of rows) {
-            const a = postEntryAttr(row);
-            if (!a) continue;
-            if (postCategorySlugForFilter(a) !== 'news') continue;
-            const s = postSlugValue(a).toLowerCase();
-            if (s && s === ex) continue;
-            out.push(row);
-            if (out.length >= want) break;
-        }
-        if (out.length >= want) break;
-        if (rows.length < GUIDES_PAGE_SIZE) break;
-        page += 1;
-    }
-    return out.slice(0, want);
-}
-
-async function fetchRecentCasinosForFooter(excludeSlug, want = 3) {
-    const ex = String(excludeSlug || '').trim().toLowerCase();
-    try {
-        const res = await fetchCasinosWithBonusPopulate('populate=*&sort=Rank:asc&pagination[limit]=40');
-        const json = await res.json();
-        if (!res.ok || !json || !Array.isArray(json.data)) return [];
-        const out = [];
-        for (const row of json.data) {
-            const attr = attrFromCasinoEntry(row);
-            const s = casinoSlugNormalized(attr);
-            if (s && s === ex) continue;
-            out.push(row);
-            if (out.length >= want) break;
-        }
-        return out;
-    } catch (e) {
-        console.warn('[footer casinos]', e);
-        return [];
-    }
-}
-
-async function fetchRecentSlotsForFooter(excludeSlug, want = 3) {
-    const ex = String(excludeSlug || '').trim().toLowerCase();
-    try {
-        const res = await fetch(
-            `${API_URL}/api/${SLOTS_API_COLLECTION}?populate=*&sort=${encodeURIComponent(SLOTS_LIST_SORT)}&pagination[limit]=40`,
-            { cache: 'no-store' },
-        );
-        const json = await res.json();
-        if (!res.ok || !json || !Array.isArray(json.data)) return [];
-        const out = [];
-        for (const row of json.data) {
-            const attr = row.attributes || row;
-            const s = String(slotSlugValue(attr) || '')
-                .trim()
-                .toLowerCase();
-            if (s && s === ex) continue;
-            out.push(row);
-            if (out.length >= want) break;
-        }
-        return out;
-    } catch (e) {
-        console.warn('[footer slots]', e);
-        return [];
-    }
-}
-
-async function fetchRecentProvidersForFooter(excludeSlug, want = 3) {
-    const ex = String(excludeSlug || '').trim().toLowerCase();
-    try {
-        const res = await fetch(`${API_URL}/api/providers?populate=*&sort=Rank:asc&pagination[limit]=40`, {
-            cache: 'no-store',
-        });
-        const json = await res.json();
-        if (!res.ok || !json || !Array.isArray(json.data)) return [];
-        const out = [];
-        for (const row of json.data) {
-            const attr = row.attributes || row;
-            const s = String(providerSlugValue(attr) || '')
-                .trim()
-                .toLowerCase();
-            if (s && s === ex) continue;
-            out.push(row);
-            if (out.length >= want) break;
-        }
-        return out;
-    } catch (e) {
-        console.warn('[footer providers]', e);
-        return [];
-    }
-}
-
-function renderGuideSidebarCardHtml(row) {
-    const attr = postEntryAttr(row);
-    if (!attr) return '';
-    const title = escapeHtml(postTitlePlain(attr));
-    const slug = postSlugValue(attr);
-    const href = escapeHtml(postDetailHref(slug));
-    const img = escapeHtml(postCoverImageUrl(attr) || GUIDES_PLACEHOLDER_IMAGE);
-    const cat = escapeHtml(postCategoryDisplayLabel(attr));
-    const mins = postReadingMinutes(attr);
-    const imgAlt = escapeHtml(postTitlePlain(attr));
-    return `
-    <li>
-        <a href="${href}" class="gp-related-card">
-            <div class="gp-related-card__img">
-                <img src="${img}" alt="${imgAlt}" width="88" height="56" loading="lazy" decoding="async" />
-            </div>
-            <div class="gp-related-card__body">
-                <span class="gp-related-card__cat">${cat}</span>
-                <span class="gp-related-card__title">${title}</span>
-                <span class="gp-related-card__meta">${mins} min read</span>
-            </div>
-        </a>
-    </li>`;
-}
-
-/** Star icon + “4.3 / 5” (or label) for footer casino/provider cards; plain text when unrated. */
-function renderFooterRatingMetaHtml(attr) {
-    const line = formatRatingScoreLine(attr, '—');
-    const safe = escapeHtml(line);
-    if (line === '—') return safe;
-    return `<span class="gp-related-card__meta-inner"><i data-lucide="star" class="gp-related-card__star" aria-hidden="true"></i><span>${safe}</span></span>`;
-}
-
-function renderFooterCasinoRelatedLi(row) {
-    const attr = attrFromCasinoEntry(row);
-    const name = escapeHtml(attr.Name || 'Casino');
-    const slug = casinoSlugNormalized(attr);
-    if (!slug) return '';
-    const href = escapeHtml(casinoReviewPath(slug));
-    const logo = getLogoUrl(attr);
-    const imgSrc = logo ? escapeHtml(logo) : escapeHtml('/assets/img/888review-siteicon.png');
-    const tier = attr.IsTierOne ? 'TIER ONE' : 'CASINO';
-    const ratingMeta = renderFooterRatingMetaHtml(attr);
-    return `
-    <li>
-        <a href="${href}" class="gp-related-card">
-            <div class="gp-related-card__img">
-                <img src="${imgSrc}" alt="${name}" width="88" height="56" loading="lazy" decoding="async" />
-            </div>
-            <div class="gp-related-card__body">
-                <span class="gp-related-card__cat">${escapeHtml(tier)}</span>
-                <span class="gp-related-card__title">${name}</span>
-                <span class="gp-related-card__meta">${ratingMeta}</span>
-            </div>
-        </a>
-    </li>`;
-}
-
-function renderFooterSlotRelatedLi(row) {
-    const attr = row.attributes || row;
-    const title = escapeHtml(attr.Name || attr.Title || 'Slot');
-    const slug = slotSlugValue(attr);
-    if (!slug) return '';
-    const href = escapeHtml(slotDetailPath(slug));
-    const imgUrl = escapeHtml(getSlotCardImageUrl(attr) || DEFAULT_SLOT_CARD_IMAGE);
-    const prov = escapeHtml((slotProviderDisplayName(attr) || 'Slot').toUpperCase());
-    const rtp = escapeHtml(formatSlotRtpDisplay(attr));
-    return `
-    <li>
-        <a href="${href}" class="gp-related-card">
-            <div class="gp-related-card__img">
-                <img src="${imgUrl}" alt="${title}" width="88" height="56" loading="lazy" decoding="async" />
-            </div>
-            <div class="gp-related-card__body">
-                <span class="gp-related-card__cat">${prov}</span>
-                <span class="gp-related-card__title">${title}</span>
-                <span class="gp-related-card__meta">RTP ${rtp}</span>
-            </div>
-        </a>
-    </li>`;
-}
-
-function renderFooterProviderRelatedLi(row) {
-    const attr = row.attributes || row;
-    const name = escapeHtml(attr.Name || 'Provider');
-    const slug = providerSlugValue(attr);
-    if (!slug) return '';
-    const href = escapeHtml(providerPath(slug));
-    const img = escapeHtml(getProviderCardImageUrl(attr));
-    const badge = escapeHtml(String(attr.TierBadge || 'PROVIDER').toUpperCase());
-    const meta = renderFooterRatingMetaHtml(attr);
-    return `
-    <li>
-        <a href="${href}" class="gp-related-card">
-            <div class="gp-related-card__img">
-                <img src="${img}" alt="${name}" width="88" height="56" loading="lazy" decoding="async" />
-            </div>
-            <div class="gp-related-card__body">
-                <span class="gp-related-card__cat">${badge}</span>
-                <span class="gp-related-card__title">${name}</span>
-                <span class="gp-related-card__meta">${meta}</span>
-            </div>
-        </a>
-    </li>`;
-}
-
-function applyFooterStripCopy(title, dek, ctaLabel, ctaHref, listAriaLabel) {
-    const h2 = document.getElementById('footer-related-heading');
-    const dekEl = document.querySelector('.footer-related-posts .footer-casino-reviews__dek');
-    const cta = document.querySelector('.footer-related-posts__cta a');
-    const ul = document.getElementById('footer-related-list');
-    if (h2) h2.textContent = title;
-    if (dekEl) dekEl.textContent = dek;
-    if (cta) {
-        cta.href = ctaHref;
-        cta.textContent = '';
-        cta.appendChild(document.createTextNode(`${ctaLabel} `));
-        const i = document.createElement('i');
-        i.setAttribute('data-lucide', 'arrow-right');
-        cta.appendChild(i);
-    }
-    if (ul && listAriaLabel) ul.setAttribute('aria-label', listAriaLabel);
-}
-
-async function populateGuidePostRelatedSidebar(excludeSlug) {
-    const ul = document.getElementById('gp-related-list');
-    const section = document.querySelector('.gp-related-latest-section');
-    if (!ul) return;
-    ul.innerHTML =
-        '<li class="gp-related-loading" role="status"><span class="gp-related-loading__text">Loading…</span></li>';
-    try {
-        const rows = await fetchRecentGuideEntriesForSidebar(excludeSlug, 3);
-        if (rows.length === 0) {
-            ul.innerHTML = '';
-            if (section) {
-                section.hidden = true;
-                section.setAttribute('aria-hidden', 'true');
-            }
-            return;
-        }
-        if (section) {
-            section.hidden = false;
-            section.removeAttribute('aria-hidden');
-        }
-        ul.innerHTML = rows.map(renderGuideSidebarCardHtml).join('');
-        if (typeof lucide !== 'undefined' && section) {
-            lucide.createIcons({ root: section });
-        }
-    } catch (e) {
-        console.warn('[guide post sidebar]', e);
-        ul.innerHTML = '';
-        if (section) {
-            section.hidden = true;
-            section.setAttribute('aria-hidden', 'true');
-        }
-    }
-}
-
-/** `/guide/my-slug` → slug to exclude from footer related list; otherwise empty. */
-function currentGuideSlugFromPathForFooter() {
-    try {
-        const m = window.location.pathname.match(/^\/guide\/([^/]+)\/?/);
-        return m ? decodeURIComponent(m[1]).trim().toLowerCase() : '';
-    } catch {
-        return '';
-    }
-}
-
-/**
- * Footer strip: contextual “more” on single pages (casino / slot / provider / post),
- * otherwise three latest guides/strategies on pages that show this block.
- * @param {object|null} loadedGuidePostAttr — from initGuidePostPage when on /guide/:slug (avoids extra fetch for category).
- */
-async function populateFooterRelatedPosts(loadedGuidePostAttr) {
-    const strip = document.querySelector('.footer-related-posts');
-    if (!strip) return;
-    try {
-        if (getComputedStyle(strip).display === 'none') return;
-    } catch {
-        return;
-    }
-    const ul = document.getElementById('footer-related-list');
-    if (!ul) return;
-    ul.setAttribute('aria-busy', 'true');
-    ul.innerHTML =
-        '<li class="gp-related-loading" role="status"><span class="gp-related-loading__text">Loading…</span></li>';
-
-    const path = window.location.pathname;
-    let rows = [];
-    let mapFn = renderGuideSidebarCardHtml;
-
-    try {
-        const casinoM = path.match(/^\/casino\/([^/]+)\/?$/);
-        const slotM = path.match(/^\/slot\/([^/]+)\/?$/);
-        const providerM = path.match(/^\/provider\/([^/]+)\/?$/);
-        const guideM = path.match(/^\/guide\/([^/]+)\/?$/);
-
-        if (casinoM) {
-            const ex = decodeURIComponent(casinoM[1]).trim().toLowerCase();
-            applyFooterStripCopy(
-                'More casinos',
-                'Explore other operators from our editorial directory: rankings, bonuses, and review notes.',
-                'Browse all casinos',
-                '/casinos',
-                'Related casinos',
-            );
-            rows = await fetchRecentCasinosForFooter(ex, 3);
-            mapFn = renderFooterCasinoRelatedLi;
-        } else if (slotM) {
-            const ex = decodeURIComponent(slotM[1]).trim().toLowerCase();
-            applyFooterStripCopy(
-                'More slots',
-                'Discover more titles from our slot review library: RTP, volatility, and provider notes.',
-                'Browse all slots',
-                '/slots',
-                'Related slots',
-            );
-            rows = await fetchRecentSlotsForFooter(ex, 3);
-            mapFn = renderFooterSlotRelatedLi;
-        } else if (providerM) {
-            const ex = decodeURIComponent(providerM[1]).trim().toLowerCase();
-            applyFooterStripCopy(
-                'More providers',
-                'Compare studios and portfolios: flagship games, expertise, and editorial ratings.',
-                'Browse all providers',
-                '/providers',
-                'Related providers',
-            );
-            rows = await fetchRecentProvidersForFooter(ex, 3);
-            mapFn = renderFooterProviderRelatedLi;
-        } else if (guideM) {
-            const slug = decodeURIComponent(guideM[1]).trim().toLowerCase();
-            let cat = '';
-            if (loadedGuidePostAttr) {
-                cat = postCategorySlugForFilter(loadedGuidePostAttr);
-            } else {
-                const { json } = await fetchPostBySlug(slug);
-                const attr = json?.data?.[0] ? postEntryAttr(json.data[0]) : null;
-                cat = attr ? postCategorySlugForFilter(attr) : '';
-            }
-            if (cat === 'news') {
-                applyFooterStripCopy(
-                    'Related news',
-                    'More headlines and editor commentary from the 888reviews news desk.',
-                    'Browse all news',
-                    '/news',
-                    'Related news',
-                );
-                rows = await fetchRecentNewsEntriesForSidebar(slug, 3);
-                mapFn = renderGuideSidebarCardHtml;
-            } else {
-                applyFooterStripCopy(
-                    'Related posts',
-                    'More editorial picks from our library: guides, strategies, and how-tos you can read next.',
-                    'Browse all guides',
-                    '/guides',
-                    'Related guides',
-                );
-                rows = await fetchRecentGuideEntriesForSidebar(slug, 3);
-                mapFn = renderGuideSidebarCardHtml;
-            }
-        } else {
-            applyFooterStripCopy(
-                'Related posts',
-                'More editorial picks from our library: guides, strategies, and how-tos you can read next.',
-                'Browse all guides',
-                '/guides',
-                'Featured guides',
-            );
-            rows = await fetchRecentGuideEntriesForSidebar(currentGuideSlugFromPathForFooter(), 3);
-            mapFn = renderGuideSidebarCardHtml;
-        }
-
-        rows = (rows || []).filter(Boolean);
-        if (rows.length === 0) {
-            ul.innerHTML = '';
-            ul.hidden = true;
-            ul.removeAttribute('aria-busy');
-            return;
-        }
-        ul.hidden = false;
-        ul.innerHTML = rows.map((r) => mapFn(r)).filter(Boolean).join('');
-        ul.removeAttribute('aria-busy');
-        if (typeof lucide !== 'undefined') lucide.createIcons({ root: strip });
-    } catch (e) {
-        console.warn('[footer related strip]', e);
-        ul.innerHTML = '';
-        ul.hidden = true;
-        ul.removeAttribute('aria-busy');
-    }
-}
-
 async function fetchPostBySlug(slug) {
     const raw = decodeURIComponent(String(slug)).trim();
     if (!raw) return { res: null, json: null };
@@ -3614,10 +3318,6 @@ function populateGuidePostPage(attr, slug) {
         }
     }
 
-    const root = document.getElementById('gp-page-root');
-    if (root) {
-        root.style.opacity = '1';
-    }
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -3642,7 +3342,6 @@ async function initGuidePostPage() {
         }
         const attr = postEntryAttr(json.data[0]);
         populateGuidePostPage(attr, slug);
-        await populateGuidePostRelatedSidebar(slug);
         return attr;
     } catch (e) {
         console.error('[guide post]', e);
@@ -4304,31 +4003,131 @@ function renderBonusCardHtml(entry, index) {
         </article>`;
 }
 
+function bonusPublishedTimeMs(attr) {
+    if (!attr) return 0;
+    const raw = attr.publishedAt || attr.published_at || attr.createdAt || attr.created_at || 0;
+    const n = new Date(raw).getTime();
+    return Number.isNaN(n) ? 0 : n;
+}
+
+function bonusTitleSortKey(attr) {
+    return (firstNonEmptyAttr(attr, ['Title', 'Headline', 'Name', 'title']) || '').toLowerCase();
+}
+
+function sortBonusesRows(rows, mode) {
+    const list = [...rows];
+    list.sort((a, b) => {
+        const ta = bonusEntryAttr(a);
+        const tb = bonusEntryAttr(b);
+        switch (mode) {
+            case 'oldest':
+                return bonusPublishedTimeMs(ta) - bonusPublishedTimeMs(tb);
+            case 'title-asc':
+                return bonusTitleSortKey(ta).localeCompare(bonusTitleSortKey(tb));
+            case 'title-desc':
+                return bonusTitleSortKey(tb).localeCompare(bonusTitleSortKey(ta));
+            case 'casino-asc': {
+                const na = bonusRelatedCasinoName(ta).toLowerCase();
+                const nb = bonusRelatedCasinoName(tb).toLowerCase();
+                return na.localeCompare(nb);
+            }
+            case 'newest':
+            default:
+                return bonusPublishedTimeMs(tb) - bonusPublishedTimeMs(ta);
+        }
+    });
+    return list;
+}
+
+function bonusMatchesFilter(attr, filterKey) {
+    if (!attr || filterKey === 'all') return true;
+    const type = String(firstNonEmptyAttr(attr, ['BonusType', 'bonusType']) || '').toLowerCase();
+    const title = String(firstNonEmptyAttr(attr, ['Title', 'Headline', 'Name', 'title']) || '').toLowerCase();
+    const hay = `${type} ${title}`;
+    switch (filterKey) {
+        case 'welcome':
+            return /welcome|first deposit|sign\s*up|signup|matched deposit|welcome pack/.test(hay);
+        case 'freespins':
+            return /free\s*spin|freespin|\bfs\b|extra\s*spin/.test(hay);
+        case 'nodeposit':
+            return /no\s*deposit|without deposit/.test(hay);
+        case 'reload':
+            return /reload|redeposit|re-deposit|cashback/.test(hay);
+        case 'highroller':
+            return /high\s*roller|highroller|\bvip\b/.test(hay);
+        default:
+            return true;
+    }
+}
+
+function filterBonusesRows(rows, filterKey) {
+    if (filterKey === 'all') return [...rows];
+    return rows.filter((e) => bonusMatchesFilter(bonusEntryAttr(e), filterKey));
+}
+
+function renderBonusesGrid(list) {
+    const grid = document.getElementById('bonuses-grid');
+    if (!grid) return;
+    if (list.length === 0) {
+        grid.innerHTML =
+            '<p class="bonuses-grid-empty">No bonuses match this filter. Choose <strong>All bonuses</strong> or another category.</p>';
+        return;
+    }
+    grid.innerHTML = list.map((row, i) => renderBonusCardHtml(row, i)).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function applyBonusesPageView() {
+    if (!bonusesPageRawList) return;
+    const filtered = filterBonusesRows(bonusesPageRawList, bonusesPageFilter);
+    const sorted = sortBonusesRows(filtered, bonusesPageSort);
+    renderBonusesGrid(sorted);
+}
+
+function wireBonusesPageControls() {
+    const bar = document.querySelector('.bonuses-filter-bar');
+    if (!bar || bar.dataset.wired === '1') return;
+    bar.dataset.wired = '1';
+
+    bar.querySelectorAll('[data-bonus-filter]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-bonus-filter') || 'all';
+            bonusesPageFilter = key;
+            bar.querySelectorAll('[data-bonus-filter]').forEach((b) => {
+                b.classList.toggle('active', (b.getAttribute('data-bonus-filter') || 'all') === key);
+            });
+            applyBonusesPageView();
+        });
+    });
+
+    const sortEl = document.getElementById('bonuses-sort-select');
+    if (sortEl && sortEl.dataset.bound !== '1') {
+        sortEl.dataset.bound = '1';
+        sortEl.value = bonusesPageSort;
+        sortEl.addEventListener('change', () => {
+            bonusesPageSort = sortEl.value || 'newest';
+            applyBonusesPageView();
+        });
+    }
+}
+
 function initBonusesPage() {
     const grid = document.getElementById('bonuses-grid');
     if (!grid) return;
+
+    wireBonusesPageControls();
 
     (async () => {
         grid.innerHTML = '<p class="bonuses-grid-loading">Loading bonuses…</p>';
         try {
             await ensureCasinoBonusSlugMap();
-            const list = [...(bonusesListRowsCache || [])].sort((a, b) => {
-                const ta = bonusEntryAttr(a);
-                const tb = bonusEntryAttr(b);
-                const da = new Date(ta?.publishedAt || ta?.published_at || ta?.createdAt || 0).getTime();
-                const db = new Date(tb?.publishedAt || tb?.published_at || tb?.createdAt || 0).getTime();
-                return db - da;
-            });
-            if (list.length === 0) {
+            bonusesPageRawList = [...(bonusesListRowsCache || [])];
+            if (bonusesPageRawList.length === 0) {
                 grid.innerHTML =
                     '<p class="bonuses-grid-empty">No bonuses published yet.</p>';
                 return;
             }
-            grid.innerHTML = list.map((row, i) => renderBonusCardHtml(row, i)).join('');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            grid.querySelectorAll('.bonus-card.reveal').forEach((el, i) => {
-                setTimeout(() => el.classList.add('active'), 60 + i * 90);
-            });
+            applyBonusesPageView();
         } catch (e) {
             console.error(e);
             grid.innerHTML =
@@ -4584,7 +4383,6 @@ async function initBonusDetailPage() {
         }
         populateBonusDetailPage(attr, slug);
         if (typeof lucide !== 'undefined') lucide.createIcons();
-        root.style.opacity = '1';
     } catch (e) {
         console.error('Failed to load bonus:', e);
         showBonusDetailError();
@@ -4613,8 +4411,7 @@ async function bootApp() {
     initSlotDetailPage();
     initGuidesPage();
     initNewsPage();
-    const guidePostAttr = await initGuidePostPage();
-    await populateFooterRelatedPosts(guidePostAttr);
+    await initGuidePostPage();
 }
 
 function runBootApp() {
@@ -5343,14 +5140,16 @@ function initCasinosListingPage() {
 
         const bonusAmt = casinoBonusAmountDisplay(attr);
         const bonus = bonusAmt
-            ? `<div class="stat-col stat-col--bonus"><span class="stat-label">CASINO BONUS</span><span class="stat-value primary">${escapeHtml(bonusAmt)}</span></div>`
-            : '';
+            ? `<div class="stat-col stat-col--bonus"><span class="stat-label-row"><i data-lucide="gift" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Casino bonus</span></span><span class="stat-value primary">${escapeHtml(bonusAmt)}</span></div>`
+            : `<div class="stat-col stat-col--bonus stat-col--empty"><span class="stat-label-row"><i data-lucide="gift" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Casino bonus</span></span><span class="stat-value stat-value--muted">No offer on file</span></div>`;
         const payoutSpeed = casinoPayoutSpeedDisplay(attr);
         const gameCount = casinoGameCountDisplay(attr);
         const payout = payoutSpeed
-            ? `<div class="stat-col"><span class="stat-label">PAYOUT SPEED</span><span class="stat-value">${escapeHtml(payoutSpeed)}</span></div>` : '';
+            ? `<div class="stat-col stat-col--payout"><span class="stat-label-row"><i data-lucide="zap" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Payout speed</span></span><span class="stat-value">${escapeHtml(payoutSpeed)}</span></div>`
+            : '';
         const games = gameCount
-            ? `<div class="stat-col"><span class="stat-label">GAMES COUNT</span><span class="stat-value">${escapeHtml(gameCount)}</span></div>` : '';
+            ? `<div class="stat-col stat-col--games"><span class="stat-label-row"><i data-lucide="layout-grid" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Games count</span></span><span class="stat-value">${escapeHtml(gameCount)}</span></div>`
+            : '';
 
         const reviewLink = casinoReviewPath(attr.Slug);
         const visitHref = escapeHtml(casinoVisitSiteHref(attr));
@@ -5386,8 +5185,8 @@ function initCasinosListingPage() {
                 </div>
             </div>
             <div class="card-action-area">
-                <a href="${visitHref}" class="btn btn-primary btn-block"${visitRel}>VISIT SITE</a>
-                <a href="${reviewLink}" class="read-review-link">READ REVIEW</a>
+                <a href="${visitHref}" class="btn btn-primary btn-block listing-visit-btn"${visitRel}><i data-lucide="external-link" aria-hidden="true"></i><span>VISIT SITE</span></a>
+                <a href="${reviewLink}" class="read-review-link"><i data-lucide="arrow-right" aria-hidden="true"></i><span>READ REVIEW</span></a>
             </div>
         </article>`;
     }
@@ -5548,6 +5347,50 @@ function casinoProsConsLine(item) {
     return String(o.Text ?? o.text ?? '').trim();
 }
 
+/** Converts the /5 player rating average and total into the hero "Player Rating" chip.
+    Bound once per page; idempotent if renderCasinoReviewPage fires more than once. */
+function bindPlayerRatingHeroListener() {
+    if (bindPlayerRatingHeroListener._bound) return;
+    bindPlayerRatingHeroListener._bound = true;
+    document.addEventListener('player-reviews:summary', (ev) => {
+        const d = (ev && ev.detail) || {};
+        const avg = Number(d.avg);
+        const total = Number(d.total) || 0;
+        const scoreEl = document.getElementById('cr-player-score');
+        const linkEl = document.getElementById('cr-player-reviews-link');
+        if (scoreEl) {
+            scoreEl.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+        }
+        if (linkEl) {
+            linkEl.textContent = `${total} review${total === 1 ? '' : 's'}`;
+        }
+        const pvScoreEl = document.getElementById('pv-hero-player-score');
+        const pvLinkEl = document.getElementById('pv-hero-player-reviews-link');
+        if (pvScoreEl) {
+            pvScoreEl.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+        }
+        if (pvLinkEl) {
+            pvLinkEl.textContent = `${total} review${total === 1 ? '' : 's'}`;
+        }
+        const svScoreEl = document.getElementById('sv-hero-player-score');
+        const svLinkEl = document.getElementById('sv-hero-player-reviews-link');
+        if (svScoreEl) {
+            svScoreEl.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+        }
+        if (svLinkEl) {
+            svLinkEl.textContent = `${total} review${total === 1 ? '' : 's'}`;
+        }
+        const pvSumPlayerNum = document.getElementById('pv-summary-player-num');
+        const pvSumPlayerLink = document.getElementById('pv-summary-player-link');
+        if (pvSumPlayerNum) {
+            pvSumPlayerNum.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+        }
+        if (pvSumPlayerLink) {
+            pvSumPlayerLink.textContent = `${total} review${total === 1 ? '' : 's'}`;
+        }
+    });
+}
+
 /** Render single casino review (`review.html` /cr-page). All visible copy from Strapi entry `attr`. */
 function renderCasinoReviewPage(attr) {
     const name = attr.Name || 'Casino';
@@ -5578,126 +5421,61 @@ function renderCasinoReviewPage(attr) {
         badgeTextEl.textContent = attr.IsTierOne ? "Editor's Choice" : 'Review';
     }
 
-    /* Hero: media / editor photo in left column; logo-only uses inline heading logo (no big tile) */
-    const heroImg = document.getElementById('cr-hero-img');
-    const heroVisual = document.getElementById('cr-hero-visual');
-    const heroGrid = document.getElementById('cr-hero-grid');
-    const headingEl = document.getElementById('cr-heading');
-    const headingLogo = document.getElementById('cr-heading-logo');
-    const headingLogoWrap = document.getElementById('cr-heading-logo-wrap');
-    const heroResolved = casinoHeroImageUrl(attr);
-    const fallback = CASINO_REVIEW_PLACEHOLDER_IMAGES[0];
-    const heroHasEditorPhoto = hasHeroEditorImage(attr);
-    const logoInlineMode = !heroHasEditorPhoto && !!heroResolved;
+    /* Hero v2: full-width banner + overlapping circular logo (20bet-style). */
+    const CASINO_BANNER_FALLBACK = CASINO_REVIEW_PLACEHOLDER_IMAGES[0];
 
-    if (heroImg) {
-        heroImg.alt = `${name}`;
-        heroImg.dataset.fallback = fallback;
-
-        if (logoInlineMode && headingLogo && headingLogoWrap) {
-            if (heroVisual) heroVisual.hidden = true;
-            heroGrid?.classList.add('cr-hero-grid--no-media');
-            heroImg.removeAttribute('src');
-            if (heroVisual) heroVisual.classList.remove('cr-hero-visual--logo');
-            headingLogo.src = logoImgSrcForDisplay(heroResolved);
-            headingLogo.alt = name ? `${name} logo` : 'Casino logo';
-            headingLogo.referrerPolicy = 'no-referrer';
-            headingLogoWrap.hidden = false;
-            headingEl?.classList.add('cr-heading--with-logo');
-            headingLogo.onerror = () => {
-                headingLogoWrap.hidden = true;
-                headingEl?.classList.remove('cr-heading--with-logo');
-                if (heroVisual) heroVisual.hidden = false;
-                heroGrid?.classList.remove('cr-hero-grid--no-media');
-                heroImg.src = heroResolved || fallback;
-                if (heroVisual) {
-                    heroVisual.classList.toggle(
-                        'cr-hero-visual--logo',
-                        !heroHasEditorPhoto && !!heroResolved,
-                    );
-                }
-                heroImg.onerror = function () {
-                    if (this.src !== this.dataset.fallback) {
-                        this.onerror = null;
-                        this.src = this.dataset.fallback;
-                        if (heroVisual) heroVisual.classList.remove('cr-hero-visual--logo');
-                    }
-                };
-            };
-        } else {
-            if (heroVisual) heroVisual.hidden = false;
-            heroGrid?.classList.remove('cr-hero-grid--no-media');
-            if (headingLogoWrap) headingLogoWrap.hidden = true;
-            headingEl?.classList.remove('cr-heading--with-logo');
-            heroImg.src = heroResolved || fallback;
-            if (heroVisual) {
-                heroVisual.classList.toggle(
-                    'cr-hero-visual--logo',
-                    !heroHasEditorPhoto && !!heroResolved,
-                );
+    const heroBannerImg = document.getElementById('cr-hero-banner-img');
+    if (heroBannerImg) {
+        const bannerUrls = [
+            ...normalizeStrapiMediaToUrls(attr.HeroImage),
+            ...normalizeStrapiMediaToUrls(attr.CoverImage),
+            ...normalizeStrapiMediaToUrls(attr.Banner),
+            ...collectCasinoGalleryUrls(attr),
+        ];
+        const bannerRaw = bannerUrls[0];
+        const bannerResolved = bannerRaw ? resolveMediaUrl(bannerRaw) : '';
+        heroBannerImg.alt = `${name} website screenshot`;
+        heroBannerImg.dataset.fallback = CASINO_BANNER_FALLBACK;
+        heroBannerImg.src = bannerResolved || CASINO_BANNER_FALLBACK;
+        heroBannerImg.onerror = function () {
+            if (this.src !== this.dataset.fallback) {
+                this.onerror = null;
+                this.src = this.dataset.fallback;
             }
-            heroImg.onerror = function () {
-                if (this.src !== this.dataset.fallback) {
-                    this.onerror = null;
-                    this.src = this.dataset.fallback;
-                    if (heroVisual) heroVisual.classList.remove('cr-hero-visual--logo');
-                }
+        };
+    }
+
+    const heroLogoImg = document.getElementById('cr-hero-logo-v2');
+    const heroLogoWrap = document.getElementById('cr-hero-logo-wrap-v2');
+    if (heroLogoImg) {
+        const logoUrls = normalizeStrapiMediaToUrls(attr.Logo);
+        const logoRaw = logoUrls[0] || '';
+        const logoResolved = logoRaw ? logoImgSrcForDisplay(resolveMediaUrl(logoRaw)) : '';
+        heroLogoImg.alt = name ? `${name} logo` : 'Casino logo';
+        if (logoResolved) {
+            heroLogoImg.src = logoResolved;
+            if (heroLogoWrap) heroLogoWrap.classList.add('cr-hero-logo-v2--contain');
+            heroLogoImg.onerror = function () {
+                this.onerror = null;
+                this.removeAttribute('src');
+                if (heroLogoWrap) heroLogoWrap.classList.remove('cr-hero-logo-v2--contain');
             };
-        }
-    }
-
-    /* Hero CTA (inline ad under Casino Information is a static sample in HTML) */
-    const playEl = document.getElementById('cr-play');
-    const affUrl = casinoAffiliateUrl(attr);
-    if (playEl) {
-        playEl.href = affUrl || '#';
-        if (affUrl) {
-            playEl.target = '_blank';
-            playEl.setAttribute('rel', 'noopener noreferrer sponsored');
         } else {
-            playEl.removeAttribute('target');
-            playEl.setAttribute('rel', 'noopener noreferrer sponsored');
+            heroLogoImg.removeAttribute('src');
+            if (heroLogoWrap) heroLogoWrap.classList.remove('cr-hero-logo-v2--contain');
         }
     }
 
-    const termsBtn = document.getElementById('cr-terms');
-    if (termsBtn) {
-        const termsUrl = casinoTermsUrl(attr);
-        if (termsUrl) {
-            termsBtn.href = termsUrl;
-            termsBtn.target = '_blank';
-            termsBtn.rel = 'noopener noreferrer';
-            termsBtn.style.display = '';
-        } else {
-            termsBtn.style.display = 'none';
-        }
-    }
-
-    /* Sidebar: score ring (0-5 scale) */
+    /* Curator score: just the number; visual ring has been replaced by a red-star rating chip. */
     const score5 = getCuratorScoreOutOfFive(attr);
     const scoreEl = document.getElementById('cr-score');
     if (scoreEl) {
         scoreEl.textContent = score5 != null ? score5.toFixed(1) : '-';
     }
 
-    const ringFill = document.getElementById('cr-ring-fill');
-    if (ringFill) {
-        const circumference = 2 * Math.PI * 52;
-        ringFill.style.strokeDasharray = circumference.toFixed(2);
-        if (score5 != null) {
-            const pct = Math.min(Math.max(score5 / 5, 0), 1);
-            requestAnimationFrame(() => {
-                ringFill.style.strokeDashoffset = (circumference * (1 - pct)).toFixed(2);
-            });
-        } else {
-            ringFill.style.strokeDashoffset = circumference.toFixed(2);
-        }
-    }
-
-    const starsEl = document.getElementById('cr-stars');
-    if (starsEl) {
-        starsEl.innerHTML = score5 != null ? renderStars(attr) : '';
-    }
+    /* Player Rating chip: filled by the `player-reviews:summary` event that
+       PlayerReviews.render() dispatches on `document` right after it aggregates. */
+    bindPlayerRatingHeroListener();
 
     /* Bonus copy for verdict sidebar (hero bonus card removed) */
     const bonusAmt = casinoBonusAmountDisplay(attr);
@@ -5860,8 +5638,7 @@ function renderCasinoReviewPage(attr) {
 
     setReviewCanonicalAndSocial(name);
 
-    /* Section nav: active-state tracking on scroll */
-    initSectionNavScrollSpy();
+    /* Section nav scroll-spy is started from initReviewPage() after player reviews (so #pr-section is visible). */
 }
 
 function populateInfoItem(wrapId, valId, value) {
@@ -5879,13 +5656,23 @@ function showNavTab(id) {
     if (li) li.hidden = false;
 }
 
+/** Document Y of element top (for scroll-spy). Hidden elements skipped: layout not reliable. */
+function sectionDocumentTop(el) {
+    if (!el || el.hidden) return null;
+    const r = el.getBoundingClientRect();
+    return r.top + window.scrollY;
+}
+
 function initSectionNavScrollSpy() {
     const nav = document.getElementById('cr-section-nav');
     if (!nav) return;
-    const links = nav.querySelectorAll('.cr-nav-links a');
+    const links = Array.from(nav.querySelectorAll('.cr-nav-links a')).filter((a) => {
+        const li = a.closest('li');
+        return !li || !li.hidden;
+    });
     if (links.length === 0) return;
 
-    const sectionIds = Array.from(links).map((a) => a.getAttribute('href').replace('#', '')).filter(Boolean);
+    const sectionIds = links.map((a) => a.getAttribute('href').replace('#', '')).filter(Boolean);
     const headerOffset = () => {
         const h = document.getElementById('main-header');
         return (h ? h.offsetHeight : 64) + nav.offsetHeight + 8;
@@ -5894,9 +5681,16 @@ function initSectionNavScrollSpy() {
     links.forEach((a) => {
         a.addEventListener('click', (e) => {
             e.preventDefault();
-            const target = document.getElementById(a.getAttribute('href').replace('#', ''));
+            const id = a.getAttribute('href').replace('#', '');
+            const target = document.getElementById(id);
+            links.forEach((x) => x.classList.toggle('active', x === a));
             if (target) {
-                window.scrollTo({ top: target.offsetTop - headerOffset() + 4, behavior: 'smooth' });
+                const top = sectionDocumentTop(target);
+                const y =
+                    top != null
+                        ? top - headerOffset() + 4
+                        : target.getBoundingClientRect().top + window.scrollY - headerOffset() + 4;
+                window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
             }
         });
     });
@@ -5907,13 +5701,23 @@ function initSectionNavScrollSpy() {
         ticking = true;
         requestAnimationFrame(() => {
             const scrollY = window.scrollY + headerOffset();
-            let current = sectionIds[0];
-            for (const id of sectionIds) {
-                const el = document.getElementById(id);
-                if (el && el.offsetTop <= scrollY) current = id;
+            /** Sections in visual order (top → bottom). Nav order can differ from DOM (#pr-section is below #cr-verdict-section). */
+            const tops = sectionIds
+                .map((id) => {
+                    const el = document.getElementById(id);
+                    const top = sectionDocumentTop(el);
+                    return top == null ? null : { id, top };
+                })
+                .filter(Boolean)
+                .sort((x, y) => x.top - y.top);
+
+            let current = tops.length ? tops[0].id : sectionIds[0];
+            for (const { id, top } of tops) {
+                if (top <= scrollY) current = id;
             }
-            links.forEach((a) => {
-                a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+
+            links.forEach((link) => {
+                link.classList.toggle('active', link.getAttribute('href') === '#' + current);
             });
             ticking = false;
         });
@@ -6181,12 +5985,28 @@ async function initReviewPage() {
             return;
         }
 
-        const attr = attrFromCasinoEntry(data[0]);
+        const entry = data[0];
+        const attr = attrFromCasinoEntry(entry);
         renderCasinoReviewPage(attr);
+
+        if (typeof window.PlayerReviews !== 'undefined' && window.PlayerReviews.render) {
+            try {
+                await window.PlayerReviews.render({
+                    parentKey: 'casino',
+                    slug,
+                    documentId: entry.documentId || attr.documentId,
+                    parentNumericId: entry.id != null ? entry.id : attr.id,
+                    parentAttr: attr,
+                });
+            } catch (e) {
+                console.warn('Player reviews failed to render:', e);
+            }
+        }
+
+        initSectionNavScrollSpy();
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
         syncReviewHeroLayout();
-        reviewWrap.style.opacity = '1';
     } catch (e) {
         console.error('Failed to load review:', e);
         showReviewError();
@@ -6210,6 +6030,8 @@ async function initProviderDetailPage() {
     }
 
     try {
+        bindPlayerRatingHeroListener();
+
         const { res, json } = await fetchProviderBySlug(slug);
         if (!res || !res.ok) {
             console.error(res ? apiErrorMessage(res.status, json) : 'No response');
@@ -6222,8 +6044,24 @@ async function initProviderDetailPage() {
             return;
         }
 
-        const attr = data[0].attributes || data[0];
+        const entry = data[0];
+        const attr = entry.attributes || entry;
         populateProviderDetailPage(attr);
+
+        if (typeof window.PlayerReviews !== 'undefined' && window.PlayerReviews.render) {
+            try {
+                await window.PlayerReviews.render({
+                    parentKey: 'provider',
+                    slug,
+                    documentId: entry.documentId || attr.documentId,
+                    parentNumericId: entry.id != null ? entry.id : attr.id,
+                    parentAttr: attr,
+                });
+            } catch (e) {
+                console.warn('Player reviews failed to render:', e);
+            }
+        }
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (e) {
         console.error('Failed to load provider:', e);
@@ -6259,7 +6097,7 @@ function formatFullDate(d) {
 }
 
 /**
- * Provider detail renderer — uses ONLY the CMS fields we actually store on the
+ * Provider detail renderer: uses ONLY the CMS fields we actually store on the
  * Provider content type: Name, Slug, TierBadge, IsTopProvider, RatingScore,
  * Rank, GamePortfolioCount, FoundedYear, Headquarters, FlagshipTitles,
  * DossierLink, Excerpt, ReviewBody, updatedAt, SEOTitle, SEODescription,
@@ -6267,7 +6105,7 @@ function formatFullDate(d) {
  * (no fallback copy, no alias fields).
  */
 function populateProviderDetailPage(attr) {
-    const DASH = '—';
+    const DASH = '-';
     const name = (attr.Name && String(attr.Name).trim()) || 'Provider';
 
     // <title>
@@ -6309,19 +6147,17 @@ function populateProviderDetailPage(attr) {
         summaryEl.hidden = excerptPlain === '';
     }
 
-    // Chips: TierBadge + IsTopProvider
-    const tierChip = document.getElementById('pv-tier-chip');
     const tier = attr.TierBadge ? String(attr.TierBadge).trim() : '';
-    if (tierChip) {
-        if (tier) {
-            tierChip.textContent = tier.toUpperCase();
-            tierChip.hidden = false;
+    const badgeTextEl = document.getElementById('pv-badge-text');
+    if (badgeTextEl) {
+        if (attr.IsTopProvider === true) {
+            badgeTextEl.textContent = "Editor's choice";
+        } else if (tier) {
+            badgeTextEl.textContent = tier.toUpperCase();
         } else {
-            tierChip.hidden = true;
+            badgeTextEl.textContent = 'Software studio';
         }
     }
-    const topChip = document.getElementById('pv-top-chip');
-    if (topChip) topChip.hidden = attr.IsTopProvider !== true;
 
     // Numeric / string values used by hero, facts strip, and summary aside
     const scoreFive = getCuratorScoreOutOfFive(attr);
@@ -6354,17 +6190,26 @@ function populateProviderDetailPage(attr) {
               ? foundedDisplay
               : hqDisplay;
 
-    // Hero score card + sidebar summary: logos (Cover / Hero / fallback from getProviderCardImageUrl)
     const logoUrl = getProviderCardImageUrl(attr);
     const logoMatDark = providerLogoMatIsDark(attr);
-    const heroLogoMat = document.getElementById('pv-hero-score-logo-mat');
-    const heroLogoImg = document.getElementById('pv-hero-score-logo-img');
+    const heroLogoV2 = document.getElementById('pv-hero-logo-v2');
+    const heroLogoWrap = document.getElementById('pv-hero-logo-wrap');
     const sumLogoMat = document.getElementById('pv-summary-logo-mat');
     const sumLogoImg = document.getElementById('pv-summary-logo-img');
-    if (heroLogoImg && heroLogoMat) {
-        heroLogoImg.src = logoUrl;
-        heroLogoImg.alt = `${name} logo`;
-        heroLogoMat.classList.toggle('pc-image-wrap--mat-dark', logoMatDark);
+    if (heroLogoV2 && heroLogoWrap) {
+        heroLogoV2.alt = `${name} logo`;
+        heroLogoV2.src = logoUrl || '';
+        heroLogoWrap.classList.toggle('cr-hero-logo-v2--contain', Boolean(logoUrl) && !logoMatDark);
+        heroLogoWrap.classList.toggle('pv-hero-logo--dark-mat', Boolean(logoUrl) && logoMatDark);
+        if (!logoUrl) {
+            heroLogoV2.removeAttribute('src');
+            heroLogoWrap.classList.remove('cr-hero-logo-v2--contain', 'pv-hero-logo--dark-mat');
+        }
+        heroLogoV2.onerror = function () {
+            this.onerror = null;
+            this.removeAttribute('src');
+            heroLogoWrap.classList.remove('cr-hero-logo-v2--contain', 'pv-hero-logo--dark-mat');
+        };
     }
     if (sumLogoImg && sumLogoMat) {
         sumLogoImg.src = logoUrl;
@@ -6372,21 +6217,8 @@ function populateProviderDetailPage(attr) {
         sumLogoMat.classList.toggle('pc-image-wrap--mat-dark', logoMatDark);
     }
 
-    // Hero score card
-    const scoreNumEl = document.getElementById('pv-score-num');
-    if (scoreNumEl) scoreNumEl.textContent = scoreDisplay;
-    const scoreStars = document.getElementById('pv-score-stars');
-    if (scoreStars) {
-        scoreStars.innerHTML = scoreFive != null ? renderStars(attr) : '';
-    }
-    const rankEl = document.getElementById('pv-rank');
-    if (rankEl) rankEl.textContent = rankDisplay;
-    const portEl = document.getElementById('pv-portfolio');
-    if (portEl) portEl.textContent = portDisplay;
-    const foundedEl = document.getElementById('pv-founded');
-    if (foundedEl) foundedEl.textContent = foundedDisplay;
-    const hqEl = document.getElementById('pv-headquarters');
-    if (hqEl) hqEl.textContent = hqDisplay;
+    const heroEditorialScore = document.getElementById('pv-hero-editorial-score');
+    if (heroEditorialScore) heroEditorialScore.textContent = scoreDisplay;
 
     // Quick facts strip
     const factRank = document.getElementById('pv-fact-rank');
@@ -6573,6 +6405,35 @@ function populateSlotDetailPage(attr) {
     const h1 = document.getElementById('sv-title');
     if (h1) h1.textContent = title;
 
+    const crumbEl = document.getElementById('sv-crumb-current');
+    if (crumbEl) crumbEl.textContent = title;
+
+    const badgeLine = document.getElementById('sv-badge-line');
+    if (badgeLine) {
+        const pName = slotProviderDisplayName(attr);
+        badgeLine.textContent = pName ? `Slot review · ${pName}` : 'Slot review';
+    }
+
+    const cardImgUrl = getSlotCardImageUrl(attr);
+    const imgAlt = firstNonEmptyAttr(attr, ['CoverImageAlt', 'coverImageAlt']) || title;
+
+    const heroLogo = document.getElementById('sv-hero-logo-v2');
+    if (heroLogo) {
+        heroLogo.alt = imgAlt;
+        heroLogo.src = cardImgUrl;
+        heroLogo.dataset.fallback = DEFAULT_SLOT_CARD_IMAGE;
+        heroLogo.onerror = function () {
+            if (this.src !== this.dataset.fallback) {
+                this.onerror = null;
+                this.src = this.dataset.fallback;
+            }
+        };
+    }
+
+    const score5 = getCuratorScoreOutOfFive(attr);
+    const edScoreEl = document.getElementById('sv-hero-editorial-score');
+    if (edScoreEl) edScoreEl.textContent = score5 != null ? score5.toFixed(1) : '-';
+
     const excerptEl = document.getElementById('sv-excerpt');
     const excerpt = firstNonEmptyAttr(attr, ['Excerpt', 'excerpt']);
     if (excerptEl) {
@@ -6598,20 +6459,6 @@ function populateSlotDetailPage(attr) {
         } else {
             hlWrap.hidden = true;
         }
-    }
-
-    const providerLine = document.getElementById('sv-provider-line');
-    if (providerLine) {
-        const p = slotProviderDisplayName(attr);
-        providerLine.textContent = p ? p.toUpperCase() : 'PROVIDER TBC';
-    }
-
-    const heroImg = document.getElementById('sv-hero-image');
-    if (heroImg) {
-        const src = getSlotCardImageUrl(attr);
-        heroImg.src = src;
-        const alt = firstNonEmptyAttr(attr, ['CoverImageAlt', 'coverImageAlt']) || title;
-        heroImg.alt = alt;
     }
 
     const playBtn = document.getElementById('sv-play-btn');
@@ -6713,8 +6560,9 @@ function populateSlotDetailPage(attr) {
     if (svOgUrl && canonicalAbsSv) svOgUrl.setAttribute('content', canonicalAbsSv);
     if (svOgTitle) svOgTitle.setAttribute('content', pageTitleSv);
     if (svOgDesc && descOgSv) svOgDesc.setAttribute('content', descOgSv);
-    let shareImgSv = '';
-    if (heroImg && heroImg.getAttribute('src')) shareImgSv = heroImg.getAttribute('src');
+    let shareImgSv = cardImgUrl || '';
+    const shareLogo = document.getElementById('sv-hero-logo-v2');
+    if (!shareImgSv && shareLogo && shareLogo.getAttribute('src')) shareImgSv = shareLogo.getAttribute('src');
     if (shareImgSv && shareImgSv.startsWith('/')) shareImgSv = `${pubOriginSv}${shareImgSv}`;
     if (!shareImgSv) shareImgSv = `${pubOriginSv}/assets/img/888review-siteicon.png`;
     if (svOgImg) svOgImg.setAttribute('content', shareImgSv);
@@ -6773,14 +6621,27 @@ async function initSlotDetailPage() {
             return;
         }
 
-        const attr = data[0].attributes || data[0];
+        const entry = data[0];
+        const attr = entry.attributes || entry;
         populateSlotDetailPage(attr);
+        bindPlayerRatingHeroListener();
+
+        if (typeof window.PlayerReviews !== 'undefined' && window.PlayerReviews.render) {
+            try {
+                await window.PlayerReviews.render({
+                    parentKey: 'slot',
+                    slug,
+                    documentId: entry.documentId || attr.documentId,
+                    parentNumericId: entry.id != null ? entry.id : attr.id,
+                    parentAttr: attr,
+                });
+            } catch (e) {
+                console.warn('Player reviews failed to render:', e);
+            }
+        }
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
-        const slotRoot = document.getElementById('slot-page-root');
-        if (slotRoot) {
-            slotRoot.querySelectorAll('.reveal:not(.active)').forEach((el) => el.classList.add('active'));
-        }
         bindSlotVerdictSidebarStickyState();
     } catch (e) {
         console.error('Failed to load slot:', e);

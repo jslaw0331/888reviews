@@ -39,48 +39,88 @@
     </div>
 
     <main class="slot-page" id="slot-page-root">
-        <!-- Hero: populated by initSlotDetailPage() from the API -->
-        <section class="slot-hero slot-hero--surface reveal">
-            <div class="container slot-hero-inner">
-                <div class="sh-left">
-                    <div class="sh-left-panel">
-                        <div class="sh-meta">
-                            <span class="sh-meta-kicker">SLOT REVIEW</span>
-                            <span class="meta-divider" aria-hidden="true">·</span>
-                            <span class="sh-meta-provider" id="sv-provider-line">…</span>
-                        </div>
-                        <h1 class="sh-title" id="sv-title">Loading…</h1>
-                        <p class="sh-excerpt" id="sv-excerpt" hidden></p>
-                        <p class="sh-compliance">18+ | T&amp;Cs Apply</p>
-                        <div class="sh-cta">
-                            <a href="#" class="sh-btn-play btn btn-primary" id="sv-play-btn" target="_blank" rel="noopener noreferrer" style="display:none;">PLAY</a>
-                            <div class="sh-cta-block">
-                                <a href="/casinos" class="sh-btn-where">
-                                    WHERE TO PLAY
-                                    <i data-lucide="arrow-right" class="sh-btn-where-icon" aria-hidden="true"></i>
-                                </a>
-                                <p class="sh-responsible">Safer play: set limits before you deposit. See each operator for tools and help.</p>
-                            </div>
-                        </div>
+        <nav class="cr-breadcrumb" aria-label="Breadcrumb">
+            <div class="container">
+                <ol class="cr-crumbs">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/slots">Slots</a></li>
+                    <li aria-current="page" id="sv-crumb-current">Slot</li>
+                </ol>
+            </div>
+        </nav>
+
+        <!-- Hero: same pattern as casino / provider (banner + strip + ratings); populated by initSlotDetailPage() -->
+        <section class="cr-hero-section cr-hero-v2 sv-slot-hero reveal" id="sv-hero-section" aria-labelledby="sv-title">
+            <div class="cr-hero-banner sv-slot-hero__banner" id="sv-hero-banner-wrap" aria-hidden="true"></div>
+
+            <div class="container cr-hero-strip">
+                <div class="cr-hero-logo-v2 sv-slot-hero-logo" id="sv-hero-logo-wrap">
+                    <img src="" alt="" class="cr-hero-logo-v2__img" id="sv-hero-logo-v2" width="160" height="160"
+                        loading="eager" decoding="async" referrerpolicy="no-referrer">
+                </div>
+
+                <div class="cr-hero-identity">
+                    <div class="cr-hero-status">
+                        <span class="cr-status-tag" id="sv-hero-status-tag"><i data-lucide="sparkles"></i> <span
+                                id="sv-badge-line">Slot review</span></span>
+                    </div>
+                    <h1 class="cr-heading" id="sv-title">Loading…</h1>
+                </div>
+
+                <div class="cr-hero-ratings">
+                    <div class="cr-rating cr-rating--curator">
+                        <span class="cr-rating-label">Our score</span>
+                        <span class="cr-rating-value">
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator"
+                                aria-hidden="true"></i>
+                            <strong id="sv-hero-editorial-score">-</strong><span class="cr-rating-max">/5</span>
+                            <a href="#sv-stats-bar" class="cr-rating-link">Key stats</a>
+                        </span>
+                    </div>
+                    <div class="cr-rating cr-rating--player">
+                        <span class="cr-rating-label">Player rating</span>
+                        <span class="cr-rating-value">
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player"
+                                aria-hidden="true"></i>
+                            <strong id="sv-hero-player-score">-</strong><span class="cr-rating-max">/5</span>
+                            <a href="#pr-section" class="cr-rating-link" id="sv-hero-player-reviews-link">0
+                                reviews</a>
+                        </span>
                     </div>
                 </div>
-                <div class="sh-right reveal delay-200">
-                    <div class="slot-hero-img-wrap">
-                        <img src="https://images.unsplash.com/photo-1596203597022-b5eefceca167?w=800&amp;auto=format&amp;fit=crop" alt="" class="slot-hero-image" id="sv-hero-image" width="800" height="800">
-                    </div>
+            </div>
+        </section>
+
+        <section class="pv-hero-lede-wrap reveal delay-50">
+            <div class="container">
+                <p class="pv-hero-lede__text" id="sv-excerpt" hidden></p>
+                <p class="sv-hero-compliance">18+ | T&amp;Cs Apply</p>
+                <div class="pv-hero-lede__actions" id="sv-hero-lede-actions">
+                    <a href="#" class="btn btn-primary ph-btn-site" id="sv-play-btn" target="_blank"
+                        rel="noopener noreferrer" style="display:none;">
+                        <span>Play</span>
+                        <i data-lucide="external-link" aria-hidden="true"></i>
+                    </a>
+                    <a href="/casinos" class="ph-btn-anchor">Where to play</a>
                 </div>
+                <p class="sv-hero-responsible">Safer play: set limits before you deposit. See each operator for tools and help.</p>
             </div>
         </section>
 
         <section class="slot-highlight-strip container reveal delay-150" id="sv-highlight-wrap" hidden>
             <div class="slot-highlight-inner">
-                <span class="slot-highlight-label" id="sv-highlight-label"></span>
-                <blockquote class="slot-highlight-quote" id="sv-highlight-quote"></blockquote>
+                <div class="slot-highlight-icon-wrap" aria-hidden="true">
+                    <i data-lucide="sparkles"></i>
+                </div>
+                <div class="slot-highlight-body">
+                    <span class="slot-highlight-label" id="sv-highlight-label"></span>
+                    <blockquote class="slot-highlight-quote" id="sv-highlight-quote"></blockquote>
+                </div>
             </div>
         </section>
 
         <!-- Stats Bar -->
-        <section class="slot-stats-bar container reveal delay-300">
+        <section class="slot-stats-bar container reveal delay-300" id="sv-stats-bar">
             <div class="ss-grid ss-grid--slot ss-grid--slot-extended">
                 <div class="ss-item">
                     <i data-lucide="percent"></i>
@@ -263,9 +303,95 @@
             </div>
         </section>
 
+        <section class="pr-section" id="pr-section" hidden aria-labelledby="pr-title">
+            <div class="container cr-article-layout cr-article-layout--verdict-split">
+                <div class="cr-verdict-row pr-row">
+                    <div class="cr-verdict-shell pr-main-shell">
+                        <header class="cr-verdict-header pr-reviews-header">
+                            <p class="cr-verdict-kicker pr-kicker">
+                                <i data-lucide="message-square-quote" aria-hidden="true"></i>
+                                <span>Player feedback</span>
+                            </p>
+                            <h2 class="cr-verdict-title" id="pr-title">Player reviews <span class="pr-count"
+                                    id="pr-count"></span></h2>
+                            <p class="cr-verdict-sub pr-reviews-sub">
+                                Ratings, pros and cons, and what stood out: real voices from the community.
+                            </p>
+                        </header>
+
+                        <div class="pr-summary" id="pr-summary" hidden>
+                            <div class="pr-summary__grid">
+                                <div class="pr-summary-score">
+                                    <p class="pr-summary-kicker">Average rating</p>
+                                    <div class="pr-summary-rating-line">
+                                        <span class="pr-summary-avg" id="pr-summary-avg"></span>
+                                        <span class="pr-summary-max" aria-hidden="true">/ 5</span>
+                                    </div>
+                                    <div class="pr-summary-stars" id="pr-summary-stars"></div>
+                                    <p class="pr-summary-total" id="pr-summary-total"></p>
+                                </div>
+                                <div class="pr-summary-distribution">
+                                    <p class="pr-summary-kicker">Rating breakdown</p>
+                                    <ul class="pr-summary-bars" id="pr-summary-bars" role="list"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <section class="cr-verdict-panel cr-verdict-panel--main pr-reviews-panel"
+                            aria-labelledby="pr-panel-heading">
+                            <div class="pr-panel-head">
+                                <h3 class="cr-verdict-panel-h" id="pr-panel-heading">What players say</h3>
+                            </div>
+                            <ul class="pr-list" id="pr-list" role="list" aria-live="polite"></ul>
+                            <div class="pr-empty" id="pr-empty" hidden>
+                                <div class="pr-empty__inner" role="status">
+                                    <div class="pr-empty__icon-wrap" aria-hidden="true">
+                                        <i data-lucide="message-circle-plus"></i>
+                                    </div>
+                                    <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No reviews yet</p>
+                                    <p class="pr-empty__dek">No player reviews yet. Be the first to share your experience.</p>
+                                </div>
+                            </div>
+                            <nav id="pr-pagination-wrap" class="listing-pager" style="display: none;"
+                                aria-label="Review pages">
+                                <div class="listing-pager__main">
+                                    <button type="button" id="pr-btn-first"
+                                        class="listing-pager__btn listing-pager__btn--first" aria-label="First page">
+                                        <i data-lucide="chevrons-left" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" id="pr-btn-prev" class="listing-pager__btn"
+                                        aria-label="Previous page">
+                                        <i data-lucide="chevron-left" aria-hidden="true"></i>
+                                    </button>
+                                    <div id="pr-page-numbers" class="listing-pager__numbers" role="group"
+                                        aria-label="Jump to page"></div>
+                                    <button type="button" id="pr-btn-next" class="listing-pager__btn"
+                                        aria-label="Next page">
+                                        <i data-lucide="chevron-right" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" id="pr-btn-last"
+                                        class="listing-pager__btn listing-pager__btn--last" aria-label="Last page">
+                                        <i data-lucide="chevrons-right" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="listing-pager__goto">
+                                    <label for="pr-page-input" class="listing-pager__goto-label">Go to page</label>
+                                    <input type="number" id="pr-page-input" class="listing-pager__goto-input" min="1"
+                                        step="1" inputmode="numeric" autocomplete="off" />
+                                    <span class="listing-pager__goto-total" id="pr-page-total-hint">of 1</span>
+                                    <button type="button" id="pr-page-go" class="listing-pager__goto-btn">Go</button>
+                                </div>
+                            </nav>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <site-footer></site-footer>
     <script src="/assets/js/script.js"></script>
+    <script src="/assets/js/player-reviews.js?v=12"></script>
 </body>
 </html>

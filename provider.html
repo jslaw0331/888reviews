@@ -35,93 +35,88 @@
     <site-header></site-header>
 
     <main class="provider-page" id="provider-content">
-        <nav class="pv-breadcrumb container" aria-label="Breadcrumb">
-            <a class="pv-bc-link" href="/">Home</a>
-            <span class="pv-bc-sep" aria-hidden="true">/</span>
-            <a class="pv-bc-link" href="/providers">Providers</a>
-            <span class="pv-bc-sep" aria-hidden="true">/</span>
-            <span class="pv-bc-current" id="pv-bc-current">Provider</span>
+        <nav class="cr-breadcrumb" aria-label="Breadcrumb">
+            <div class="container">
+                <ol class="cr-crumbs">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/providers">Providers</a></li>
+                    <li aria-current="page" id="pv-bc-current">Provider</li>
+                </ol>
+            </div>
         </nav>
 
-        <section class="provider-hero provider-hero--refined container reveal">
-            <div class="ph-left">
-                <div class="ph-chip-row" id="pv-chip-row">
-                    <span class="ph-chip ph-chip--tier" id="pv-tier-chip" hidden></span>
-                    <span class="ph-chip ph-chip--top" id="pv-top-chip" hidden>
-                        <i data-lucide="award" aria-hidden="true"></i>
-                        <span>Top provider</span>
-                    </span>
+        <!-- Hero: same pattern as casino review (banner + overlapping logo + ratings); provider uses teal-tinted banner -->
+        <section class="cr-hero-section cr-hero-v2 pv-provider-hero reveal" id="pv-hero-section"
+            aria-labelledby="pv-title">
+            <div class="cr-hero-banner pv-provider-hero__banner" id="pv-hero-banner" aria-hidden="true"></div>
+
+            <div class="container cr-hero-strip">
+                <div class="cr-hero-logo-v2" id="pv-hero-logo-wrap">
+                    <img src="" alt="" class="cr-hero-logo-v2__img" id="pv-hero-logo-v2" width="160" height="160"
+                        loading="eager" decoding="async" referrerpolicy="no-referrer">
                 </div>
-                <h1 class="ph-title" id="pv-title">Loading…</h1>
-                <p class="ph-desc" id="pv-summary"></p>
-                <div class="ph-actions" id="pv-actions" hidden>
-                    <a id="pv-dossier-link" class="btn btn-primary ph-btn-site" href="#" target="_blank"
-                        rel="noopener noreferrer">
-                        <span>Visit official site</span>
-                        <i data-lucide="external-link" aria-hidden="true"></i>
-                    </a>
-                    <a href="#pv-review" class="ph-btn-anchor">Read full review</a>
+
+                <div class="cr-hero-identity">
+                    <div class="cr-hero-status">
+                        <span class="cr-status-tag" id="pv-hero-status-tag"><i data-lucide="layers"></i> <span
+                                id="pv-badge-text">Software studio</span></span>
+                    </div>
+                    <h1 class="cr-heading" id="pv-title">Loading…</h1>
+                </div>
+
+                <div class="cr-hero-ratings">
+                    <div class="cr-rating cr-rating--curator">
+                        <span class="cr-rating-label">Our score</span>
+                        <span class="cr-rating-value">
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator"
+                                aria-hidden="true"></i>
+                            <strong id="pv-hero-editorial-score">-</strong><span class="cr-rating-max">/5</span>
+                            <a href="#pv-facts-strip" class="cr-rating-link">Studio rank</a>
+                        </span>
+                    </div>
+                    <div class="cr-rating cr-rating--player">
+                        <span class="cr-rating-label">Player rating</span>
+                        <span class="cr-rating-value">
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player"
+                                aria-hidden="true"></i>
+                            <strong id="pv-hero-player-score">-</strong><span class="cr-rating-max">/5</span>
+                            <a href="#pr-section" class="cr-rating-link" id="pv-hero-player-reviews-link">0
+                                reviews</a>
+                        </span>
+                    </div>
                 </div>
             </div>
-            <aside class="ph-right" aria-label="Editorial summary">
-                <div class="ph-score-card">
-                    <div class="ph-score-card__top">
-                        <div class="ph-score-card__col ph-score-card__col--logo">
-                            <div class="ph-score-card__brand">
-                                <div class="pc-image-wrap ph-score-card__logo-mat" id="pv-hero-score-logo-mat">
-                                    <img class="pc-image" id="pv-hero-score-logo-img" src="" alt="" width="200"
-                                        height="112" loading="eager" decoding="async">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="ph-score-card__col ph-score-card__col--score">
-                            <span class="ph-score-card__label">Editorial score</span>
-                            <div class="ph-score-card__headline">
-                                <span class="ph-score-num" id="pv-score-num">—</span>
-                                <span class="ph-score-denom">/ 5</span>
-                            </div>
-                            <div class="ph-score-card__stars" id="pv-score-stars" aria-hidden="true"></div>
-                        </div>
-                    </div>
-                    <dl class="ph-score-card__meta">
-                        <div class="ph-score-meta-row">
-                            <dt>Rank</dt>
-                            <dd id="pv-rank">—</dd>
-                        </div>
-                        <div class="ph-score-meta-row">
-                            <dt>Library</dt>
-                            <dd id="pv-portfolio">—</dd>
-                        </div>
-                        <div class="ph-score-meta-row">
-                            <dt>Founded</dt>
-                            <dd id="pv-founded">—</dd>
-                        </div>
-                        <div class="ph-score-meta-row">
-                            <dt>HQ</dt>
-                            <dd id="pv-headquarters">—</dd>
-                        </div>
-                    </dl>
-                </div>
-            </aside>
         </section>
 
-        <section class="pv-facts-strip container reveal delay-75" aria-label="Key facts">
+        <section class="pv-hero-lede-wrap container reveal delay-50">
+            <p class="pv-hero-lede__text" id="pv-summary" hidden></p>
+            <div class="pv-hero-lede__actions" id="pv-actions" hidden>
+                <a id="pv-dossier-link" class="btn btn-primary ph-btn-site" href="#" target="_blank"
+                    rel="noopener noreferrer">
+                    <span>Visit official site</span>
+                    <i data-lucide="external-link" aria-hidden="true"></i>
+                </a>
+                <a href="#pv-review" class="ph-btn-anchor">Read full review</a>
+            </div>
+        </section>
+
+        <section class="pv-facts-strip container reveal delay-75" id="pv-facts-strip" aria-label="Key facts">
             <div class="pv-facts">
                 <div class="pv-fact">
                     <span class="pv-fact__label">Rank</span>
-                    <span class="pv-fact__value" id="pv-fact-rank">—</span>
+                    <span class="pv-fact__value" id="pv-fact-rank">-</span>
                 </div>
                 <div class="pv-fact">
                     <span class="pv-fact__label">Score</span>
-                    <span class="pv-fact__value" id="pv-fact-score">—</span>
+                    <span class="pv-fact__value" id="pv-fact-score">-</span>
                 </div>
                 <div class="pv-fact">
                     <span class="pv-fact__label">Library</span>
-                    <span class="pv-fact__value" id="pv-fact-library">—</span>
+                    <span class="pv-fact__value" id="pv-fact-library">-</span>
                 </div>
                 <div class="pv-fact">
                     <span class="pv-fact__label">Founded</span>
-                    <span class="pv-fact__value" id="pv-fact-founded">—</span>
+                    <span class="pv-fact__value" id="pv-fact-founded">-</span>
                 </div>
             </div>
         </section>
@@ -159,30 +154,44 @@
                                 </div>
                             </div>
                             <div class="pv-summary-card__col pv-summary-card__col--score">
-                                <span class="pv-summary-label">Summary</span>
-                                <div class="pv-summary-score">
-                                    <span class="pv-summary-num" id="pv-summary-num">—</span>
-                                    <span class="pv-summary-denom">/ 5</span>
+                                <div class="pv-summary-rating-stack">
+                                    <div class="pv-summary-rating-block">
+                                        <span class="pv-summary-label">Our score</span>
+                                        <div class="pv-summary-score">
+                                            <span class="pv-summary-num" id="pv-summary-num">-</span>
+                                            <span class="pv-summary-denom">/ 5</span>
+                                        </div>
+                                        <div class="pv-summary-stars" id="pv-summary-stars" aria-hidden="true"></div>
+                                    </div>
+                                    <div class="pv-summary-rating-block pv-summary-rating-block--player">
+                                        <span class="pv-summary-label">Player rating</span>
+                                        <div class="pv-summary-score pv-summary-score--player">
+                                            <span class="pv-summary-num pv-summary-num--player"
+                                                id="pv-summary-player-num">-</span>
+                                            <span class="pv-summary-denom">/ 5</span>
+                                        </div>
+                                        <a href="#pr-section" class="pv-summary-player-link"
+                                            id="pv-summary-player-link">0 reviews</a>
+                                    </div>
                                 </div>
-                                <div class="pv-summary-stars" id="pv-summary-stars" aria-hidden="true"></div>
                             </div>
                         </div>
                         <dl class="pv-summary-meta">
                             <div>
                                 <dt>Rank</dt>
-                                <dd id="pv-summary-rank">—</dd>
+                                <dd id="pv-summary-rank">-</dd>
                             </div>
                             <div>
                                 <dt>Library</dt>
-                                <dd id="pv-summary-portfolio">—</dd>
+                                <dd id="pv-summary-portfolio">-</dd>
                             </div>
                             <div>
                                 <dt>Founded</dt>
-                                <dd id="pv-summary-founded">—</dd>
+                                <dd id="pv-summary-founded">-</dd>
                             </div>
                             <div>
                                 <dt>HQ</dt>
-                                <dd id="pv-summary-hq">—</dd>
+                                <dd id="pv-summary-hq">-</dd>
                             </div>
                         </dl>
                         <a class="btn btn-primary btn-block pv-summary-cta" id="pv-summary-cta" href="#" target="_blank"
@@ -195,6 +204,91 @@
                 </aside>
             </div>
         </section>
+
+        <section class="pr-section" id="pr-section" hidden aria-labelledby="pr-title">
+            <div class="container cr-article-layout cr-article-layout--verdict-split">
+                <div class="cr-verdict-row pr-row">
+                    <div class="cr-verdict-shell pr-main-shell">
+                        <header class="cr-verdict-header pr-reviews-header">
+                            <p class="cr-verdict-kicker pr-kicker">
+                                <i data-lucide="message-square-quote" aria-hidden="true"></i>
+                                <span>Player feedback</span>
+                            </p>
+                            <h2 class="cr-verdict-title" id="pr-title">Player reviews <span class="pr-count"
+                                    id="pr-count"></span></h2>
+                            <p class="cr-verdict-sub pr-reviews-sub">
+                                Ratings, pros and cons, and what stood out: real voices from the community.
+                            </p>
+                        </header>
+
+                        <div class="pr-summary" id="pr-summary" hidden>
+                            <div class="pr-summary__grid">
+                                <div class="pr-summary-score">
+                                    <p class="pr-summary-kicker">Average rating</p>
+                                    <div class="pr-summary-rating-line">
+                                        <span class="pr-summary-avg" id="pr-summary-avg"></span>
+                                        <span class="pr-summary-max" aria-hidden="true">/ 5</span>
+                                    </div>
+                                    <div class="pr-summary-stars" id="pr-summary-stars"></div>
+                                    <p class="pr-summary-total" id="pr-summary-total"></p>
+                                </div>
+                                <div class="pr-summary-distribution">
+                                    <p class="pr-summary-kicker">Rating breakdown</p>
+                                    <ul class="pr-summary-bars" id="pr-summary-bars" role="list"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <section class="cr-verdict-panel cr-verdict-panel--main pr-reviews-panel"
+                            aria-labelledby="pr-panel-heading">
+                            <div class="pr-panel-head">
+                                <h3 class="cr-verdict-panel-h" id="pr-panel-heading">What players say</h3>
+                            </div>
+                            <ul class="pr-list" id="pr-list" role="list" aria-live="polite"></ul>
+                            <div class="pr-empty" id="pr-empty" hidden>
+                                <div class="pr-empty__inner" role="status">
+                                    <div class="pr-empty__icon-wrap" aria-hidden="true">
+                                        <i data-lucide="message-circle-plus"></i>
+                                    </div>
+                                    <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No reviews yet</p>
+                                    <p class="pr-empty__dek">No player reviews yet. Be the first to share your experience.</p>
+                                </div>
+                            </div>
+                            <nav id="pr-pagination-wrap" class="listing-pager" style="display: none;"
+                                aria-label="Review pages">
+                                <div class="listing-pager__main">
+                                    <button type="button" id="pr-btn-first"
+                                        class="listing-pager__btn listing-pager__btn--first" aria-label="First page">
+                                        <i data-lucide="chevrons-left" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" id="pr-btn-prev" class="listing-pager__btn"
+                                        aria-label="Previous page">
+                                        <i data-lucide="chevron-left" aria-hidden="true"></i>
+                                    </button>
+                                    <div id="pr-page-numbers" class="listing-pager__numbers" role="group"
+                                        aria-label="Jump to page"></div>
+                                    <button type="button" id="pr-btn-next" class="listing-pager__btn"
+                                        aria-label="Next page">
+                                        <i data-lucide="chevron-right" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" id="pr-btn-last"
+                                        class="listing-pager__btn listing-pager__btn--last" aria-label="Last page">
+                                        <i data-lucide="chevrons-right" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="listing-pager__goto">
+                                    <label for="pr-page-input" class="listing-pager__goto-label">Go to page</label>
+                                    <input type="number" id="pr-page-input" class="listing-pager__goto-input" min="1"
+                                        step="1" inputmode="numeric" autocomplete="off" />
+                                    <span class="listing-pager__goto-total" id="pr-page-total-hint">of 1</span>
+                                    <button type="button" id="pr-page-go" class="listing-pager__goto-btn">Go</button>
+                                </div>
+                            </nav>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <div id="provider-error" class="container" style="display: none; text-align: center; padding: 120px 0;">
@@ -205,6 +299,7 @@
 
     <site-footer></site-footer>
     <script src="/assets/js/script.js"></script>
+    <script src="/assets/js/player-reviews.js?v=12"></script>
 </body>
 
 </html>

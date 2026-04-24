@@ -99,16 +99,26 @@
 
         <section class="bonuses-filter-bar reveal" aria-label="Bonus categories">
             <div class="container fb-inner">
-                <p class="fb-lead">Explore types: <strong>welcome bonus</strong>, <strong>free spins</strong>, <strong>no deposit</strong>, <strong>reload</strong>, and <strong>high roller</strong> promotions. Category filters are coming soon. Use the full list below.</p>
-                <div class="fb-tabs" role="group" aria-label="Bonus categories (filters coming soon)">
-                    <button type="button" class="fb-btn active" disabled aria-disabled="true" title="Coming soon">ALL BONUSES</button>
-                    <button type="button" class="fb-btn" disabled aria-disabled="true" title="Coming soon">WELCOME PACK</button>
-                    <button type="button" class="fb-btn" disabled aria-disabled="true" title="Coming soon">FREE SPINS</button>
-                    <button type="button" class="fb-btn" disabled aria-disabled="true" title="Coming soon">NO DEPOSIT</button>
-                    <button type="button" class="fb-btn" disabled aria-disabled="true" title="Coming soon">HIGH ROLLER</button>
+                <p class="fb-lead">Explore types: <strong>welcome bonus</strong>, <strong>free spins</strong>, <strong>no deposit</strong>, <strong>reload</strong>, and <strong>high roller</strong> promotions. Use the chips to narrow the grid, or change sort order.</p>
+                <div class="fb-tabs" role="group" aria-label="Bonus categories">
+                    <button type="button" class="fb-btn active" data-bonus-filter="all">ALL BONUSES</button>
+                    <button type="button" class="fb-btn" data-bonus-filter="welcome">WELCOME PACK</button>
+                    <button type="button" class="fb-btn" data-bonus-filter="freespins">FREE SPINS</button>
+                    <button type="button" class="fb-btn" data-bonus-filter="nodeposit">NO DEPOSIT</button>
+                    <button type="button" class="fb-btn" data-bonus-filter="reload">RELOAD</button>
+                    <button type="button" class="fb-btn" data-bonus-filter="highroller">HIGH ROLLER</button>
                 </div>
                 <div class="fb-sort">
-                    <span class="fb-sort-label"><i data-lucide="list-filter" aria-hidden="true"></i> Sorted by editor priority (default)</span>
+                    <label class="fb-sort-field" for="bonuses-sort-select">
+                        <span class="fb-sort-label"><i data-lucide="arrow-up-down" aria-hidden="true"></i> Sort</span>
+                        <select id="bonuses-sort-select" class="fb-sort-select" aria-label="Sort bonus list">
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                            <option value="title-asc">Title A–Z</option>
+                            <option value="title-desc">Title Z–A</option>
+                            <option value="casino-asc">Casino A–Z</option>
+                        </select>
+                    </label>
                 </div>
             </div>
         </section>
@@ -125,20 +135,24 @@
 
         <section class="bonuses-seo reveal delay-100" aria-labelledby="bonuses-seo-heading">
             <div class="container">
-                <h2 id="bonuses-seo-heading">How we list casino bonuses for search &amp; comparison</h2>
-                <p>
-                    This page aggregates <strong>online casino bonuses</strong> and <strong>promotional offers</strong> we can match to our review data:
-                    welcome packages, matched deposits, free spins bundles, reload deals, and occasional no-deposit or high-roller lines.
-                    We prioritise clarity: headline value, key wagering or playthrough language, typical win caps where stated, and expiry or game restrictions when the source material includes them.
-                </p>
-                <p>
-                    A bonus is not a recommendation to gamble. Offers are published by licensed operators under their own terms; we do not guarantee availability in your region, payment method, or currency.
-                    For studio context behind the games these promotions often target, see our <a href="/providers">software provider directory</a>.
-                    For operator fit beyond the offer line, use our <a href="/casinos">casino reviews &amp; directory</a>.
-                </p>
-                <p>
-                    18+ only. Gambling can be addictive. Use safer gambling tools and limits offered by licensed sites. If you need help, contact local support organisations listed in our site footer.
-                </p>
+                <header class="bonuses-seo__header">
+                    <h2 id="bonuses-seo-heading">How we list casino bonuses for search &amp; comparison</h2>
+                    <div class="bonuses-seo__intro">
+                        <p>
+                            This page aggregates <strong>online casino bonuses</strong> and <strong>promotional offers</strong> we can match to our review data:
+                            welcome packages, matched deposits, free spins bundles, reload deals, and occasional no-deposit or high-roller lines.
+                            We prioritise clarity: headline value, key wagering or playthrough language, typical win caps where stated, and expiry or game restrictions when the source material includes them.
+                        </p>
+                        <p>
+                            A bonus is not a recommendation to gamble. Offers are published by licensed operators under their own terms; we do not guarantee availability in your region, payment method, or currency.
+                            For studio context behind the games these promotions often target, see our <a href="/providers">software provider directory</a>.
+                            For operator fit beyond the offer line, use our <a href="/casinos">casino reviews &amp; directory</a>.
+                        </p>
+                        <p>
+                            18+ only. Gambling can be addictive. Use safer gambling tools and limits offered by licensed sites. If you need help, contact local support organisations listed in our site footer.
+                        </p>
+                    </div>
+                </header>
             </div>
         </section>
 
@@ -227,6 +241,6 @@
     </main>
 
     <site-footer></site-footer>
-    <script src="/assets/js/script.js?v=24"></script>
+    <script src="/assets/js/script.js?v=25"></script>
 </body>
 </html>
