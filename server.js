@@ -278,19 +278,36 @@ app.get('/api/:endpoint', async (req, res) => {
         const queryParams = req.url.split('?')[1] || '';
 
         // Build the literal target URL to your secure Strapi server
+        if (!process.env.STRAPI_API_URL || !process.env.STRAPI_API_TOKEN) {
+            res.status(503).json({
+                error: 'Strapi is not configured (set STRAPI_API_URL and STRAPI_API_TOKEN in the deployment environment).',
+            });
+            return;
+        }
+
         const targetUrl = `${process.env.STRAPI_API_URL}/api/${endpoint}?${queryParams}`;
 
         // Make the server-side request (This hides the token from the browser completely!)
+        // Timeout required on serverless: default axios has no limit and can spin forever, so the page fetch never completes.
         const response = await axios.get(targetUrl, {
             headers: {
-                Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`
-            }
+                Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
+            },
+            timeout: 60000,
         });
 
         // Send the Strapi data back to your local vanilla HTML frontend
         res.json(response.data);
 
     } catch (error) {
+        const isTimeout = error.code === 'ECONNABORTED' || /timeout/i.test(String(error.message || ''));
+        if (isTimeout) {
+            console.error(`[Strapi proxy] timeout /api/${req.params.endpoint}`);
+            res.status(504).json({
+                error: 'Strapi did not respond in time. Check that STRAPI_API_URL is reachable from Vercel and not blocking cloud IPs.',
+            });
+            return;
+        }
         const st = error.response?.status;
         if (st === 400 || st === 404) {
             console.warn(
