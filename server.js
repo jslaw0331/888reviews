@@ -409,11 +409,15 @@ ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
     });
 });
 
-// Boot up the proxy server
-app.listen(PORT, () => {
-    console.log(`🛡️ Site + API proxy: http://localhost:${PORT}`);
-    console.log(`🔗 Strapi backend: ${process.env.STRAPI_API_URL || '(set STRAPI_API_URL in .env)'}`);
-    console.log(
-        `🗺️ SEO: /robots.txt + /sitemap.xml (set SITE_PUBLIC_URL in production for canonical domain in sitemap)`,
-    );
-});
+// Vercel runs this app via serverless (api/index.js); do not listen on a port there.
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🛡️ Site + API proxy: http://localhost:${PORT}`);
+        console.log(`🔗 Strapi backend: ${process.env.STRAPI_API_URL || '(set STRAPI_API_URL in .env)'}`);
+        console.log(
+            `🗺️ SEO: /robots.txt + /sitemap.xml (set SITE_PUBLIC_URL in production for canonical domain in sitemap)`,
+        );
+    });
+}
+
+module.exports = app;
