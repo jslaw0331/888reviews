@@ -27,18 +27,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/bonuses", "destination": "/bonuses.html" },
-    { "source": "/slots", "destination": "/slots.html" },
-    { "source": "/casinos", "destination": "/casinos.html" },
-    { "source": "/providers", "destination": "/providers.html" },
-    { "source": "/guides", "destination": "/guides.html" },
-    { "source": "/news", "destination": "/news.html" },
-    { "source": "/about", "destination": "/about.html" },
-    { "source": "/how-we-rate", "destination": "/how-we-rate.html" },
-    { "source": "/privacy", "destination": "/privacy.html" },
-    { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/contact", "destination": "/contact.html" },
     {
       "source": "/((?!assets/|components/).+)",
       "destination": "/api"

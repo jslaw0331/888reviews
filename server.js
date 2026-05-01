@@ -339,15 +339,17 @@ app.get('/api/:endpoint', async (req, res) => {
     }
 });
 
-// Static site: same origin as /api so one `npm start` serves pages + proxy
+// Static site: same origin as /api so one `npm start` serves pages + proxy.
+// On Vercel, express.static is ignored — files must live in public/ for CDN serving.
+const PUBLIC_DIR = path.join(__dirname, 'public');
 const ASSETS_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 app.use(
     '/assets',
-    express.static(path.join(__dirname, 'assets'), { maxAge: ASSETS_MAX_AGE_MS }),
+    express.static(path.join(PUBLIC_DIR, 'assets'), { maxAge: ASSETS_MAX_AGE_MS }),
 );
 app.use(
     '/components',
-    express.static(path.join(__dirname, 'public', 'components'), {
+    express.static(path.join(PUBLIC_DIR, 'components'), {
         maxAge: 3600 * 1000,
         setHeaders: (res) => {
             res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
@@ -361,7 +363,7 @@ app.get('/casino/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, __dirname, 'casino', raw, sitePublicOrigin(req));
+    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'casino', raw, sitePublicOrigin(req));
 });
 
 app.get('/review.html', (req, res) => {
@@ -370,7 +372,7 @@ app.get('/review.html', (req, res) => {
         res.redirect(301, `/casino/${encodeURIComponent(String(slug))}`);
         return;
     }
-    res.sendFile(path.join(__dirname, 'review.html'));
+    res.sendFile(path.join(PUBLIC_DIR, 'review.html'));
 });
 
 app.get('/provider/:slug', (req, res) => {
@@ -379,7 +381,7 @@ app.get('/provider/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, __dirname, 'provider', raw, sitePublicOrigin(req));
+    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'provider', raw, sitePublicOrigin(req));
 });
 
 app.get('/slot/:slug', (req, res) => {
@@ -388,7 +390,7 @@ app.get('/slot/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, __dirname, 'slot', raw, sitePublicOrigin(req));
+    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'slot', raw, sitePublicOrigin(req));
 });
 
 app.get('/bonus/:slug', (req, res) => {
@@ -397,7 +399,7 @@ app.get('/bonus/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, __dirname, 'bonus', raw, sitePublicOrigin(req));
+    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'bonus', raw, sitePublicOrigin(req));
 });
 
 /** Guide / strategy article (Strapi `posts`); legacy `post.html?slug=` → `/guide/:slug`. */
@@ -407,7 +409,7 @@ app.get('/guide/:slug', (req, res) => {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, __dirname, 'guide', raw, sitePublicOrigin(req));
+    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'guide', raw, sitePublicOrigin(req));
 });
 
 app.get('/post.html', (req, res) => {
@@ -425,7 +427,7 @@ app.get('/provider.html', (req, res) => {
         res.redirect(301, `/provider/${encodeURIComponent(String(slug))}`);
         return;
     }
-    res.sendFile(path.join(__dirname, 'provider.html'));
+    res.sendFile(path.join(PUBLIC_DIR, 'provider.html'));
 });
 
 app.get('/slot.html', (req, res) => {
@@ -434,11 +436,11 @@ app.get('/slot.html', (req, res) => {
         res.redirect(301, `/slot/${encodeURIComponent(String(slug))}`);
         return;
     }
-    res.sendFile(path.join(__dirname, 'slot.html'));
+    res.sendFile(path.join(PUBLIC_DIR, 'slot.html'));
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 app.get('/index.html', (req, res) => {
     res.redirect(301, '/');
@@ -446,7 +448,7 @@ app.get('/index.html', (req, res) => {
 ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
     const pretty = `/${name.replace(/\.html$/, '')}`;
     app.get(pretty, (req, res) => {
-        res.sendFile(path.join(__dirname, name));
+        res.sendFile(path.join(PUBLIC_DIR, name));
     });
     app.get(`/${name}`, (req, res) => {
         res.redirect(301, pretty);
