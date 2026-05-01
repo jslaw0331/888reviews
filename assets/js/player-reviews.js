@@ -306,7 +306,7 @@
                 attemptIndex += 1;
                 try {
                     const url = `${API_BASE}/api/${endpoint}?${qs}`;
-                    const res = await fetch(url, { cache: 'no-store' });
+                    const res = await fetch(url);
                     if (res.ok) {
                         const json = await res.json();
                         if (json && Array.isArray(json.data)) {

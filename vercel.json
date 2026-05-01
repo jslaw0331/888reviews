@@ -1,15 +1,27 @@
 {
-  "version": 2,
   "functions": {
-    "api/index.js": {
-      "includeFiles": "{*.html,server-seo.js}",
+    "server.js": {
       "maxDuration": 60
     }
   },
-  "rewrites": [
+  "headers": [
     {
-      "source": "/((?!assets/|components/).*)",
-      "destination": "/api"
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000"
+        }
+      ]
+    },
+    {
+      "source": "/components/(.*)\\.(html|js)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
     }
   ]
 }

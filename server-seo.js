@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { getStrapiAxiosTimeoutMs } = require('./server-http-config');
 
 const templateCache = new Map();
 
@@ -163,10 +164,11 @@ async function strapiFetchJson(pathAfterApi) {
     }
     const root = String(base).replace(/\/$/, '');
     const url = `${root}/api/${pathAfterApi}`;
+    const timeout = getStrapiAxiosTimeoutMs();
     try {
         const response = await axios.get(url, {
             headers: { Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}` },
-            timeout: 20000,
+            timeout,
             validateStatus: () => true,
         });
         if (response.status >= 400) {
@@ -266,17 +268,24 @@ async function collectSitemapUrlLines(req, escapeXml, sitePublicOrigin) {
         ['posts', '/guide/'],
     ];
 
-    for (const [endpoint, prefix] of detailDefs) {
-        try {
-            const slugs = await fetchAllSlugsForEndpoint(endpoint);
-            for (const s of slugs) {
-                const loc = `${base}${prefix}${encodeURIComponent(s)}`;
-                lines.push(
-                    `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-                );
+    const slugResults = await Promise.all(
+        detailDefs.map(async ([endpoint, prefix]) => {
+            try {
+                const slugs = await fetchAllSlugsForEndpoint(endpoint);
+                return { prefix, slugs };
+            } catch (e) {
+                console.warn('[sitemap] skip endpoint', endpoint, e.message);
+                return { prefix, slugs: [] };
             }
-        } catch (e) {
-            console.warn('[sitemap] skip endpoint', endpoint, e.message);
+        }),
+    );
+
+    for (const { prefix, slugs } of slugResults) {
+        for (const s of slugs) {
+            const loc = `${base}${prefix}${encodeURIComponent(s)}`;
+            lines.push(
+                `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+            );
         }
     }
 

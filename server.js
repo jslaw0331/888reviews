@@ -4,8 +4,15 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const serverSeo = require('./server-seo');
+const {
+    getStrapiAxiosTimeoutMs,
+    API_PROXY_CACHE_CONTROL,
+    API_CONFIG_CACHE_CONTROL,
+    SITEMAP_CACHE_CONTROL,
+} = require('./server-http-config');
 
 const app = express();
+const STRAPI_HTTP_MS = getStrapiAxiosTimeoutMs();
 const PORT = process.env.PORT || 3000;
 
 /**
@@ -61,6 +68,7 @@ app.get('/sitemap.xml', async (req, res) => {
         const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
             '\n',
         )}\n</urlset>\n`;
+        res.setHeader('Cache-Control', SITEMAP_CACHE_CONTROL);
         res.type('application/xml');
         res.send(body);
     } catch (e) {
@@ -88,6 +96,7 @@ app.get('/sitemap.xml', async (req, res) => {
         const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
             '\n',
         )}\n</urlset>\n`;
+        res.setHeader('Cache-Control', SITEMAP_CACHE_CONTROL);
         res.type('application/xml').send(body);
     }
 });
@@ -167,7 +176,7 @@ app.get(/^\/uploads\/.+/, async (req, res) => {
         const tryStream = (headers) =>
             axios.get(targetUrl, {
                 responseType: 'stream',
-                timeout: 60000,
+                timeout: STRAPI_HTTP_MS,
                 validateStatus: () => true,
                 headers,
             });
@@ -195,6 +204,7 @@ app.get(/^\/uploads\/.+/, async (req, res) => {
 
 /** Public Strapi base URL for resolving /uploads/... in the browser (no secrets). Must be before /api/:endpoint. */
 app.get('/api/config', (req, res) => {
+    res.setHeader('Cache-Control', API_CONFIG_CACHE_CONTROL);
     res.json({
         strapiPublicUrl: (process.env.STRAPI_API_URL || '').replace(/\/$/, ''),
     });
@@ -243,7 +253,7 @@ app.get('/api/media-proxy', async (req, res) => {
     try {
         const response = await axios.get(targetUrl, {
             responseType: 'stream',
-            timeout: 60000,
+            timeout: STRAPI_HTTP_MS,
             validateStatus: () => true,
             headers: {
                 'User-Agent': '888reviews-media-proxy/1.0',
@@ -293,9 +303,10 @@ app.get('/api/:endpoint', async (req, res) => {
             headers: {
                 Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
             },
-            timeout: 60000,
+            timeout: STRAPI_HTTP_MS,
         });
 
+        res.setHeader('Cache-Control', API_PROXY_CACHE_CONTROL);
         // Send the Strapi data back to your local vanilla HTML frontend
         res.json(response.data);
 
@@ -325,8 +336,20 @@ app.get('/api/:endpoint', async (req, res) => {
 });
 
 // Static site: same origin as /api so one `npm start` serves pages + proxy
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
-app.use('/components', express.static(path.join(__dirname, 'components')));
+const ASSETS_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+app.use(
+    '/assets',
+    express.static(path.join(__dirname, 'assets'), { maxAge: ASSETS_MAX_AGE_MS }),
+);
+app.use(
+    '/components',
+    express.static(path.join(__dirname, 'components'), {
+        maxAge: 3600 * 1000,
+        setHeaders: (res) => {
+            res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+        },
+    }),
+);
 
 app.get('/casino/:slug', (req, res) => {
     const raw = req.params.slug;
@@ -426,7 +449,7 @@ ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
     });
 });
 
-// Vercel runs this app via serverless (api/index.js); do not listen on a port there.
+// Vercel runs this app as a single serverless function (server.js entry); do not listen on a port there.
 if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`🛡️ Site + API proxy: http://localhost:${PORT}`);

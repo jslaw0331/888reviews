@@ -1091,7 +1091,7 @@ async function ensureStrapiPublicUrl() {
     if (window.__STRAPI_PUBLIC_URL__ !== undefined) return;
     window.__STRAPI_PUBLIC_URL__ = '';
     try {
-        const r = await fetch(`${API_URL}/api/config`, { cache: 'no-store' });
+        const r = await fetch(`${API_URL}/api/config`);
         if (!r.ok) return;
         const j = await r.json();
         const u = j.strapiPublicUrl;
@@ -2031,7 +2031,7 @@ async function fetchBonusesIndexData() {
         `populate[casino][populate]=*&populate[CoverImage][populate]=*&populate[Image][populate]=*&sort=publishedAt:desc&pagination[limit]=${BONUSES_PAGE_SIZE}`,
     ];
     for (const qs of tries) {
-        const res = await fetch(`${API_URL}/api/${BONUSES_API_COLLECTION}?${qs}`, { cache: 'no-store' });
+        const res = await fetch(`${API_URL}/api/${BONUSES_API_COLLECTION}?${qs}`);
         let json;
         try {
             json = await res.json();
@@ -2072,7 +2072,7 @@ async function fetchBonusBySlug(slug) {
     let last = { res: null, json: null };
     for (const qs of qsVariants) {
         try {
-            const res = await fetch(`${API_URL}/api/${BONUSES_API_COLLECTION}?${qs}`, { cache: 'no-store' });
+            const res = await fetch(`${API_URL}/api/${BONUSES_API_COLLECTION}?${qs}`);
             let json;
             try {
                 json = await res.json();
@@ -2093,7 +2093,6 @@ async function fetchBonusBySlug(slug) {
     try {
         const listRes = await fetch(
             `${API_URL}/api/${BONUSES_API_COLLECTION}?populate=*&sort=publishedAt:desc&pagination[limit]=${BONUSES_PAGE_SIZE}`,
-            { cache: 'no-store' },
         );
         const listJson = await listRes.json();
         last = { res: listRes, json: listJson };
@@ -2402,7 +2401,7 @@ function casinoListedPromoHasDetail(attr) {
  * `populate=*` already loads first-level relations; use collectBonusLikeObjects() for nested bonus fields.
  */
 async function fetchCasinosWithBonusPopulate(queryString) {
-    return fetch(`${API_URL}/api/casinos?${queryString}`, { cache: 'no-store' });
+    return fetch(`${API_URL}/api/casinos?${queryString}`);
 }
 
 function applyHeroLogoElement(logoEl, attr) {
@@ -2689,7 +2688,7 @@ async function loadHomeFeaturedCasino() {
         const logoEl = document.getElementById('hero-logo');
         if (logoEl && !logoEl.classList.contains('hero-logo--has-image')) {
             try {
-                const bonusRes = await fetch(`${API_URL}/api/${BONUSES_API_COLLECTION}?populate=*&pagination[limit]=50`, { cache: 'no-store' });
+                const bonusRes = await fetch(`${API_URL}/api/${BONUSES_API_COLLECTION}?populate=*&pagination[limit]=50`);
                 if (bonusRes.ok) {
                     const bonusJson = await bonusRes.json();
                     const heroSlug = firstNonEmptyAttr(heroAttr, ['Slug', 'slug', 'URLSlug', 'urlSlug']).toLowerCase();
@@ -2753,7 +2752,6 @@ async function fetchGuidesPageFallback(page, filterKey) {
         for (let i = 0; i < 40; i++) {
             const res = await fetch(
                 `${API_URL}/api/posts?populate=*&sort=publishedAt:desc&pagination[start]=${start}&pagination[limit]=${chunkLimit}`,
-                { cache: 'no-store' },
             );
             const json = await res.json();
             if (!res.ok || !json || !Array.isArray(json.data)) break;
@@ -2819,7 +2817,6 @@ async function fetchNewsPageFallback(page) {
         for (let i = 0; i < 40; i++) {
             const res = await fetch(
                 `${API_URL}/api/posts?populate=*&sort=publishedAt:desc&pagination[start]=${start}&pagination[limit]=${chunkLimit}`,
-                { cache: 'no-store' },
             );
             const json = await res.json();
             if (!res.ok || !json || !Array.isArray(json.data)) break;
@@ -3252,7 +3249,7 @@ async function fetchPostBySlug(slug) {
         for (const base of attemptsBase) {
             const qs = `${base}&${pop}`;
             try {
-                const res = await fetch(`${API_URL}/api/posts?${qs}`, { cache: 'no-store' });
+                const res = await fetch(`${API_URL}/api/posts?${qs}`);
                 const json = await res.json();
                 if (!res.ok || !json || !Array.isArray(json.data) || json.data.length === 0) continue;
                 const attr = postEntryAttr(json.data[0]);
