@@ -124,8 +124,50 @@ const ROOT_HTML = [
     'contact.html',
 ];
 
-// Enable CORS so your frontend can call this proxy
-app.use(cors());
+/**
+ * Browser CORS for `/api/*` etc. Gates who may call this Express proxy from another origin.
+ * Optional env: CORS_ORIGINS=https://a.com,https://b.com (comma-separated exact origins only).
+ */
+function defaultCorsMatchers() {
+    return [
+        'https://888reviews.com',
+        'https://www.888reviews.com',
+        'https://888reviews.vercel.app',
+        /^http:\/\/localhost(?::\d+)?$/,
+        /^http:\/\/127\.0\.0\.1(?::\d+)?$/,
+        /^https:\/\/888reviews-[a-z0-9-]+\.vercel\.app$/i,
+        /^https:\/\/[a-z0-9-]+-888reviews\.vercel\.app$/i,
+    ];
+}
+
+function corsMatchersFromEnv() {
+    const raw = process.env.CORS_ORIGINS;
+    if (!raw || !String(raw).trim()) return null;
+    return String(raw)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+function isOriginAllowedForCors(origin) {
+    if (!origin) return true;
+    const explicit = corsMatchersFromEnv();
+    const matchers = explicit && explicit.length > 0 ? explicit : defaultCorsMatchers();
+    return matchers.some((m) => (typeof m === 'string' ? m === origin : m.test(origin)));
+}
+
+app.use(
+    cors({
+        origin(origin, callback) {
+            if (isOriginAllowedForCors(origin)) {
+                callback(null, true);
+            } else {
+                callback(null, false);
+            }
+        },
+        methods: ['GET', 'HEAD', 'OPTIONS'],
+    }),
+);
 app.use(express.json());
 
 /**
