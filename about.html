@@ -7,7 +7,7 @@
     <meta name="public-base-url" content="https://888reviews.com">
     <title>About 888reviews | Independent Online Casino Reviews &amp; Editorial Mission</title>
     <meta name="description"
-        content="Who is 888reviews? Independent online casino reviews, bonus analysis, guides, and news: our mission, editorial standards, and how we help you compare licensed operators. 18+ only.">
+        content="Who is 888reviews? Independent casino reviews, bonus analysis, guides, and news—our mission and editorial standards for comparing licensed operators. 18+ only.">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://888reviews.com/about">
     <meta property="og:type" content="website">
@@ -168,9 +168,6 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
     <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/components/components.js"></script>
 </head>
 
 <body class="page-about">
@@ -367,7 +364,10 @@
     </main>
 
     <site-footer></site-footer>
-    <script src="/assets/js/script.js"></script>
+    <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/components/components.js" defer></script>
+    <script src="/assets/js/script.js" defer></script>
 </body>
 
 </html>

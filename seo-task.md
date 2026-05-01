@@ -7,7 +7,7 @@
 
 ---
 
-## STEP 1: SEO Audit (Read-Only)
+## STEP 1 — SEO Audit (Read-Only)
 
 ### 1.1 On-Page SEO
 **Audit Checklist:**
@@ -115,7 +115,7 @@ Create a prioritized report before implementation:
 
 ---
 
-## STEP 2: On-Page SEO Fixes
+## STEP 2 — On-Page SEO Fixes
 
 **Objective:** Systematically fix issues identified in Audit 1.1 & 1.2.
 
@@ -135,7 +135,7 @@ Create a prioritized report before implementation:
 
 ---
 
-## STEP 3: Content Improvements
+## STEP 3 — Content Improvements
 
 **Objective:** Enhance value and relevance (Audit 1.1).
 
@@ -154,7 +154,7 @@ Create a prioritized report before implementation:
 
 ---
 
-## STEP 4: Image Optimization
+## STEP 4 — Image Optimization
 
 **Objective:** Fix issues from Audit 1.3.
 
@@ -166,7 +166,7 @@ Create a prioritized report before implementation:
 
 ---
 
-## STEP 5: Technical SEO Enhancements
+## STEP 5 — Technical SEO Enhancements
 
 **Objective:** Fix issues from Audit 1.4.
 
@@ -185,7 +185,7 @@ Create a prioritized report before implementation:
 
 ---
 
-## STEP 6: Performance Optimization
+## STEP 6 — Performance Optimization
 
 **Objective:** Fix issues from Audit 1.5.
 
@@ -197,7 +197,7 @@ Create a prioritized report before implementation:
 
 ---
 
-## STEP 7: SCALABILITY & MAINTENANCE (New)
+## STEP 7 — SCALABILITY & MAINTENANCE (New)
 
 **Objective:** Ensure the system remains healthy as it grows.
 

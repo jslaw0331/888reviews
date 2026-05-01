@@ -7,7 +7,7 @@
     <meta name="public-base-url" content="https://888reviews.com">
     <title>Online Casino News &amp; Industry Updates | 888reviews</title>
     <meta name="description"
-        content="Read independent online casino news and industry updates: regulation, operators, game releases, and market analysis from 888reviews. Editorial briefings for informed play. Always verify facts with regulators and licensed operators.">
+        content="Casino news from 888reviews: regulation, operators, releases. Editorial briefings—verify facts with regulators before you play.">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://888reviews.com/news">
     <meta property="og:type" content="website">
@@ -15,7 +15,7 @@
     <meta property="og:locale" content="en_US">
     <meta property="og:title" content="Online Casino News &amp; Industry Updates | 888reviews">
     <meta property="og:description"
-        content="Independent casino industry news: regulation, operators, new games, and market context. Editorial coverage from 888reviews.">
+        content="Casino industry news: regulation, operators, new games, and market context—editorial coverage from 888reviews, not hype.">
     <meta property="og:url" content="https://888reviews.com/news">
     <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
     <meta name="twitter:card" content="summary_large_image">
@@ -156,9 +156,6 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
     <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/components/components.js"></script>
 </head>
 
 <body class="page-news">
@@ -354,7 +351,10 @@
     </main>
 
     <site-footer></site-footer>
-    <script src="/assets/js/script.js"></script>
+    <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/components/components.js" defer></script>
+    <script src="/assets/js/script.js" defer></script>
 </body>
 
 </html>

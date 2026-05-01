@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Lucide icons
-    lucide.createIcons();
+    // Initialize Lucide icons (script may load deferred after our UMD bundle).
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     // Filter logic removed as filters were removed from UI.
 
@@ -3104,17 +3104,72 @@ function postAuthorLine(attr) {
     return '888reviews Editorial';
 }
 
+/** Avatar URL from Strapi author / writer relation or post-level portrait fields. */
 function postAuthorAvatarUrl(attr) {
-    const keys = ['author', 'Author'];
-    for (const k of keys) {
+    const mediaKeys = [
+        'avatar',
+        'Avatar',
+        'image',
+        'Image',
+        'photo',
+        'Photo',
+        'picture',
+        'Picture',
+        'profileImage',
+        'ProfileImage',
+        'profile_photo',
+        'ProfilePhoto',
+        'headshot',
+        'Headshot',
+        'portrait',
+        'Portrait',
+    ];
+    const authorKeys = [
+        'author',
+        'Author',
+        'writtenBy',
+        'WrittenBy',
+        'writer',
+        'Writer',
+        'users_permissions_user',
+        'Users_permissions_user',
+    ];
+
+    const urlFromAttrs = (a) => {
+        if (!a || typeof a !== 'object') return '';
+        for (const mk of mediaKeys) {
+            const u = logoUrlFromMediaField(a[mk]);
+            if (u) return logoImgSrcForDisplay(u);
+        }
+        return '';
+    };
+
+    for (const k of authorKeys) {
         const raw = attr[k];
         if (raw == null) continue;
         const list = strapiRelationToAttrList(raw);
         for (const a of list) {
-            const u = logoUrlFromMediaField(a?.avatar || a?.Avatar || a?.image || a?.Image);
-            if (u) return logoImgSrcForDisplay(u);
+            const u = urlFromAttrs(a);
+            if (u) return u;
         }
     }
+
+    const direct = urlFromAttrs(attr);
+    if (direct) return direct;
+
+    const postLevelPortraitKeys = [
+        'AuthorAvatar',
+        'authorAvatar',
+        'authorPhoto',
+        'AuthorPhoto',
+        'writerAvatar',
+        'WriterAvatar',
+    ];
+    for (const pk of postLevelPortraitKeys) {
+        const u = logoUrlFromMediaField(attr[pk]);
+        if (u) return logoImgSrcForDisplay(u);
+    }
+
     const name = postAuthorLine(attr);
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
 }
@@ -3182,23 +3237,30 @@ function injectNewsItemListJsonLd(rows, pageOffset) {
 async function fetchPostBySlug(slug) {
     const raw = decodeURIComponent(String(slug)).trim();
     if (!raw) return { res: null, json: null };
-    const pop = 'populate=*&pagination[limit]=1';
-    const attempts = [
-        `filters[slug][$eqi]=${encodeURIComponent(raw)}&${pop}`,
-        `filters[slug][$eq]=${encodeURIComponent(raw)}&${pop}`,
-        `filters[Slug][$eqi]=${encodeURIComponent(raw)}&${pop}`,
-        `filters[Slug][$eq]=${encodeURIComponent(raw)}&${pop}`,
+    /* Prefer nested author media (avatar/photo); Strapi often omits these with populate=* alone. */
+    const popVariants = [
+        'populate=*&populate[author][populate]=*&pagination[limit]=1',
+        'populate=*&pagination[limit]=1',
     ];
-    for (const qs of attempts) {
-        try {
-            const res = await fetch(`${API_URL}/api/posts?${qs}`, { cache: 'no-store' });
-            const json = await res.json();
-            if (!res.ok || !json || !Array.isArray(json.data) || json.data.length === 0) continue;
-            const attr = postEntryAttr(json.data[0]);
-            if (!postCategorySlugForFilter(attr)) continue;
-            return { res, json };
-        } catch (e) {
-            console.warn('[guide post] fetch failed:', e);
+    const attemptsBase = [
+        `filters[slug][$eqi]=${encodeURIComponent(raw)}`,
+        `filters[slug][$eq]=${encodeURIComponent(raw)}`,
+        `filters[Slug][$eqi]=${encodeURIComponent(raw)}`,
+        `filters[Slug][$eq]=${encodeURIComponent(raw)}`,
+    ];
+    for (const pop of popVariants) {
+        for (const base of attemptsBase) {
+            const qs = `${base}&${pop}`;
+            try {
+                const res = await fetch(`${API_URL}/api/posts?${qs}`, { cache: 'no-store' });
+                const json = await res.json();
+                if (!res.ok || !json || !Array.isArray(json.data) || json.data.length === 0) continue;
+                const attr = postEntryAttr(json.data[0]);
+                if (!postCategorySlugForFilter(attr)) continue;
+                return { res, json };
+            } catch (e) {
+                console.warn('[guide post] fetch failed:', e);
+            }
         }
     }
     return { res: null, json: null };

@@ -6,13 +6,13 @@
     <meta name="public-base-url" content="https://888reviews.com">
     <title>Casino &amp; Slot Guides | Strategies, How-Tos &amp; Expert Tips | 888reviews</title>
     <meta name="description"
-        content="Free online casino guides and slot strategy articles: bankroll planning, bonus wagering and win caps, RTP and volatility, payments, licensing, and safer gambling. Editorial explainers—pair with our casino directory, slot reviews, and bonus listings. 18+ | Play responsibly.">
+        content="Casino guides and slot strategies: bankroll, bonuses, RTP, volatility, payments, licensing, safer play. Pair with reviews, slots, and bonuses. 18+ only.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://888reviews.com/guides">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Casino &amp; Slot Guides &amp; Strategies | 888reviews">
     <meta property="og:description"
-        content="How-to guides for online casino play and slots: mechanics, bonuses, payments, regulation, and responsible gaming—written for clarity, not hype. Browse the library and jump to ranked operators when you are ready.">
+        content="How-to guides for casino and slots: bonuses, payments, licensing, and responsible play—clear explainers, not hype. Browse the library and open reviews when ready.">
     <meta property="og:url" content="https://888reviews.com/guides">
     <meta property="og:site_name" content="888reviews">
     <meta property="og:locale" content="en_US">
@@ -21,7 +21,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Casino &amp; Slot Guides &amp; Strategies | 888reviews">
     <meta name="twitter:description"
-        content="Editorial guides and strategies for casino and slots: expert tips, payments, licensing, and responsible gaming.">
+        content="Expert casino and slot guides: strategy, payments, licensing, and responsible gaming. Pair with our reviews. 18+ only.">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -136,9 +136,6 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
     <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/components/components.js"></script>
 </head>
 <body class="page-guides">
     <site-header></site-header>
@@ -155,21 +152,24 @@
             <p class="gh-kicker"><i data-lucide="library-big" aria-hidden="true"></i> Editorial library · Research, not hype</p>
             <h1 class="gh-title" id="guides-hero-h1">Casino &amp; slot <em>guides</em>,<br><em>strategies</em> &amp; how-tos</h1>
             <p class="gh-desc">Practical articles on <strong>online casino</strong> play and <strong>slot games</strong>: bankroll discipline, bonus wagering, RTP and volatility, payments, licensing, and safer gambling. Use this hub to learn the mechanics, then cross-check every offer and rule on the operator’s site before you play.</p>
-
-            <div class="gh-filters" role="group" aria-label="Filter guides by type">
-                <button type="button" class="gh-filter-btn active" data-guides-filter="all">All</button>
-                <button type="button" class="gh-filter-btn" data-guides-filter="guide">Guides</button>
-                <button type="button" class="gh-filter-btn" data-guides-filter="strategy">Strategies</button>
-            </div>
         </section>
 
         <p id="guides-status" class="container guides-status" role="status" aria-live="polite">Loading guides…</p>
 
         <section class="guides-grid-section container reveal delay-200" aria-labelledby="guides-directory-heading">
-            <header class="guides-directory-header">
-                <h2 id="guides-directory-heading">Browse guides &amp; strategies</h2>
-                <p class="guides-directory-dek">Open any title for the full article. Filters narrow by editorial category. Content is general education only—offers, odds, and rules change, so confirm eligibility, wagering, and country restrictions on the licensed operator’s site.</p>
-            </header>
+            <div class="guides-directory-intro">
+                <header class="guides-directory-header">
+                    <h2 id="guides-directory-heading">Browse guides &amp; strategies</h2>
+                    <p class="guides-directory-dek">Open any title for the full article. Filters narrow by editorial category. Content is general education only—offers, odds, and rules change, so confirm eligibility, wagering, and country restrictions on the licensed operator’s site.</p>
+                </header>
+                <div class="guides-directory-intro__filters">
+                    <div class="gh-filters" role="group" aria-label="Filter guides by type">
+                        <button type="button" class="gh-filter-btn active" data-guides-filter="all">All</button>
+                        <button type="button" class="gh-filter-btn" data-guides-filter="guide">Guides</button>
+                        <button type="button" class="gh-filter-btn" data-guides-filter="strategy">Strategies</button>
+                    </div>
+                </div>
+            </div>
             <div class="guides-grid" id="guides-grid"></div>
             <p id="guides-empty" class="guides-empty-msg container" hidden>No guides match this filter yet. Try &ldquo;All&rdquo; or check back soon.</p>
             <nav id="guides-pagination-wrap" class="guides-pagination-wrap listing-pager container"
@@ -372,6 +372,9 @@
     </main>
 
     <site-footer></site-footer>
-    <script src="/assets/js/script.js?v=26"></script>
+    <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/components/components.js" defer></script>
+    <script src="/assets/js/script.js?v=26" defer></script>
 </body>
 </html>

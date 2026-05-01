@@ -7,7 +7,7 @@
     <meta name="public-base-url" content="https://888reviews.com">
     <title>Online Casino Reviews &amp; Directory | Compare Licensed Sites | 888reviews</title>
     <meta name="description"
-        content="Browse independent online casino reviews, bonus summaries, and payout notes. Compare licensed operators, sort by name or our editorial rank, and open full reviews before you play.">
+        content="Independent casino reviews with bonus and payout notes. Compare licensed operators by name or editorial rank—open full reviews before you deposit or play.">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://888reviews.com/casinos">
     <meta property="og:type" content="website">
@@ -15,7 +15,7 @@
     <meta property="og:locale" content="en_US">
     <meta property="og:title" content="Online Casino Reviews &amp; Directory | Compare Licensed Sites | 888reviews">
     <meta property="og:description"
-        content="Browse independent online casino reviews, bonus summaries, and payout notes. Compare licensed operators, sort by rank, and open full reviews before you play.">
+        content="Independent casino directory: bonus and payout notes, sort by rank, and full reviews before you play at licensed operators.">
     <meta property="og:url" content="https://888reviews.com/casinos">
     <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
     <meta name="twitter:card" content="summary_large_image">
@@ -33,13 +33,9 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
     <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body class="page-casinos">
-    <!-- Components -->
-    <script src="/components/components.js"></script>
     <site-header></site-header>
 
     <!-- Casino Listing Layout: DOM order = title, filters, cards (stacked). Grid on desktop = sidebar left, header+cards right. -->
@@ -256,8 +252,10 @@
 
     <!-- Footer -->
     <site-footer></site-footer>
-    <!-- All JS lives in script.js; no inline script needed -->
-    <script src="/assets/js/script.js?v=42"></script>
+    <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/components/components.js" defer></script>
+    <script src="/assets/js/script.js?v=42" defer></script>
 </body>
 
 </html>

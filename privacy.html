@@ -7,7 +7,7 @@
     <meta name="public-base-url" content="https://888reviews.com">
     <title>Privacy Policy | 888reviews | How We Handle Your Data</title>
     <meta name="description"
-        content="888reviews privacy policy: what we collect, cookies, analytics, third parties, your rights, and how we protect information when you use our casino reviews and guides.">
+        content="888reviews privacy policy: data we collect, cookies, analytics, third parties, your rights, and how we protect information on our editorial site.">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://888reviews.com/privacy">
     <meta property="og:type" content="website">
@@ -77,9 +77,6 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
     <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/components/components.js"></script>
 </head>
 
 <body class="page-privacy">
@@ -226,7 +223,10 @@
     </main>
 
     <site-footer></site-footer>
-    <script src="/assets/js/script.js"></script>
+    <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/components/components.js" defer></script>
+    <script src="/assets/js/script.js" defer></script>
 </body>
 
 </html>
