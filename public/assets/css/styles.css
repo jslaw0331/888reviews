@@ -12643,7 +12643,7 @@ body.page-guide-post {
 
 .page-guide-post .post-hero__guide-inner {
   width: 100%;
-  max-width: min(1760px, 100%);
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: clamp(1rem, 2.5vw, 1.75rem) clamp(16px, 4vw, 40px);
   box-sizing: border-box;
@@ -12826,7 +12826,7 @@ body.page-guide-post {
 }
 
 .page-guide-post .post-main-container {
-  max-width: min(1760px, 100%);
+  max-width: var(--container-max-width);
   margin-left: auto;
   margin-right: auto;
   padding-left: clamp(16px, 4vw, 40px);
@@ -13294,7 +13294,7 @@ body.page-guide-post {
 }
 
 .page-guide-post .gp-related-latest-inner {
-  max-width: min(1760px, 100%);
+  max-width: var(--container-max-width);
   padding-left: clamp(16px, 4vw, 40px);
   padding-right: clamp(16px, 4vw, 40px);
   box-sizing: border-box;
