@@ -347,7 +347,7 @@ app.use(
 );
 app.use(
     '/components',
-    express.static(path.join(__dirname, 'components'), {
+    express.static(path.join(__dirname, 'public', 'components'), {
         maxAge: 3600 * 1000,
         setHeaders: (res) => {
             res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
