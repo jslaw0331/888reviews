@@ -1,6 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
   "functions": {
-    "server.js": {
+    "api/index.js": {
       "maxDuration": 60
     }
   },
@@ -22,6 +24,12 @@
           "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
     }
   ]
 }

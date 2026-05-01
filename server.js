@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const serverSeo = require('./server-seo');
+const { restoreVercelUrlMiddleware } = require('./server-vercel-url');
 const {
     getStrapiAxiosTimeoutMs,
     API_PROXY_CACHE_CONTROL,
@@ -12,6 +13,9 @@ const {
 } = require('./server-http-config');
 
 const app = express();
+if (process.env.VERCEL) {
+    app.use(restoreVercelUrlMiddleware);
+}
 const STRAPI_HTTP_MS = getStrapiAxiosTimeoutMs();
 const PORT = process.env.PORT || 3000;
 
@@ -449,7 +453,7 @@ ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
     });
 });
 
-// Vercel runs this app as a single serverless function (server.js entry); do not listen on a port there.
+// Vercel: api/index.js re-exports this app; rewrite sends traffic to /api — see server-vercel-url.js.
 if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`🛡️ Site + API proxy: http://localhost:${PORT}`);
