@@ -96,11 +96,137 @@ function guideDetailPath(slug) {
     return `/guide/${encodeURIComponent(String(slug).trim())}`;
 }
 
+/** News article: `/news/{slug}` (same `post.html` template as guides). */
+function newsDetailPath(slug) {
+    if (!slug) return '/news';
+    return `/news/${encodeURIComponent(String(slug).trim())}`;
+}
+
 function escapeHtml(s) {
     if (s == null) return '';
     const d = document.createElement('div');
     d.textContent = String(s);
     return d.innerHTML;
+}
+
+/** Centered spinner + message for empty containers and homepage sections. */
+function loadingHtml(message = 'Loading…', extraClass = '') {
+    const mod = extraClass ? ` ${extraClass}` : '';
+    return `<div class="app-loading${mod}" role="status" aria-live="polite">
+        <div class="app-loading__spinner" aria-hidden="true"></div>
+        ${message ? `<p class="app-loading__text">${escapeHtml(message)}</p>` : ''}
+    </div>`;
+}
+
+function skeletonGridHtml(variant, count = 6) {
+    const n = Math.max(1, Math.min(12, Math.floor(Number(count)) || 6));
+    const cards = [];
+    for (let i = 0; i < n; i++) {
+        cards.push(skeletonCardHtml(variant));
+    }
+    return cards.join('');
+}
+
+function skeletonCardHtml(variant) {
+    if (variant === 'listing-card') {
+        return `<article class="app-skel app-skel--listing-card listing-card" aria-hidden="true">
+            <div class="app-skel-block app-skel-rank"></div>
+            <div class="app-skel-block app-skel-logo"></div>
+            <div class="app-skel-body">
+                <div class="app-skel-block app-skel-line--lg"></div>
+                <div class="app-skel-block app-skel-line--md"></div>
+                <div class="app-skel-block app-skel-line--sm"></div>
+            </div>
+            <div class="app-skel-actions">
+                <div class="app-skel-block app-skel-btn"></div>
+                <div class="app-skel-block app-skel-btn"></div>
+            </div>
+        </article>`;
+    }
+    if (variant === 'tier-card') {
+        return `<div class="app-skel app-skel--tier-card tier-card" aria-hidden="true">
+            <div class="app-skel-block app-skel-logo-col"></div>
+            <div class="app-skel-body">
+                <div class="app-skel-block app-skel-line--lg"></div>
+                <div class="app-skel-block app-skel-line--md"></div>
+                <div class="app-skel-block app-skel-line--sm"></div>
+                <div class="app-skel-block app-skel-line--body"></div>
+            </div>
+            <div class="app-skel-block app-skel-bonus"></div>
+        </div>`;
+    }
+    if (variant === 'slot-card') {
+        return `<div class="app-skel app-skel--slot-card slot-card" aria-hidden="true">
+            <div class="app-skel-block app-skel-media"></div>
+            <div class="app-skel-body">
+                <div class="app-skel-block app-skel-line--sub"></div>
+                <div class="app-skel-block app-skel-line--title"></div>
+                <div class="app-skel-block app-skel-line--body"></div>
+            </div>
+        </div>`;
+    }
+    if (variant === 'provider-card') {
+        return `<div class="app-skel app-skel--provider-card" aria-hidden="true">
+            <div class="app-skel-block app-skel-media"></div>
+            <div class="app-skel-body">
+                <div class="app-skel-block app-skel-line--title"></div>
+                <div class="app-skel-block app-skel-line--sub"></div>
+                <div class="app-skel-block app-skel-line--body"></div>
+            </div>
+        </div>`;
+    }
+    if (variant === 'bonus-card') {
+        return `<article class="app-skel app-skel--bonus-card bonus-card" aria-hidden="true">
+            <div class="app-skel-block app-skel-media"></div>
+            <div class="app-skel-body">
+                <div class="app-skel-block app-skel-line--title"></div>
+                <div class="app-skel-block app-skel-line--sub"></div>
+                <div class="app-skel-block app-skel-btn"></div>
+            </div>
+        </article>`;
+    }
+    if (variant === 'guide-card') {
+        return `<article class="app-skel app-skel--guide-card guide-card" aria-hidden="true">
+            <div class="app-skel-block app-skel-media"></div>
+            <div class="app-skel-body">
+                <div class="app-skel-block app-skel-line--sub"></div>
+                <div class="app-skel-block app-skel-line--title"></div>
+                <div class="app-skel-block app-skel-line--body"></div>
+            </div>
+        </article>`;
+    }
+    return loadingHtml('Loading…');
+}
+
+function setDetailPageLoading(rootEl) {
+    if (rootEl) rootEl.classList.add('detail-page--loading');
+}
+
+function clearDetailPageLoading(rootEl) {
+    if (rootEl) rootEl.classList.remove('detail-page--loading');
+}
+
+/** Which boot path to run — avoids bonus-map + homepage fetches on unrelated pages. */
+function detectBootPageType() {
+    if (document.getElementById('gp-page-root')) return 'guide-post';
+    if (document.getElementById('bonus-page-root') && document.getElementById('bd-title')) return 'bonus-detail';
+    if (document.getElementById('cr-page') && document.getElementById('cr-name')) return 'casino-review';
+    if (document.getElementById('provider-content') && document.getElementById('pv-title')) return 'provider-detail';
+    if (document.getElementById('slot-page-root') && document.getElementById('sv-title')) return 'slot-detail';
+    if (document.getElementById('casinos-listing-container')) return 'casinos-listing';
+    if (document.getElementById('slots-listing-grid')) return 'slots-listing';
+    if (document.getElementById('providers-listing-grid')) return 'providers-listing';
+    if (document.getElementById('bonuses-grid')) return 'bonuses-listing';
+    if (document.getElementById('guides-grid')) return 'guides-listing';
+    if (document.getElementById('news-grid')) return 'news-listing';
+    if (
+        document.getElementById('hero-casino-card') ||
+        document.getElementById('casinos-container') ||
+        document.getElementById('providers-container')
+    ) {
+        return 'home';
+    }
+    return 'static';
 }
 
 /**
@@ -1602,6 +1728,7 @@ document.addEventListener('site-footer-loaded', (e) => {
 async function loadCasinos() {
     const container = document.getElementById('casinos-container');
     if (!container) return;
+    container.innerHTML = skeletonGridHtml('tier-card', HOME_TIER_ONE_CASINOS_LIMIT);
     try {
         const res = await fetchCasinosWithBonusPopulate(
             `populate=*&sort=Rank:asc&pagination[limit]=${HOME_TIER_ONE_CASINOS_LIMIT}`,
@@ -1716,6 +1843,7 @@ async function loadCasinos() {
 async function loadProviders() {
     const container = document.getElementById('providers-container');
     if (!container) return;
+    container.innerHTML = skeletonGridHtml('tier-card', HOME_TOP_PROVIDERS_LIMIT);
     try {
         const res = await fetch(
             `${API_URL}/api/providers?populate=*&sort=Rank:asc&pagination[limit]=${HOME_TOP_PROVIDERS_LIMIT}`
@@ -2480,7 +2608,8 @@ function applySimpleHeroFromAttr(attr) {
         if (hasPromo) {
             const labelLine = casinoBonusLabelDisplay(attr) || 'Welcome offer';
             if (labelEl) labelEl.textContent = labelLine.toUpperCase();
-            headlineEl.textContent = name ? `${name} Welcome Bonus` : 'Welcome Bonus';
+            const amt = String(casinoBonusAmountDisplay(attr) || '').trim();
+            headlineEl.textContent = amt || 'Welcome bonus';
         } else {
             if (labelEl) labelEl.textContent = 'FEATURED CASINO';
             headlineEl.textContent = name || 'Featured operator';
@@ -2504,7 +2633,8 @@ function applySimpleHeroFromAttr(attr) {
     try {
         if (amountEl) {
             const amt = String(casinoBonusAmountDisplay(attr) || '').trim();
-            if (amt && hasPromo) {
+            const headlineText = (headlineEl?.textContent || '').trim();
+            if (amt && hasPromo && amt !== headlineText) {
                 amountEl.textContent = amt;
                 amountEl.hidden = false;
             } else {
@@ -2551,6 +2681,54 @@ function applySidebarBrandLogo(logoWrap, logoImg, nameEl, attr) {
     }
 }
 
+/** Wager / min-deposit chips for verdict bonus sidebar. */
+function bonusPromoMetaParts(attr) {
+    if (!attr) return [];
+    const indexed = bonusFromSlugMapForCasino(attr);
+    const sources = [indexed, ...collectBonusLikeObjects(attr), attr].filter(Boolean);
+    let wager = '';
+    let minDep = '';
+    for (const s of sources) {
+        if (!wager) {
+            wager = firstNonEmptyAttr(s, [
+                'WageringRequirement',
+                'Wagering',
+                'WagerRequirement',
+                'Playthrough',
+                'Wager',
+            ]);
+        }
+        if (!minDep) {
+            minDep = firstNonEmptyAttr(s, ['MinDeposit', 'MinimumDeposit', 'MinDep']);
+        }
+        if (wager && minDep) break;
+    }
+    const parts = [];
+    if (wager) parts.push(wager);
+    if (minDep) parts.push(`Min ${minDep}`);
+    return parts;
+}
+
+function bonusSidebarLinesRedundant(label, amount, casinoName) {
+    const l = String(label || '').trim().toLowerCase();
+    const a = String(amount || '').trim().toLowerCase();
+    if (!l || !a) return false;
+    if (l === a) return true;
+    if (a.includes(l) || l.includes(a)) return true;
+    const n = String(casinoName || '').trim().toLowerCase();
+    if (n && l.includes(n) && (a.includes(n) || a.includes('welcome') || a.includes('bonus'))) {
+        return true;
+    }
+    return false;
+}
+
+function bonusDetailHrefForCasino(attr) {
+    const indexed = bonusFromSlugMapForCasino(attr);
+    if (!indexed) return '';
+    const slug = firstNonEmptyAttr(indexed, ['Slug', 'slug']);
+    return slug ? bonusDetailPath(slug) : '';
+}
+
 /**
  * Sticky welcome-offer card (logo, bonus lines, visit CTA) beside Expert Verdict.
  * @param {string} asideId e.g. cr-verdict-bonus-sidebar
@@ -2572,7 +2750,9 @@ function applyBonusSidebarSlot(asideId, prefix, attr, bonusTag, bonusAmt, bonusD
 
     const nameEl = document.getElementById(`${prefix}-name`);
     const labelEl = document.getElementById(`${prefix}-label`);
+    const metaEl = document.getElementById(`${prefix}-meta`);
     const termsEl = document.getElementById(`${prefix}-terms`);
+    const detailEl = document.getElementById(`${prefix}-detail`);
 
     if (nameEl) {
         applySidebarBrandLogo(
@@ -2582,17 +2762,52 @@ function applyBonusSidebarSlot(asideId, prefix, attr, bonusTag, bonusAmt, bonusD
             attr,
         );
     }
+    const casinoName = String(attr.Name || '').trim();
+    const amountText = String(bonusAmt || '').trim();
+    amountEl.textContent = amountText;
+    amountEl.hidden = !amountText;
+
     if (labelEl) {
-        const line =
-            String(bonusTag || '').trim() || casinoBonusLabelDisplay(attr);
+        let line = String(bonusTag || '').trim() || casinoBonusLabelDisplay(attr);
+        if (bonusSidebarLinesRedundant(line, amountText, casinoName)) {
+            line = '';
+        }
+        if (!line && amountText) {
+            line = 'Welcome offer';
+        }
         labelEl.textContent = line;
         labelEl.hidden = !line;
     }
-    amountEl.textContent = String(bonusAmt || '').trim();
-    amountEl.hidden = !amountEl.textContent;
+
+    if (metaEl) {
+        const chips = bonusPromoMetaParts(attr);
+        if (chips.length) {
+            metaEl.innerHTML = chips
+                .map((c) => `<li class="cr-verdict-bonus-sidebar__chip">${escapeHtml(c)}</li>`)
+                .join('');
+            metaEl.hidden = false;
+            metaEl.removeAttribute('hidden');
+        } else {
+            metaEl.innerHTML = '';
+            metaEl.hidden = true;
+            metaEl.setAttribute('hidden', '');
+        }
+    }
+
     if (termsEl) {
-        termsEl.textContent = terms || '';
-        termsEl.hidden = !termsEl.textContent.trim();
+        termsEl.textContent = 'T&Cs apply · 18+';
+        termsEl.hidden = false;
+    }
+
+    if (detailEl) {
+        const detailHref = bonusDetailHrefForCasino(attr);
+        if (detailHref) {
+            detailEl.href = detailHref;
+            detailEl.hidden = false;
+        } else {
+            detailEl.removeAttribute('href');
+            detailEl.hidden = true;
+        }
     }
 
     ctaEl.href = casinoVisitSiteHref(attr);
@@ -2744,24 +2959,42 @@ const GUIDES_PAGE_SIZE = 6;
 const GUIDES_PLACEHOLDER_IMAGE =
     'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=1000&auto=format&fit=crop';
 
+/** Strapi often 400s on `filters[slug]` for posts; chunk unfiltered list instead. */
+async function fetchAllPostsChunked() {
+    const chunkLimit = 100;
+    let allData = [];
+    let start = 0;
+    for (let i = 0; i < 40; i++) {
+        const res = await fetch(
+            `${API_URL}/api/posts?populate=*&sort=publishedAt:desc&pagination[start]=${start}&pagination[limit]=${chunkLimit}`,
+        );
+        const json = await res.json();
+        if (!res.ok || !json || !Array.isArray(json.data)) {
+            throw new Error(`posts list failed (${res.status})`);
+        }
+        const batch = json.data;
+        if (batch.length === 0) break;
+        allData.push(...batch);
+        const total = json.meta?.pagination?.total;
+        start += batch.length;
+        if (typeof total === 'number' && start >= total) break;
+    }
+    return allData;
+}
+
+function findPostRowBySlug(rows, slug) {
+    const want = decodeURIComponent(String(slug)).trim().toLowerCase();
+    if (!want || !Array.isArray(rows)) return null;
+    for (const row of rows) {
+        const s = postSlugValue(postEntryAttr(row)).toLowerCase();
+        if (s === want) return row;
+    }
+    return null;
+}
+
 async function fetchGuidesPageFallback(page, filterKey) {
     try {
-        const chunkLimit = 100;
-        let allData = [];
-        let start = 0;
-        for (let i = 0; i < 40; i++) {
-            const res = await fetch(
-                `${API_URL}/api/posts?populate=*&sort=publishedAt:desc&pagination[start]=${start}&pagination[limit]=${chunkLimit}`,
-            );
-            const json = await res.json();
-            if (!res.ok || !json || !Array.isArray(json.data)) break;
-            const batch = json.data;
-            if (batch.length === 0) break;
-            allData.push(...batch);
-            const total = json.meta?.pagination?.total;
-            start += batch.length;
-            if (typeof total === 'number' && start >= total) break;
-        }
+        const allData = await fetchAllPostsChunked();
         if (allData.length === 0) {
             return {
                 rows: [],
@@ -2811,22 +3044,7 @@ async function fetchGuidesPage(page, filterKey) {
 async function fetchNewsPageFallback(page) {
     const p = Math.max(1, Math.floor(Number(page)) || 1);
     try {
-        const chunkLimit = 100;
-        let allData = [];
-        let start = 0;
-        for (let i = 0; i < 40; i++) {
-            const res = await fetch(
-                `${API_URL}/api/posts?populate=*&sort=publishedAt:desc&pagination[start]=${start}&pagination[limit]=${chunkLimit}`,
-            );
-            const json = await res.json();
-            if (!res.ok || !json || !Array.isArray(json.data)) break;
-            const batch = json.data;
-            if (batch.length === 0) break;
-            allData.push(...batch);
-            const total = json.meta?.pagination?.total;
-            start += batch.length;
-            if (typeof total === 'number' && start >= total) break;
-        }
+        const allData = await fetchAllPostsChunked();
         if (allData.length === 0) {
             return {
                 rows: [],
@@ -2870,10 +3088,12 @@ function postEntryAttr(entry) {
 }
 
 function postSlugValue(attr) {
-    return String(firstNonEmptyAttr(attr, ['slug', 'Slug']) || '').trim();
+    return String(firstNonEmptyAttr(attr, ['slug', 'Slug', 'URLSlug', 'urlSlug']) || '').trim();
 }
 
-function postDetailHref(slug) {
+function postDetailHref(slug, category) {
+    const cat = String(category || '').trim().toLowerCase();
+    if (cat === 'news') return newsDetailPath(slug);
     return guideDetailPath(slug);
 }
 
@@ -3211,7 +3431,7 @@ function injectNewsItemListJsonLd(rows, pageOffset) {
         const a = postEntryAttr(row);
         const slug = postSlugValue(a);
         const title = postTitlePlain(a);
-        const url = slug ? `${origin}${guideDetailPath(slug)}` : `${origin}/news`;
+        const url = slug ? `${origin}${newsDetailPath(slug)}` : `${origin}/news`;
         return {
             '@type': 'ListItem',
             position: base + i + 1,
@@ -3231,48 +3451,59 @@ function injectNewsItemListJsonLd(rows, pageOffset) {
     document.head.appendChild(script);
 }
 
-async function fetchPostBySlug(slug) {
+async function fetchPostBySlug(slug, allowedCategories = ['guide', 'strategy']) {
     const raw = decodeURIComponent(String(slug)).trim();
     if (!raw) return { res: null, json: null };
-    /* Prefer nested author media (avatar/photo); Strapi often omits these with populate=* alone. */
-    const popVariants = [
-        'populate=*&populate[author][populate]=*&pagination[limit]=1',
-        'populate=*&pagination[limit]=1',
+    const allowed = new Set(allowedCategories);
+    const slugQueries = [
+        `filters[Slug][$eqi]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1`,
+        `filters[Slug][$eq]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1`,
     ];
-    const attemptsBase = [
-        `filters[slug][$eqi]=${encodeURIComponent(raw)}`,
-        `filters[slug][$eq]=${encodeURIComponent(raw)}`,
-        `filters[Slug][$eqi]=${encodeURIComponent(raw)}`,
-        `filters[Slug][$eq]=${encodeURIComponent(raw)}`,
-    ];
-    for (const pop of popVariants) {
-        for (const base of attemptsBase) {
-            const qs = `${base}&${pop}`;
-            try {
-                const res = await fetch(`${API_URL}/api/posts?${qs}`);
-                const json = await res.json();
-                if (!res.ok || !json || !Array.isArray(json.data) || json.data.length === 0) continue;
-                const attr = postEntryAttr(json.data[0]);
-                if (!postCategorySlugForFilter(attr)) continue;
-                return { res, json };
-            } catch (e) {
-                console.warn('[guide post] fetch failed:', e);
-            }
+
+    for (const qs of slugQueries) {
+        try {
+            const res = await fetch(`${API_URL}/api/posts?${qs}`);
+            const json = await res.json();
+            if (!res.ok || !json || !Array.isArray(json.data) || json.data.length === 0) continue;
+            const attr = postEntryAttr(json.data[0]);
+            const cat = postCategorySlugForFilter(attr);
+            if (!allowed.has(cat)) continue;
+            return { res, json };
+        } catch (e) {
+            console.warn('[post detail] slug fetch failed:', e);
         }
     }
-    return { res: null, json: null };
+
+    try {
+        const rows = await fetchAllPostsChunked();
+        const hit = findPostRowBySlug(rows, raw);
+        if (!hit) return { res: null, json: null };
+        const attr = postEntryAttr(hit);
+        const cat = postCategorySlugForFilter(attr);
+        if (!allowed.has(cat)) return { res: null, json: null };
+        return { res: { ok: true, status: 200 }, json: { data: [hit] } };
+    } catch (e) {
+        console.warn('[post detail] chunked fetch failed:', e);
+        return { res: null, json: null };
+    }
 }
 
-function showGuidePostError() {
+function showGuidePostError(isNewsPage) {
     const err = document.getElementById('gp-error');
     const root = document.getElementById('gp-page-root');
     if (err) err.hidden = false;
     if (root) root.style.display = 'none';
-    document.title = 'Guide not found | 888reviews';
+    const textEl = err?.querySelector('.bonus-detail-error__text');
+    if (textEl) {
+        textEl.textContent = isNewsPage
+            ? 'We could not load this article.'
+            : 'We could not load this guide.';
+    }
+    document.title = isNewsPage ? 'Article not found | 888reviews' : 'Guide not found | 888reviews';
 }
 
 function setGuideCanonicalAndOg(attr, slug, pageTitle, seoDesc) {
-    const path = `/guide/${encodeURIComponent(String(slug).trim())}`;
+    const path = postDetailHref(slug, postCategorySlugForFilter(attr));
     const abs = `${getPublicSiteOrigin()}${path}`;
     const canonical = document.getElementById('gp-canonical');
     const ogUrl = document.getElementById('gp-og-url');
@@ -3383,29 +3614,37 @@ function populateGuidePostPage(attr, slug) {
 async function initGuidePostPage() {
     if (!document.getElementById('gp-page-root')) return null;
 
-    const slugFromPath = window.location.pathname.match(/^\/guide\/([^/]+)\/?$/);
+    const guideMatch = window.location.pathname.match(/^\/guide\/([^/]+)\/?$/);
+    const newsMatch = window.location.pathname.match(/^\/news\/([^/]+)\/?$/);
+    const slugFromPath = guideMatch || newsMatch;
+    const isNewsPage = !!newsMatch;
+    const allowedCategories = isNewsPage ? ['news'] : ['guide', 'strategy'];
     const slug = slugFromPath
         ? decodeURIComponent(slugFromPath[1])
         : new URLSearchParams(window.location.search).get('slug');
 
     if (!slug) {
-        showGuidePostError();
+        showGuidePostError(isNewsPage);
         return null;
     }
 
+    const rootEl = document.getElementById('gp-page-root');
+    setDetailPageLoading(rootEl);
     try {
-        const { res, json } = await fetchPostBySlug(slug);
+        const { res, json } = await fetchPostBySlug(slug, allowedCategories);
         if (!res || !res.ok || !json || !json.data || json.data.length === 0) {
-            showGuidePostError();
+            showGuidePostError(isNewsPage);
             return null;
         }
         const attr = postEntryAttr(json.data[0]);
         populateGuidePostPage(attr, slug);
         return attr;
     } catch (e) {
-        console.error('[guide post]', e);
-        showGuidePostError();
+        console.error('[post detail]', e);
+        showGuidePostError(isNewsPage);
         return null;
+    } finally {
+        clearDetailPageLoading(rootEl);
     }
 }
 
@@ -3423,6 +3662,8 @@ function initGuidesPage() {
     const pageGoBtn = document.getElementById('guides-page-go');
     const pageTotalHint = document.getElementById('guides-page-total-hint');
     if (!grid || !statusEl) return;
+    statusEl.hidden = true;
+    grid.innerHTML = skeletonGridHtml('guide-card', 6);
 
     let currentPage = 1;
     try {
@@ -3519,8 +3760,8 @@ function initGuidesPage() {
     }
 
     async function loadAndRender() {
-        statusEl.hidden = false;
-        statusEl.textContent = 'Loading guides…';
+        statusEl.hidden = true;
+        grid.innerHTML = skeletonGridHtml('guide-card', 6);
         if (wrap) wrap.style.display = 'none';
         try {
             let { rows, meta } = await fetchGuidesPage(currentPage, currentFilter);
@@ -3634,6 +3875,8 @@ function initNewsPage() {
     const pageGoBtn = document.getElementById('news-page-go');
     const pageTotalHint = document.getElementById('news-page-total-hint');
     if (!grid || !statusEl) return;
+    statusEl.hidden = true;
+    grid.innerHTML = skeletonGridHtml('guide-card', 6);
 
     let currentPage = 1;
     try {
@@ -3684,7 +3927,7 @@ function initNewsPage() {
         const title = escapeHtml(postTitlePlain(attr));
         const excerpt = escapeHtml(postExcerptPlain(attr));
         const slug = postSlugValue(attr);
-        const href = escapeHtml(postDetailHref(slug));
+        const href = escapeHtml(postDetailHref(slug, 'news'));
         const img = postCoverImageUrl(attr) || GUIDES_PLACEHOLDER_IMAGE;
         const cat = escapeHtml(postCategoryDisplayLabel(attr));
         const mins = postReadingMinutes(attr);
@@ -3719,8 +3962,8 @@ function initNewsPage() {
     }
 
     async function loadAndRender() {
-        statusEl.hidden = false;
-        statusEl.textContent = 'Loading headlines…';
+        statusEl.hidden = true;
+        grid.innerHTML = skeletonGridHtml('guide-card', 6);
         if (wrap) wrap.style.display = 'none';
         try {
             let { rows, meta } = await fetchNewsPage(currentPage);
@@ -3959,14 +4202,6 @@ function applyBonusLinkButton(el, href) {
     }
 }
 
-function bonusCardCodeLabel(attr) {
-    const raw = firstNonEmptyAttr(attr, ['BonusCode', 'bonusCode', 'PromoCode']);
-    if (!raw || String(raw).trim() === '') return 'NO CODE REQUIRED';
-    const s = String(raw).trim();
-    if (/^no\s*code/i.test(s)) return 'NO CODE REQUIRED';
-    return `CODE: ${s.toUpperCase().slice(0, 28)}`;
-}
-
 function bonusCardTrustPeriod(attr) {
     const t = attr?.publishedAt || attr?.published_at;
     if (!t) return '';
@@ -3986,7 +4221,6 @@ function renderBonusCardHtml(entry, index) {
     const title = firstNonEmptyAttr(attr, ['Title', 'Headline', 'Name', 'title']) || 'Bonus offer';
     const bonusAmount = firstNonEmptyAttr(attr, ['BonusAmount', 'bonusAmount']);
     const bonusType = firstNonEmptyAttr(attr, ['BonusType', 'bonusType']);
-    const codeLabel = bonusCardCodeLabel(attr);
     const trustPeriod = bonusCardTrustPeriod(attr);
     const wager = firstNonEmptyAttr(attr, [
         'WageringRequirement',
@@ -4018,10 +4252,6 @@ function renderBonusCardHtml(entry, index) {
     const imgSrc = imgUrl || fallbackImg;
     const logoClass = bonusImgIsLogo ? ' bc-logo-img--contain' : ' bc-logo-img--cover';
 
-    const infoBtn = detailHref
-        ? `<a href="${escapeHtml(detailHref)}" class="bc-info" aria-label="View full bonus terms and details"><i data-lucide="info"></i></a>`
-        : `<span class="bc-info bc-info--muted" aria-hidden="true"><i data-lucide="info"></i></span>`;
-
     const termsLink = detailHref
         ? `<a href="${escapeHtml(detailHref)}" class="bc-terms-link">Full terms &amp; T&amp;Cs apply</a>`
         : '';
@@ -4037,10 +4267,6 @@ function renderBonusCardHtml(entry, index) {
 
     return `
         <article class="bonus-card reveal ${delayClass}">
-            <div class="bc-header">
-                <span class="bc-code">${escapeHtml(codeLabel)}</span>
-                ${infoBtn}
-            </div>
             <div class="bc-logo-zone">
                 <div class="bc-logo-mat">
                     <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(casinoName || 'Bonus')}" class="bc-logo-img${logoClass}" loading="lazy" decoding="async" width="120" height="120">
@@ -4173,11 +4399,12 @@ function wireBonusesPageControls() {
 function initBonusesPage() {
     const grid = document.getElementById('bonuses-grid');
     if (!grid) return;
+    grid.innerHTML = skeletonGridHtml('bonus-card', 6);
 
     wireBonusesPageControls();
 
     (async () => {
-        grid.innerHTML = '<p class="bonuses-grid-loading">Loading bonuses…</p>';
+        grid.innerHTML = skeletonGridHtml('bonus-card', 6);
         try {
             await ensureCasinoBonusSlugMap();
             bonusesPageRawList = [...(bonusesListRowsCache || [])];
@@ -4226,8 +4453,92 @@ function setBonusCanonicalAndOg(attr, slug, pageTitle, seoDesc) {
     if (ogDesc) ogDesc.setAttribute('content', (seoDesc || '').slice(0, 320));
 }
 
+function bonusEligibleUsersDisplay(attr) {
+    return (
+        firstNonEmptyAttr(attr, [
+            'EligibleUsers',
+            'Eligibility',
+            'Audience',
+            'TargetAudience',
+            'eligibleUsers',
+        ]) || 'New members'
+    );
+}
+
+function bonusProductDisplay(attr, casino) {
+    const fromBonus = firstNonEmptyAttr(attr, [
+        'Product',
+        'Products',
+        'ProductType',
+        'AppliesTo',
+        'product',
+    ]);
+    if (fromBonus) return fromBonus;
+
+    const parts = [];
+    const casinoHay = casino
+        ? `${casino.Name || ''} ${casino.Description || ''} ${casino.ProductTags || ''}`.toLowerCase()
+        : '';
+    const bonusHay = `${firstNonEmptyAttr(attr, ['Title', 'Description']) || ''}`.toLowerCase();
+    const hay = `${casinoHay} ${bonusHay}`;
+
+    if (/sportsbook|sports\s*bet|sports betting/.test(hay)) parts.push('Sportsbook');
+    if (/casino|slot|live dealer|table game/.test(hay) || (casino && casinoGameCountDisplay(casino))) {
+        parts.push('Casino');
+    }
+    return parts.length ? parts.join(' / ') : 'Sportsbook / Casino';
+}
+
+function bonusTrustChipsList(casino, bonusAttr) {
+    const chips = [];
+    const license =
+        casino &&
+        firstNonEmptyAttr(casino, ['License', 'LicenseInfo', 'GamblingLicense', 'license']);
+    if (license || casino || bonusAttr) {
+        chips.push({ icon: 'shield-check', label: 'Licensed operator' });
+    }
+
+    const mobileKeys = ['MobileFriendly', 'IsMobileFriendly', 'HasMobileApp', 'MobileApp'];
+    const hasMobile =
+        casino && mobileKeys.some((k) => casino[k] === true || String(casino[k]).toLowerCase() === 'true');
+    if (hasMobile || casino) {
+        chips.push({ icon: 'smartphone', label: 'Mobile friendly' });
+    }
+
+    const productStr = bonusProductDisplay(bonusAttr, casino).toLowerCase();
+    if (/sportsbook|sports/.test(productStr)) {
+        chips.push({ icon: 'trophy', label: 'Sportsbook' });
+    }
+    if (/casino|slot|game/.test(productStr)) {
+        chips.push({ icon: 'dice-5', label: 'Casino games' });
+    }
+
+    if (chips.length < 2) {
+        if (!chips.some((c) => /sportsbook/i.test(c.label))) {
+            chips.push({ icon: 'trophy', label: 'Sportsbook' });
+        }
+        if (!chips.some((c) => /casino/i.test(c.label))) {
+            chips.push({ icon: 'dice-5', label: 'Casino games' });
+        }
+    }
+
+    return chips.slice(0, 4);
+}
+
+function renderBonusTrustChipsHtml(casino, bonusAttr) {
+    const chips = bonusTrustChipsList(casino, bonusAttr);
+    return chips
+        .map(
+            (c) =>
+                `<li><i data-lucide="${escapeHtml(c.icon)}" aria-hidden="true"></i>${escapeHtml(c.label)}</li>`,
+        )
+        .join('');
+}
+
 function populateBonusDetailPage(attr, slug) {
     const name = firstNonEmptyAttr(attr, ['Title', 'title']) || 'Casino bonus';
+    const relatedCasino = getRelatedCasinoFromBonus(attr);
+    const casinoName = bonusRelatedCasinoName(attr) || name.split(/\s+/)[0] || 'Casino';
     const seoTitle = firstNonEmptyAttr(attr, ['SEOTitle', 'seoTitle']);
     const seoDesc =
         firstNonEmptyAttr(attr, ['SEODescription', 'seoDescription']) ||
@@ -4246,15 +4557,39 @@ function populateBonusDetailPage(attr, slug) {
     const crumb = document.getElementById('bd-crumb-current');
     if (crumb) crumb.textContent = name;
 
+    const casinoNameEl = document.getElementById('bd-casino-name');
+    if (casinoNameEl) casinoNameEl.textContent = casinoName;
+
+    const ratingEl = document.getElementById('bd-trust-rating');
+    if (ratingEl) {
+        const ratingSource = relatedCasino || attr;
+        const scoreLine = formatRatingScoreLine(ratingSource, '');
+        if (scoreLine && getCuratorScoreOutOfFive(ratingSource) != null) {
+            ratingEl.innerHTML = `${renderStars(ratingSource)}<span class="bd-brand-rating__score">${escapeHtml(scoreLine)}</span>`;
+            ratingEl.hidden = false;
+        } else {
+            ratingEl.innerHTML = '';
+            ratingEl.hidden = true;
+        }
+    }
+
+    const chipsEl = document.getElementById('bd-trust-chips');
+    if (chipsEl) {
+        chipsEl.innerHTML = renderBonusTrustChipsHtml(relatedCasino, attr);
+    }
+
     const amountLine = firstNonEmptyAttr(attr, ['BonusAmount', 'bonusAmount']) || '';
     const amountEl = document.getElementById('bd-amount');
     if (amountEl) amountEl.textContent = amountLine;
 
     const descEl = document.getElementById('bd-desc');
+    const descWrap = document.getElementById('bd-desc-wrap');
     const descPlain = firstNonEmptyAttr(attr, ['Description', 'ShortDescription']) || '';
     if (descEl) {
         descEl.textContent = descPlain;
-        descEl.style.display = descPlain ? '' : 'none';
+    }
+    if (descWrap) {
+        descWrap.hidden = !descPlain;
     }
 
     const typeEl = document.getElementById('bd-bonus-type');
@@ -4268,21 +4603,51 @@ function populateBonusDetailPage(attr, slug) {
         }
     }
 
+    const quickTypeEl = document.getElementById('bd-quick-type');
+    if (quickTypeEl) {
+        quickTypeEl.textContent = bonusType || 'Welcome bonus';
+    }
+
+    const quickEligibleEl = document.getElementById('bd-quick-eligible');
+    if (quickEligibleEl) {
+        quickEligibleEl.textContent = bonusEligibleUsersDisplay(attr);
+    }
+
+    const quickProductEl = document.getElementById('bd-quick-product');
+    if (quickProductEl) {
+        quickProductEl.textContent = bonusProductDisplay(attr, relatedCasino);
+    }
+
+    const quickTermsEl = document.getElementById('bd-quick-terms');
+    if (quickTermsEl) {
+        quickTermsEl.textContent = 'Check operator site';
+    }
+
     const titleEl = document.getElementById('bd-title');
     if (titleEl) titleEl.textContent = name;
 
     const vf = formatBonusDateDisplay(attr.ValidFrom || attr.validFrom);
     const exp = formatBonusDateDisplay(attr.ExpiryDate || attr.expiryDate);
-    const datesEl = document.getElementById('bd-dates');
-    if (datesEl) {
-        if (vf || exp) {
-            const parts = [];
-            if (vf) parts.push(`Valid from ${vf}`);
-            if (exp) parts.push(`Expires ${exp}`);
-            datesEl.textContent = parts.join(' · ');
-            datesEl.hidden = false;
+    const validFromEl = document.getElementById('bd-valid-from');
+    const validFromTextEl = document.getElementById('bd-valid-from-text');
+    const expiresEl = document.getElementById('bd-expires');
+    const expiresTextEl = document.getElementById('bd-expires-text');
+    if (validFromEl && validFromTextEl) {
+        if (vf) {
+            validFromTextEl.textContent = `Valid from ${vf}`;
+            validFromEl.hidden = false;
         } else {
-            datesEl.hidden = true;
+            validFromTextEl.textContent = '';
+            validFromEl.hidden = true;
+        }
+    }
+    if (expiresEl && expiresTextEl) {
+        if (exp) {
+            expiresTextEl.textContent = `Expires ${exp}`;
+            expiresEl.hidden = false;
+        } else {
+            expiresTextEl.textContent = '';
+            expiresEl.hidden = true;
         }
     }
 
@@ -4294,12 +4659,29 @@ function populateBonusDetailPage(attr, slug) {
     if (img && frame) {
         const src = heroUrl || fallbackHero;
         img.src = src;
-        img.alt = name;
+        img.alt = `${casinoName} logo`;
         img.hidden = false;
         const useLogo = heroIsLogo && !!heroUrl;
         frame.classList.toggle('bd-hero-frame--logo', useLogo);
         frame.classList.toggle('bd-hero-frame--cover', !useLogo);
         img.classList.toggle('bd-hero-img--logo', useLogo);
+    }
+
+    const actionLede = document.getElementById('bd-action-lede');
+    if (actionLede) {
+        actionLede.textContent = amountLine
+            ? `Claim the ${casinoName} offer through the operator’s official link. Confirm eligibility and terms before you deposit.`
+            : `Use the operator’s official link to activate this ${casinoName} offer. Confirm eligibility on their site before you deposit.`;
+    }
+
+    const ctaPrimaryLabel = document.getElementById('bd-cta-primary-label');
+    if (ctaPrimaryLabel) {
+        ctaPrimaryLabel.textContent = `Claim ${casinoName} bonus`;
+    }
+
+    const ctaReviewLabel = document.getElementById('bd-cta-review-label');
+    if (ctaReviewLabel) {
+        ctaReviewLabel.textContent = `Read full ${casinoName} review`;
     }
 
     const pubOriginBonus = getPublicSiteOrigin();
@@ -4358,7 +4740,6 @@ function populateBonusDetailPage(attr, slug) {
 
     const reviewBtn = document.getElementById('bd-cta-review');
     const sidebarReview = document.getElementById('bd-sidebar-review');
-    const relatedCasino = getRelatedCasinoFromBonus(attr);
     const cs = relatedCasino ? firstNonEmptyAttr(relatedCasino, ['Slug', 'slug']) : '';
     if (cs) {
         const reviewPath = casinoReviewPath(cs);
@@ -4400,7 +4781,7 @@ function populateBonusDetailPage(attr, slug) {
             {
                 '@type': 'ListItem',
                 position: 2,
-                name: 'Casino bonuses',
+                name: 'Casino Bonuses',
                 item: `${pub}/bonuses`,
             },
             { '@type': 'ListItem', position: 3, name: name, item: absoluteUrl },
@@ -4429,6 +4810,7 @@ async function initBonusDetailPage() {
         return;
     }
 
+    setDetailPageLoading(root);
     try {
         const { res, json } = await fetchBonusBySlug(slug);
         if (!res || !res.ok || !json || !json.data || json.data.length === 0) {
@@ -4445,6 +4827,8 @@ async function initBonusDetailPage() {
     } catch (e) {
         console.error('Failed to load bonus:', e);
         showBonusDetailError();
+    } finally {
+        clearDetailPageLoading(root);
     }
 }
 
@@ -4454,23 +4838,76 @@ async function bootApp() {
     } catch (e) {
         console.warn('Content API public URL:', e);
     }
-    try {
-        await ensureCasinoBonusSlugMap();
-    } catch (e) {
-        console.warn('Bonus / casino map:', e);
+
+    const pageType = detectBootPageType();
+
+    switch (pageType) {
+        case 'guide-post':
+            await initGuidePostPage();
+            return;
+        case 'bonus-detail':
+            await initBonusDetailPage();
+            return;
+        case 'casino-review':
+            await initReviewPage();
+            return;
+        case 'provider-detail':
+            await initProviderDetailPage();
+            return;
+        case 'slot-detail':
+            await initSlotDetailPage();
+            return;
+        case 'home':
+            await Promise.all([loadHomeFeaturedCasino(), loadCasinos(), loadProviders()]);
+            return;
+        case 'casinos-listing': {
+            const casinosEl = document.getElementById('casinos-listing-container');
+            if (casinosEl) casinosEl.innerHTML = skeletonGridHtml('listing-card', 5);
+            try {
+                await ensureCasinoBonusSlugMap();
+            } catch (e) {
+                console.warn('Bonus / casino map:', e);
+            }
+            initCasinosListingPage();
+            return;
+        }
+        case 'slots-listing': {
+            const slotsEl = document.getElementById('slots-listing-grid');
+            if (slotsEl) slotsEl.innerHTML = skeletonGridHtml('slot-card', 6);
+            initSlotsListingPage();
+            return;
+        }
+        case 'providers-listing': {
+            const providersEl = document.getElementById('providers-listing-grid');
+            if (providersEl) providersEl.innerHTML = skeletonGridHtml('provider-card', 6);
+            initProvidersListingPage();
+            return;
+        }
+        case 'bonuses-listing': {
+            const bonusesEl = document.getElementById('bonuses-grid');
+            if (bonusesEl) bonusesEl.innerHTML = skeletonGridHtml('bonus-card', 6);
+            initBonusesPage();
+            return;
+        }
+        case 'guides-listing': {
+            const guidesEl = document.getElementById('guides-grid');
+            const guidesStatus = document.getElementById('guides-status');
+            if (guidesEl) guidesEl.innerHTML = skeletonGridHtml('guide-card', 6);
+            if (guidesStatus) guidesStatus.hidden = true;
+            initGuidesPage();
+            return;
+        }
+        case 'news-listing': {
+            const newsEl = document.getElementById('news-grid');
+            const newsStatus = document.getElementById('news-status');
+            if (newsEl) newsEl.innerHTML = skeletonGridHtml('guide-card', 6);
+            if (newsStatus) newsStatus.hidden = true;
+            initNewsPage();
+            return;
+        }
+        default:
+            return;
     }
-    await Promise.all([loadHomeFeaturedCasino(), loadCasinos(), loadProviders()]);
-    initProvidersListingPage();
-    initSlotsListingPage();
-    initCasinosListingPage();
-    initBonusesPage();
-    initBonusDetailPage();
-    initReviewPage();
-    initProviderDetailPage();
-    initSlotDetailPage();
-    initGuidesPage();
-    initNewsPage();
-    await initGuidePostPage();
 }
 
 function runBootApp() {
@@ -4499,6 +4936,7 @@ function providersListingFilterQuery(filter) {
 function initProvidersListingPage() {
     const grid = document.getElementById('providers-listing-grid');
     if (!grid) return;
+    grid.innerHTML = skeletonGridHtml('provider-card', 6);
 
     let currentPage = 1;
     const pageSize = PROVIDERS_PAGE_SIZE;
@@ -4625,8 +5063,7 @@ function initProvidersListingPage() {
 
         const holdHeight = Math.max(grid.offsetHeight, 200);
         grid.style.minHeight = `${holdHeight}px`;
-        grid.innerHTML =
-            '<p style="grid-column: 1 / -1; text-align: center; padding: 48px; color: #64748b;">Loading…</p>';
+        grid.innerHTML = skeletonGridHtml('provider-card', 6);
 
         const clearListingMinHeight = () => {
             grid.style.minHeight = '';
@@ -4912,6 +5349,7 @@ function renderSlotCard(entry) {
 function initSlotsListingPage() {
     const grid = document.getElementById('slots-listing-grid');
     if (!grid) return;
+    grid.innerHTML = skeletonGridHtml('slot-card', 6);
 
     let currentPage = 1;
     const pageSize = SLOTS_PAGE_SIZE;
@@ -4976,8 +5414,7 @@ function initSlotsListingPage() {
 
         const holdHeight = Math.max(grid.offsetHeight, 200);
         grid.style.minHeight = `${holdHeight}px`;
-        grid.innerHTML =
-            '<p style="grid-column: 1 / -1; text-align: center; padding: 48px; color: #64748b;">Loading…</p>';
+        grid.innerHTML = skeletonGridHtml('slot-card', 6);
 
         const clearListingMinHeight = () => {
             grid.style.minHeight = '';
@@ -5172,12 +5609,71 @@ function initSlotsListingPage() {
 }
 
 // ============================================================
+// Casinos listing: slide-out filter drawer (tablet & mobile)
+// ============================================================
+function initCasinosListingFilterDrawer() {
+    const toggle = document.getElementById('listing-filter-toggle');
+    const drawer = document.getElementById('listing-filter-drawer');
+    const backdrop = document.getElementById('listing-filter-backdrop');
+    const closeBtn = document.getElementById('listing-filter-close');
+    if (!toggle || !drawer) return;
+
+    const mq = window.matchMedia('(max-width: 1024px)');
+
+    const setOpen = (open) => {
+        if (!mq.matches) {
+            document.body.classList.remove('listing-filter-open');
+            drawer.classList.remove('is-open');
+            drawer.removeAttribute('aria-hidden');
+            toggle.setAttribute('aria-expanded', 'false');
+            if (backdrop) backdrop.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            return;
+        }
+        document.body.classList.toggle('listing-filter-open', open);
+        drawer.classList.toggle('is-open', open);
+        drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (backdrop) {
+            backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+        }
+        document.body.style.overflow = open ? 'hidden' : '';
+    };
+
+    const closeDrawer = () => setOpen(false);
+
+    toggle.addEventListener('click', () => {
+        setOpen(!document.body.classList.contains('listing-filter-open'));
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.body.classList.contains('listing-filter-open')) {
+            closeDrawer();
+        }
+    });
+
+    const onMqChange = () => {
+        if (!mq.matches) closeDrawer();
+    };
+    if (typeof mq.addEventListener === 'function') {
+        mq.addEventListener('change', onMqChange);
+    } else if (typeof mq.addListener === 'function') {
+        mq.addListener(onMqChange);
+    }
+    window.addEventListener('resize', onMqChange);
+    setOpen(false);
+}
+
+// ============================================================
 // Casinos Listing Page: Dynamic Strapi Integration
 // Only runs when the #casinos-listing-container element exists
 // ============================================================
 function initCasinosListingPage() {
     const container = document.getElementById('casinos-listing-container');
     if (!container) return; // Not on the casinos listing page, bail out
+    container.innerHTML = skeletonGridHtml('listing-card', 5);
 
     // --- State ---
     let currentPage = 1;
@@ -5306,7 +5802,7 @@ function initCasinosListingPage() {
 
         const holdHeight = Math.max(container.offsetHeight, 200);
         container.style.minHeight = `${holdHeight}px`;
-        container.innerHTML = `<p style="text-align:center; padding: 60px; color: #64748b;">Loading…</p>`;
+        container.innerHTML = skeletonGridHtml('listing-card', currentPageSize);
 
         let qs = `populate=*&sort=${currentSort}&pagination[page]=${currentPage}&pagination[pageSize]=${currentPageSize}`;
         if (filterTierOne) qs += `&filters[IsTierOne][$eq]=true`;
@@ -5383,6 +5879,8 @@ function initCasinosListingPage() {
     const nextBtn = document.getElementById('btn-next');
     if (prevBtn) prevBtn.addEventListener('click', (e) => { e.preventDefault(); if (currentPage > 1) { currentPage--; fetchAndRender({ scrollListing: true }); } });
     if (nextBtn) nextBtn.addEventListener('click', (e) => { e.preventDefault(); currentPage++; fetchAndRender({ scrollListing: true }); });
+
+    initCasinosListingFilterDrawer();
 
     // Initial fetch
     fetchAndRender();
@@ -6030,8 +6528,15 @@ async function initReviewPage() {
         reviewWrap.dataset.casinoSlug = slug;
     }
 
+    setDetailPageLoading(reviewWrap);
     try {
-        const { res, json } = await fetchCasinoBySlugWithListFallback(slug);
+        const [, fetchResult] = await Promise.all([
+            ensureCasinoBonusSlugMap().catch((e) => {
+                console.warn('Bonus / casino map:', e);
+            }),
+            fetchCasinoBySlugWithListFallback(slug),
+        ]);
+        const { res, json } = fetchResult;
         if (!res || !res.ok) {
             console.error(res ? apiErrorMessage(res.status, json) : 'No response');
             showReviewError();
@@ -6069,6 +6574,8 @@ async function initReviewPage() {
     } catch (e) {
         console.error('Failed to load review:', e);
         showReviewError();
+    } finally {
+        clearDetailPageLoading(reviewWrap);
     }
 }
 
@@ -6088,6 +6595,7 @@ async function initProviderDetailPage() {
         return;
     }
 
+    setDetailPageLoading(mainEl);
     try {
         bindPlayerRatingHeroListener();
 
@@ -6125,6 +6633,8 @@ async function initProviderDetailPage() {
     } catch (e) {
         console.error('Failed to load provider:', e);
         showProviderError();
+    } finally {
+        clearDetailPageLoading(mainEl);
     }
 }
 
@@ -6668,6 +7178,8 @@ async function initSlotDetailPage() {
         return;
     }
 
+    const rootEl = document.getElementById('slot-page-root');
+    setDetailPageLoading(rootEl);
     try {
         const { res, json } = await fetchSlotBySlug(slug);
         if (!res || !res.ok) {
@@ -6705,6 +7217,8 @@ async function initSlotDetailPage() {
     } catch (e) {
         console.error('Failed to load slot:', e);
         showSlotError();
+    } finally {
+        clearDetailPageLoading(rootEl);
     }
 }
 

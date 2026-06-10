@@ -16,6 +16,11 @@
     const PAGE_SIZE = 5;
     const SUMMARY_PAGE_SIZE = 100;
 
+    const PR_EMPTY_TITLE = 'No reviews yet';
+    const PR_EMPTY_DEK = '';
+    const PR_ERROR_TITLE = PR_EMPTY_TITLE;
+    const PR_ERROR_DEK = PR_EMPTY_DEK;
+
     /** @type {{ id: string, label: string }[]} */
     const SORT_OPTIONS = [
         { id: 'newest', label: 'Newest' },
@@ -606,7 +611,7 @@
         }
 
         if (empty) {
-            showPrEmpty(empty, message, 'Unable to load reviews');
+            showPrEmpty(empty, message || PR_ERROR_DEK, PR_ERROR_TITLE);
         }
         if (list) list.innerHTML = '';
         if (summaryWrap) {
@@ -826,53 +831,78 @@
 
         if (!documentId && !slug && (parentNumericId == null || parentNumericId === '')) {
             console.warn('[player-reviews] render: missing slug, documentId, and parentNumericId');
-            showEmptyState(els, 'We could not load player reviews.');
+            showEmptyState(els, PR_ERROR_DEK);
             return;
         }
 
         section.hidden = false;
         section.removeAttribute('hidden');
-        hidePrEmpty(empty);
 
         let summaryData = { avg: 0, total: 0, buckets: [0, 0, 0, 0, 0] };
         let allAttrsFromSummary = [];
-        try {
-            allAttrsFromSummary = await fetchAllAttrsForSummary(parentKey, slug, documentId, parentNumericId);
-            summaryData = computeSummary(allAttrsFromSummary);
-        } catch (e) {
-            console.warn('[player-reviews] summary fetch failed:', e && e.message ? e.message : e);
-        }
-
-        renderSummaryEl(summaryData, {
-            summaryWrap,
-            avgEl,
-            starsEl,
-            totalEl,
-            barsEl,
-        });
-
-        try {
-            document.dispatchEvent(
-                new CustomEvent('player-reviews:summary', {
-                    detail: {
-                        parentKey,
-                        avg: summaryData.avg,
-                        total: summaryData.total,
-                        buckets: summaryData.buckets,
-                    },
-                }),
-            );
-        } catch (_) {
-            /* CustomEvent not supported; harmless to skip. */
-        }
-
         let currentSort = 'newest';
-        let sortedForList = sortAttrs(allAttrsFromSummary, currentSort);
+        let sortedForList = [];
         let currentPage = 1;
         let totalReviews = 0;
         let totalPages = 1;
 
+        function showNoReviewsEmpty() {
+            list.innerHTML = '';
+            showPrEmpty(empty, PR_EMPTY_DEK, PR_EMPTY_TITLE);
+            if (countEl) countEl.textContent = '';
+            syncPlayerReviewsPager(1, 1, 0);
+            injectJsonLd(parentAttr, { total: 0, avg: 0 }, []);
+            setSortToolbarVisible(false);
+        }
+
+        function dispatchSummaryEvent() {
+            try {
+                document.dispatchEvent(
+                    new CustomEvent('player-reviews:summary', {
+                        detail: {
+                            parentKey,
+                            avg: summaryData.avg,
+                            total: summaryData.total,
+                            buckets: summaryData.buckets,
+                        },
+                    }),
+                );
+            } catch (_) {
+                /* CustomEvent not supported; harmless to skip. */
+            }
+        }
+
+        async function refreshSummaryCache() {
+            try {
+                allAttrsFromSummary = await fetchAllAttrsForSummary(
+                    parentKey,
+                    slug,
+                    documentId,
+                    parentNumericId,
+                );
+                summaryData = computeSummary(allAttrsFromSummary);
+                sortedForList = sortAttrs(allAttrsFromSummary, currentSort);
+                renderSummaryEl(summaryData, {
+                    summaryWrap,
+                    avgEl,
+                    starsEl,
+                    totalEl,
+                    barsEl,
+                });
+                dispatchSummaryEvent();
+            } catch (e) {
+                console.warn('[player-reviews] summary fetch failed:', e && e.message ? e.message : e);
+            }
+        }
+
+        showNoReviewsEmpty();
+
         function finishListRender(items, page) {
+            if (!items || items.length === 0) {
+                showNoReviewsEmpty();
+                return;
+            }
+
             hidePrEmpty(empty);
             list.innerHTML = items.map(renderItem).join('');
 
@@ -888,6 +918,9 @@
 
             if (page === 1) {
                 injectJsonLd(parentAttr, summaryData, items.slice(0, 10));
+                if (allAttrsFromSummary.length === 0) {
+                    void refreshSummaryCache();
+                }
             }
 
             setSortToolbarVisible(totalReviews > 0);
@@ -900,15 +933,7 @@
                 totalReviews = allAttrsFromSummary.length;
 
                 if (totalReviews === 0) {
-                    list.innerHTML = '';
-                    showPrEmpty(
-                        empty,
-                        'No player reviews yet. Be the first to share your experience.',
-                    );
-                    if (countEl) countEl.textContent = '';
-                    syncPlayerReviewsPager(1, 1, 0);
-                    injectJsonLd(parentAttr, { total: 0, avg: 0 }, []);
-                    setSortToolbarVisible(false);
+                    showNoReviewsEmpty();
                     return;
                 }
 
@@ -933,7 +958,7 @@
                 sortQueryFor(currentSort),
             );
             if (!json || !Array.isArray(json.data)) {
-                showEmptyState(els, 'We could not load player reviews.');
+                showEmptyState(els, PR_ERROR_DEK);
                 return;
             }
 
@@ -954,16 +979,8 @@
 
             const items = json.data.map(entryToAttr).filter(Boolean);
 
-            if (totalReviews === 0 && items.length === 0) {
-                list.innerHTML = '';
-                showPrEmpty(
-                    empty,
-                    'No player reviews yet. Be the first to share your experience.',
-                );
-                if (countEl) countEl.textContent = '';
-                syncPlayerReviewsPager(1, 1, 0);
-                injectJsonLd(parentAttr, { total: 0, avg: 0 }, []);
-                setSortToolbarVisible(false);
+            if (items.length === 0) {
+                showNoReviewsEmpty();
                 return;
             }
 
@@ -1029,7 +1046,17 @@
             }
         }
 
-        await loadPage(1);
+        try {
+            await loadPage(1);
+        } catch (e) {
+            console.warn('[player-reviews] loadPage failed:', e && e.message ? e.message : e);
+            showEmptyState(els, PR_ERROR_DEK);
+            return;
+        }
+
+        if (empty && empty.hidden && list && !list.children.length) {
+            showNoReviewsEmpty();
+        }
     }
 
     window.PlayerReviews = { render };

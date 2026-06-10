@@ -14,25 +14,33 @@ class SiteHeader extends HTMLElement {
     async connectedCallback() {
         this.innerHTML = await loadComponent('/components/header.html');
         
-        // Setup Active Navigation State Dynamically (pretty URLs: /bonuses not /bonuses.html)
+        // Active nav: match hub pages and detail routes (/bonus/:slug → Bonuses, etc.)
         const currentPath = window.location.pathname;
-        const parts = currentPath.split('/').filter(Boolean);
-        const lastSeg = (parts.length ? parts[parts.length - 1] : '').replace(/\.html$/i, '');
-        const currentKey = (lastSeg || 'index').toLowerCase();
-        const hrefToKey = (href) => {
-            if (!href || href === '#') return '';
-            if (href === '/' || href === '/index.html') return 'index';
-            return href.replace(/^\//, '').replace(/\.html$/, '').toLowerCase();
+        const navMatchers = {
+            '/': (p) => p === '/' || p === '/index.html',
+            '/casinos': (p) => /^\/(casinos|casino|review)(\/|$)/.test(p),
+            '/slots': (p) => /^\/(slots|slot)(\/|$)/.test(p),
+            '/providers': (p) => /^\/(providers|provider)(\/|$)/.test(p),
+            '/bonuses': (p) => /^\/(bonuses|bonus)(\/|$)/.test(p),
+            '/guides': (p) => /^\/(guides|guide)(\/|$)/.test(p),
+            '/news': (p) => /^\/news(\/|$)/.test(p),
+        };
+        const isNavLinkActive = (href) => {
+            if (!href || href === '#') return false;
+            const match = navMatchers[href];
+            return match ? match(currentPath) : currentPath === href || currentPath.startsWith(`${href}/`);
         };
         const links = this.querySelectorAll('.main-nav a');
 
         links.forEach((link) => {
+            if (link.classList.contains('mobile-nav-cta')) return;
             const href = link.getAttribute('href');
-            const key = hrefToKey(href);
-            if (key && key === currentKey) {
-                link.classList.add('active');
+            const active = isNavLinkActive(href);
+            link.classList.toggle('active', active);
+            if (active) {
+                link.setAttribute('aria-current', 'page');
             } else {
-                link.classList.remove('active');
+                link.removeAttribute('aria-current');
             }
         });
 

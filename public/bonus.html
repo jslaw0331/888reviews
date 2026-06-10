@@ -29,7 +29,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <script type="application/ld+json" id="bd-jsonld-breadcrumb"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="preload" href="/components/header.html" as="fetch" crossorigin>
     <link rel="preload" href="/components/footer.html" as="fetch" crossorigin>
@@ -53,41 +53,105 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/bonuses" class="btn btn-primary">Browse all bonuses</a>
     </div>
 
-    <main class="bonus-detail-page" id="bonus-page-root">
-        <nav class="bd-breadcrumb container" aria-label="Breadcrumb">
-            <ol class="bd-breadcrumb__list">
-                <li><a href="/">Home</a></li>
-                <li><a href="/bonuses">Casino bonuses</a></li>
-                <li aria-current="page" id="bd-crumb-current">Loading…</li>
-            </ol>
-        </nav>
+    <main class="bonus-detail-page detail-page--loading" id="bonus-page-root">
+        <div class="bd-breadcrumb-bar">
+            <div class="container bd-breadcrumb-wrap">
+                <nav class="bd-breadcrumb" aria-label="Breadcrumb">
+                    <ol class="bd-breadcrumb__list">
+                        <li class="bd-breadcrumb__item">
+                            <a href="/" class="bd-breadcrumb__link">Home</a>
+                        </li>
+                        <li class="bd-breadcrumb__item">
+                            <a href="/bonuses" class="bd-breadcrumb__link">
+                                <span class="bd-breadcrumb__label bd-breadcrumb__label--long">Casino Bonuses</span>
+                                <span class="bd-breadcrumb__label bd-breadcrumb__label--short" aria-hidden="true">Bonuses</span>
+                            </a>
+                        </li>
+                        <li class="bd-breadcrumb__item bd-breadcrumb__item--current" aria-current="page">
+                            <span class="bd-breadcrumb__current" id="bd-crumb-current">Loading…</span>
+                        </li>
+                    </ol>
+                </nav>
+                <a href="/bonuses" class="bd-breadcrumb__back">
+                    <i data-lucide="arrow-left" aria-hidden="true"></i>
+                    <span>All bonuses</span>
+                </a>
+            </div>
+        </div>
 
-        <section class="bd-hero reveal" aria-labelledby="bd-title">
-            <div class="bd-hero-accent" aria-hidden="true"></div>
-            <div class="container bd-hero-inner">
-                <div class="bd-hero-grid">
-                    <div class="bd-hero-visual">
-                        <div class="bd-hero-frame" id="bd-visual-frame">
-                            <img src="" alt="" class="bd-hero-img" id="bd-hero-img" width="640" height="400" loading="eager" decoding="async" hidden>
+        <section class="bd-panel reveal" aria-labelledby="bd-title">
+            <div class="container">
+                <div class="bd-panel__card">
+                    <!-- Column 1: Brand trust -->
+                    <aside class="bd-col bd-col-trust" aria-label="Brand information">
+                        <div class="bd-brand-logo" id="bd-visual-frame">
+                            <img src="" alt="" class="bd-brand-img" id="bd-hero-img" width="200" height="200"
+                                loading="eager" decoding="async" hidden>
                         </div>
-                    </div>
-                    <div class="bd-hero-body">
+                        <p class="bd-brand-label">Casino bonus</p>
+                        <h2 class="bd-brand-name" id="bd-casino-name">Loading…</h2>
+                        <div class="bd-brand-rating" id="bd-trust-rating" hidden></div>
+                        <ul class="bd-trust-chips" id="bd-trust-chips" aria-label="Brand highlights"></ul>
+                    </aside>
+
+                    <!-- Column 2: Main bonus details -->
+                    <div class="bd-col bd-col-details">
                         <div class="bd-meta-row">
-                            <span class="bd-kicker">CASINO BONUS</span>
+                            <span class="bd-kicker">Casino bonus</span>
                             <span class="bd-type-pill" id="bd-bonus-type" hidden></span>
                         </div>
                         <h1 class="bd-title" id="bd-title">Loading…</h1>
-                        <p class="bd-amount-line" id="bd-amount"></p>
-                        <p class="bd-dates" id="bd-dates" hidden></p>
-                        <div class="bd-desc-wrap">
+                        <div class="bd-offer-card">
+                            <p class="bd-amount-line" id="bd-amount"></p>
+                            <div class="bd-dates-group">
+                                <p class="bd-date-row" id="bd-valid-from" hidden>
+                                    <i data-lucide="calendar" aria-hidden="true"></i>
+                                    <span id="bd-valid-from-text"></span>
+                                </p>
+                                <p class="bd-date-row" id="bd-expires" hidden>
+                                    <i data-lucide="calendar-clock" aria-hidden="true"></i>
+                                    <span id="bd-expires-text"></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="bd-desc-wrap" id="bd-desc-wrap" hidden>
                             <p class="bd-desc" id="bd-desc"></p>
                         </div>
-                        <div class="bd-actions">
-                            <a href="#" class="btn btn-primary bd-btn-primary" id="bd-cta-primary">Claim bonus</a>
-                            <a href="#" class="btn btn-outline bd-btn-secondary" id="bd-cta-review" style="display:none">Casino review</a>
-                        </div>
-                        <p class="bd-compliance">18+ | T&amp;Cs apply on the operator site | Play responsibly</p>
+                        <dl class="bd-quick-facts" aria-label="Bonus quick facts">
+                            <div class="bd-quick-fact">
+                                <dt>Bonus type</dt>
+                                <dd id="bd-quick-type">—</dd>
+                            </div>
+                            <div class="bd-quick-fact">
+                                <dt>Eligible users</dt>
+                                <dd id="bd-quick-eligible">New members</dd>
+                            </div>
+                            <div class="bd-quick-fact">
+                                <dt>Product</dt>
+                                <dd id="bd-quick-product">Sportsbook / Casino</dd>
+                            </div>
+                            <div class="bd-quick-fact">
+                                <dt>Terms</dt>
+                                <dd id="bd-quick-terms">Check operator site</dd>
+                            </div>
+                        </dl>
                     </div>
+
+                    <!-- Column 3: Action card -->
+                    <aside class="bd-col bd-col-action" aria-label="Claim this offer">
+                        <h2 class="bd-action-title">Ready to claim?</h2>
+                        <p class="bd-action-lede" id="bd-action-lede">Use the operator’s official link to activate this
+                            welcome offer.</p>
+                        <div class="bd-actions">
+                            <a href="#" class="btn btn-primary btn-block bd-btn-primary" id="bd-cta-primary"><i
+                                    data-lucide="external-link" aria-hidden="true"></i> <span
+                                    id="bd-cta-primary-label">Claim bonus</span></a>
+                            <a href="#" class="btn btn-outline btn-block bd-btn-secondary" id="bd-cta-review"
+                                style="display:none"><i data-lucide="file-text" aria-hidden="true"></i> <span
+                                    id="bd-cta-review-label">Casino review</span></a>
+                        </div>
+                        <p class="bd-compliance">18+ only · T&amp;Cs apply · Play responsibly</p>
+                    </aside>
                 </div>
             </div>
         </section>
@@ -160,6 +224,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/script.js?v=32" defer></script>
+    <script src="/assets/js/script.js?v=48" defer></script>
 </body>
 </html>

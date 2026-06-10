@@ -157,7 +157,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- Styles -->
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
@@ -185,31 +185,27 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </ol>
         </nav>
 
-        <!-- Hero: inner .container so horizontal padding is reliable (section + container on one node fought cascade) -->
-        <section class="guides-hero news-hero-brand reveal" aria-labelledby="news-hero-h1">
-            <div class="container news-hero-inner">
-                <h1 class="gh-title" id="news-hero-h1"><em>Casino News</em><br>&amp; <em>market notes</em></h1>
-                <p class="gh-desc">Independent <strong>online casino news</strong> and industry updates from 888reviews:
-                    regulation, licensed operators, game releases, and market context. Clarity for readers who want signal,
-                    not noise. Pair headlines with our <a href="/slots">slot reviews</a> or <a href="/bonuses">bonus
-                        listings</a> when you research products. Nothing here is legal or financial advice; confirm
-                    time-sensitive facts with regulators and operators.</p>
+        <section class="guides-hero container reveal" aria-labelledby="news-hero-h1">
+            <p class="gh-kicker"><i data-lucide="newspaper" aria-hidden="true"></i> Industry desk · Signal, not hype</p>
+            <h1 class="gh-title" id="news-hero-h1">Casino <em>news</em> &amp; <em>market notes</em></h1>
+            <p class="gh-desc">Stay updated with independent <strong>online casino news</strong> and clear industry insights from 888Reviews. We cover important developments in casino regulation, licensed operators, new slot game releases, bonus updates, payment trends, software providers, and wider iGaming market changes. This news hub is built for readers who want useful context instead of noise, helping you understand how industry updates may affect casino sites, slot games, promotions, and player experience. For deeper research, compare the latest stories with our <a href="/slots">slot reviews</a>, <a href="/bonuses">casino bonus listings</a>, and <a href="/casinos">online casino reviews</a>. Information may change quickly, so always confirm legal, licensing, and promotional details with official regulators and casino operators before making decisions.</p>
+            <div class="home-intro__pills hub-hero__pills" role="list">
+                <span class="home-intro__pill" role="listitem"><i data-lucide="landmark"></i> Regulation</span>
+                <span class="home-intro__pill" role="listitem"><i data-lucide="building-2"></i> Operators</span>
+                <span class="home-intro__pill" role="listitem"><i data-lucide="sparkles"></i> Product launches</span>
             </div>
         </section>
 
-        <p id="news-status" class="container bonuses-grid-loading" role="status" aria-live="polite">Loading headlines…
-        </p>
+        <p id="news-status" class="container guides-status" role="status" aria-live="polite" hidden>Loading headlines…</p>
 
         <!-- Grid: Strapi posts with category news only -->
         <section class="guides-grid-section container reveal delay-200" id="latest-coverage"
             aria-labelledby="news-directory-heading">
-            <header class="guides-directory-header">
-                <h2 id="news-directory-heading">Latest casino news &amp; industry headlines</h2>
-                <p class="guides-directory-dek">Browse editorial articles tagged <strong>news</strong> in our CMS. Open
-                    a card for the full story. For how-tos and play strategy, use our <a href="/guides">guides and
-                        strategies</a>. For licensed operator benchmarks, see <a href="/casinos">casino
-                        reviews</a>. Offers and rules change; confirm details on the operator’s site.</p>
-            </header>
+            <div class="guides-directory-intro">
+                <header class="guides-directory-header">
+                    <h2 id="news-directory-heading">Latest casino news &amp; industry headlines</h2>
+                </header>
+            </div>
             <div class="guides-grid" id="news-grid" role="list"></div>
             <p id="news-empty" class="container" hidden style="padding: 2rem 0; color: #64748b;">No news posts yet. Add
                 posts with category <strong>news</strong> in Strapi, or check back soon.</p>

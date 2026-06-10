@@ -3,11 +3,14 @@
 
 <head>
     <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-TS95HFR5');</script>
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-TS95HFR5');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,8 +31,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <title>Casino review | 888reviews</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="preload" href="/components/header.html" as="fetch" crossorigin>
@@ -42,13 +44,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <body>
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TS95HFR5"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TS95HFR5" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
     <site-header></site-header>
 
-    <main class="cr-page" id="cr-page">
+    <main class="cr-page detail-page--loading" id="cr-page">
 
         <!-- Breadcrumb -->
         <nav class="cr-breadcrumb" aria-label="Breadcrumb">
@@ -88,8 +90,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="cr-rating cr-rating--curator">
                         <span class="cr-rating-label">Our Rating</span>
                         <span class="cr-rating-value">
-                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator"
-                                aria-hidden="true"></i>
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator" aria-hidden="true"></i>
                             <strong id="cr-score">-</strong><span class="cr-rating-max">/5</span>
                             <a href="#cr-verdict-section" class="cr-rating-link">CasinoRank</a>
                         </span>
@@ -97,8 +98,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="cr-rating cr-rating--player">
                         <span class="cr-rating-label">Player Rating</span>
                         <span class="cr-rating-value">
-                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player"
-                                aria-hidden="true"></i>
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player" aria-hidden="true"></i>
                             <strong id="cr-player-score">-</strong><span class="cr-rating-max">/5</span>
                             <a href="#pr-section" class="cr-rating-link" id="cr-player-reviews-link">0 reviews</a>
                         </span>
@@ -236,11 +236,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 </div>
                                 <p class="cr-verdict-bonus-sidebar__name" id="cr-vb-name"></p>
                             </div>
-                            <p class="cr-verdict-bonus-sidebar__label" id="cr-vb-label"></p>
-                            <p class="cr-verdict-bonus-sidebar__amount" id="cr-vb-amount"></p>
-                            <p class="cr-verdict-bonus-sidebar__terms" id="cr-vb-terms"></p>
-                            <a href="#" class="cr-btn-visit cr-btn-visit--sm cr-verdict-bonus-cta" id="cr-vb-cta"><i
-                                    data-lucide="external-link"></i> Visit casino</a>
+                            <div class="cr-verdict-bonus-sidebar__offer">
+                                <p class="cr-verdict-bonus-sidebar__label" id="cr-vb-label"></p>
+                                <p class="cr-verdict-bonus-sidebar__amount" id="cr-vb-amount"></p>
+                                <ul class="cr-verdict-bonus-sidebar__chips" id="cr-vb-meta" hidden role="list"></ul>
+                            </div>
+                            <div class="cr-verdict-bonus-sidebar__actions">
+                                <a href="#" class="cr-btn-visit cr-btn-visit--sm cr-verdict-bonus-cta" id="cr-vb-cta"><i
+                                        data-lucide="external-link" aria-hidden="true"></i> Visit casino</a>
+                                <a href="#" class="cr-verdict-bonus-sidebar__detail-link" id="cr-vb-detail" hidden>Full
+                                    bonus terms <i data-lucide="arrow-right" aria-hidden="true"></i></a>
+                            </div>
+                            <p class="cr-verdict-bonus-sidebar__terms" id="cr-vb-terms">T&amp;Cs apply · 18+</p>
                         </div>
                     </aside>
                     <div class="cr-review-page__main">
@@ -267,7 +274,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             <div class="container cr-article-layout" id="cr-verdict-secondary-wrap" hidden>
                                 <div class="cr-verdict-shell cr-verdict-shell--secondary-only">
                                     <div class="cr-verdict-flow">
-                                        <section class="cr-verdict-panel cr-verdict-panel--secondary" id="cr-panel-bottom">
+                                        <section class="cr-verdict-panel cr-verdict-panel--secondary"
+                                            id="cr-panel-bottom">
                                             <h3 class="cr-verdict-panel-h">Also worth knowing</h3>
                                             <div id="cr-body-bottom"></div>
                                         </section>
@@ -314,14 +322,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                         <h3 class="cr-verdict-panel-h" id="pr-panel-heading">What players say</h3>
                                     </div>
                                     <ul class="pr-list" id="pr-list" role="list" aria-live="polite"></ul>
-                                    <div class="pr-empty" id="pr-empty" hidden>
-                                        <div class="pr-empty__inner" role="status">
-                                            <div class="pr-empty__icon-wrap" aria-hidden="true">
-                                                <i data-lucide="message-circle-plus"></i>
-                                            </div>
-                                            <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No reviews yet</p>
-                                            <p class="pr-empty__dek">No player reviews yet. Be the first to share your experience.</p>
-                                        </div>
+                                    <div class="pr-empty" id="pr-empty" role="status">
+                                        <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No
+                                            reviews yet</p>
                                     </div>
                                     <nav id="pr-pagination-wrap" class="listing-pager" style="display: none;"
                                         aria-label="Review pages">
@@ -384,8 +387,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/script.js?v=40" defer></script>
-    <script src="/assets/js/player-reviews.js?v=12" defer></script>
+    <script src="/assets/js/script.js?v=43" defer></script>
+    <script src="/assets/js/player-reviews.js?v=17" defer></script>
 </body>
 
 </html>

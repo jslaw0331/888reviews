@@ -454,6 +454,16 @@ app.get('/guide/:slug', (req, res) => {
     serverSeo.sendDetailPage(res, PUBLIC_DIR, 'guide', raw, sitePublicOrigin(req));
 });
 
+/** News article (Strapi `posts`, category news). */
+app.get('/news/:slug', (req, res) => {
+    const raw = req.params.slug;
+    if (!raw || /[/\\]|\.\./.test(raw)) {
+        res.status(404).send('Not found');
+        return;
+    }
+    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'news', raw, sitePublicOrigin(req));
+});
+
 app.get('/post.html', (req, res) => {
     const slug = req.query && req.query.slug;
     if (slug && String(slug).trim()) {

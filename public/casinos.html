@@ -3,11 +3,14 @@
 
 <head>
     <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-TS95HFR5');</script>
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-TS95HFR5');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,8 +36,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- Styles -->
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
@@ -48,29 +50,64 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <body class="page-casinos">
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TS95HFR5"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TS95HFR5" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
     <site-header></site-header>
 
-    <!-- Casino Listing Layout: DOM order = title, filters, cards (stacked). Grid on desktop = sidebar left, header+cards right. -->
-    <main class="container listing-layout">
-        <div class="listing-header-wrap reveal delay-200">
-            <div class="listing-header">
-                <h1>Online casino reviews and directory</h1>
-                <p>Compare licensed online casinos using our editorial rankings, bonus lines, payout speed labels, and
-                    game coverage notes. Each listing links to a full review. Showing <strong
-                        id="results-count">…</strong>
-                    results. When you shortlist brands, cross-check headline offers on our <a href="/bonuses">bonus
-                        digest</a> and wagering basics in our <a href="/guides">guides</a>.</p>
-            </div>
-        </div>
+    <main class="casinos-page" id="main-content">
+        <nav class="bonuses-breadcrumb container" aria-label="Breadcrumb">
+            <ol class="bonuses-breadcrumb__list">
+                <li><a href="/">Home</a></li>
+                <li aria-current="page">Casino reviews</li>
+            </ol>
+        </nav>
 
-        <!-- Sidebar Filters -->
-        <aside class="listing-sidebar reveal delay-100">
+        <section class="casinos-hero container reveal" aria-labelledby="casinos-hero-h1">
+            <div class="casinos-hero__inner">
+                <div class="casinos-hero__content reveal">
+                    <p class="gh-kicker casinos-hero__kicker"><i data-lucide="landmark" aria-hidden="true"></i> Licensed
+                        operators · Editorial reviews</p>
+                    <h1 class="casinos-hero__title" id="casinos-hero-h1">Online casino <em>reviews</em> &amp;
+                        <em>directory</em></h1>
+                    <p class="casinos-hero__desc">Compare licensed online casinos using our editorial rankings, bonus
+                        lines, payout speed labels, and game coverage notes. Each listing links to a full review. See
+                        <a href="/how-we-rate">how we rate casinos</a> for our scoring framework.</p>
+                    <div class="home-intro__pills casinos-hero__pills" role="list">
+                        <span class="home-intro__pill" role="listitem"><i data-lucide="shield-check"></i> Licensed
+                            operators only</span>
+                        <span class="home-intro__pill" role="listitem"><i data-lucide="bar-chart-3"></i> Editorial
+                            rankings</span>
+                        <span class="home-intro__pill" role="listitem"><i data-lucide="zap"></i> Payout &amp; bonus
+                            notes</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="listing-filter-toolbar container reveal delay-100" aria-label="Listing controls">
+            <button type="button" class="listing-filter-toggle" id="listing-filter-toggle" aria-expanded="false"
+                aria-controls="listing-filter-drawer">
+                <i data-lucide="sliders-horizontal" aria-hidden="true"></i>
+                <span>Filters</span>
+            </button>
+        </section>
+
+        <!-- Listing: sidebar + cards. Grid on desktop = sidebar left, cards right. -->
+        <div class="container listing-layout">
+        <div class="listing-filter-backdrop" id="listing-filter-backdrop" aria-hidden="true"></div>
+
+        <!-- Sidebar Filters (slide-out drawer on tablet & mobile) -->
+        <aside class="listing-sidebar listing-filter-drawer reveal delay-100" id="listing-filter-drawer">
             <div class="listing-filters-card">
-                <h2 class="filter-title" id="casinos-filters-heading">Filter results</h2>
+                <div class="listing-filters-card__head">
+                    <h2 class="filter-title" id="casinos-filters-heading">Filter results</h2>
+                    <button type="button" class="listing-filter-close icon-btn" id="listing-filter-close"
+                        aria-label="Close filters">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <div class="listing-filters-grid" role="group" aria-labelledby="casinos-filters-heading">
                     <div class="filter-group">
                         <h4 class="filter-heading">Tier</h4>
@@ -131,7 +168,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <section class="listing-main reveal delay-200">
             <!-- Cards Container: populated by script.js initCasinosListingPage() -->
             <div class="listing-cards" id="casinos-listing-container">
-                <p style="text-align:center; padding: 60px; color: #64748b;">Loading casinos…</p>
+                <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true"><div class="app-skel-block app-skel-rank"></div><div class="app-skel-block app-skel-logo"></div><div class="app-skel-body"><div class="app-skel-block app-skel-line--lg"></div><div class="app-skel-block app-skel-line--md"></div><div class="app-skel-block app-skel-line--sm"></div></div><div class="app-skel-actions"><div class="app-skel-block app-skel-btn"></div><div class="app-skel-block app-skel-btn"></div></div></article>
+                <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true"><div class="app-skel-block app-skel-rank"></div><div class="app-skel-block app-skel-logo"></div><div class="app-skel-body"><div class="app-skel-block app-skel-line--lg"></div><div class="app-skel-block app-skel-line--md"></div><div class="app-skel-block app-skel-line--sm"></div></div><div class="app-skel-actions"><div class="app-skel-block app-skel-btn"></div><div class="app-skel-block app-skel-btn"></div></div></article>
+                <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true"><div class="app-skel-block app-skel-rank"></div><div class="app-skel-block app-skel-logo"></div><div class="app-skel-body"><div class="app-skel-block app-skel-line--lg"></div><div class="app-skel-block app-skel-line--md"></div><div class="app-skel-block app-skel-line--sm"></div></div><div class="app-skel-actions"><div class="app-skel-block app-skel-btn"></div><div class="app-skel-block app-skel-btn"></div></div></article>
             </div>
 
             <!-- Pagination: populated by script.js renderPagination() -->
@@ -141,6 +180,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <a href="#" class="next" id="btn-next">NEXT <i data-lucide="arrow-right"></i></a>
             </div>
         </section>
+        </div>
     </main>
 
     <section class="casinos-seo" aria-labelledby="casinos-seo-heading">

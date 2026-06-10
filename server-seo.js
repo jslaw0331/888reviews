@@ -72,6 +72,14 @@ const PAGE_CONFIG = {
         descTpl: (h) =>
             `Editorial guide on 888reviews: expert notes and practical takeaways — ${h}. 18+ only. Play responsibly.`,
     },
+    news: {
+        file: 'post.html',
+        pathSeg: 'news',
+        idPrefix: 'gp',
+        titleTpl: (h) => `${h} | News | 888reviews`,
+        descTpl: (h) =>
+            `Latest news on 888reviews: industry updates and editorial coverage — ${h}. 18+ only. Play responsibly.`,
+    },
 };
 
 function readTemplate(rootDir, fileName) {

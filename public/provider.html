@@ -3,11 +3,14 @@
 
 <head>
     <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-TS95HFR5');</script>
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-TS95HFR5');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,8 +31,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <title>Provider | 888reviews</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="preload" href="/components/header.html" as="fetch" crossorigin>
@@ -42,13 +44,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <body class="page-provider-detail">
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TS95HFR5"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TS95HFR5" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
     <site-header></site-header>
 
-    <main class="provider-page" id="provider-content">
+    <main class="provider-page detail-page--loading" id="provider-content">
         <nav class="cr-breadcrumb" aria-label="Breadcrumb">
             <div class="container">
                 <ol class="cr-crumbs">
@@ -82,8 +84,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="cr-rating cr-rating--curator">
                         <span class="cr-rating-label">Our score</span>
                         <span class="cr-rating-value">
-                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator"
-                                aria-hidden="true"></i>
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--curator" aria-hidden="true"></i>
                             <strong id="pv-hero-editorial-score">-</strong><span class="cr-rating-max">/5</span>
                             <a href="#pv-facts-strip" class="cr-rating-link">Studio rank</a>
                         </span>
@@ -91,8 +92,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="cr-rating cr-rating--player">
                         <span class="cr-rating-label">Player rating</span>
                         <span class="cr-rating-value">
-                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player"
-                                aria-hidden="true"></i>
+                            <i data-lucide="star" class="cr-rating-icon cr-rating-icon--player" aria-hidden="true"></i>
                             <strong id="pv-hero-player-score">-</strong><span class="cr-rating-max">/5</span>
                             <a href="#pr-section" class="cr-rating-link" id="pv-hero-player-reviews-link">0
                                 reviews</a>
@@ -259,14 +259,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <h3 class="cr-verdict-panel-h" id="pr-panel-heading">What players say</h3>
                             </div>
                             <ul class="pr-list" id="pr-list" role="list" aria-live="polite"></ul>
-                            <div class="pr-empty" id="pr-empty" hidden>
-                                <div class="pr-empty__inner" role="status">
-                                    <div class="pr-empty__icon-wrap" aria-hidden="true">
-                                        <i data-lucide="message-circle-plus"></i>
-                                    </div>
-                                    <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No reviews yet</p>
-                                    <p class="pr-empty__dek">No player reviews yet. Be the first to share your experience.</p>
-                                </div>
+                            <div class="pr-empty" id="pr-empty" role="status">
+                                <p class="pr-empty__title" data-pr-empty-default-title="No reviews yet">No reviews
+                                    yet</p>
                             </div>
                             <nav id="pr-pagination-wrap" class="listing-pager" style="display: none;"
                                 aria-label="Review pages">
@@ -318,7 +313,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
     <script src="/assets/js/script.js" defer></script>
-    <script src="/assets/js/player-reviews.js?v=12" defer></script>
+    <script src="/assets/js/player-reviews.js?v=17" defer></script>
 </body>
 
 </html>
