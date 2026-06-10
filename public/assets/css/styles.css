@@ -2016,6 +2016,26 @@ body.mobile-menu-open {
   justify-content: center;
   min-height: 58px;
   padding: 6px 4px 4px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.review-rank-panel__logo--mat-light {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.review-rank-panel__logo--mat-light .review-rank-panel__logo-img {
+  filter: contrast(1.02);
+}
+
+.review-rank-panel__logo--mat-dark {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .review-rank-panel__logo-img {
@@ -2030,10 +2050,17 @@ body.mobile-menu-open {
   font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 800;
-  color: #f8fafc;
   text-align: center;
   line-height: 1.2;
   padding: 0 6px;
+}
+
+.review-rank-panel__logo-fallback--light {
+  color: #475569;
+}
+
+.review-rank-panel__logo-fallback--dark {
+  color: #f8fafc;
 }
 
 .review-rank-panel--p1 {
@@ -5386,14 +5413,13 @@ p.bonus-terms.bonus-terms--expanded {
   }
 
   /* Provider card at ≤768: matching center-aligned stack.
-     Row 1: rank, Row 2: logo, Row 3: title, Row 4: rating/badge meta.
+     Row 1: unified review panel, Row 2: title, Row 3: rating/badge meta.
      Remaining sections (pros, features, bonus) stack vertically as before. */
   .tier-card.tier-card--provider {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-areas:
-      "rank"
-      "logo"
+      "panel"
       "title"
       "meta"
       "pros"
@@ -5409,28 +5435,12 @@ p.bonus-terms.bonus-terms--expanded {
     display: contents;
   }
 
-  .tier-card--provider .tier-rank-wrap {
-    grid-area: rank;
+  .tier-card--provider .review-rank-panel {
+    grid-area: panel;
     justify-self: center;
-    width: auto;
-    min-width: 56px;
-    margin: 20px 20px 14px;
-    padding: 6px 14px;
-  }
-
-  .tier-card--provider .tier-logo-col {
-    grid-area: logo;
-    justify-self: center;
-    align-self: center;
-    width: 100%;
+    width: calc(100% - 40px);
     max-width: 260px;
-    margin: 0 20px 16px;
-    padding: 0;
-  }
-
-  .tier-card--provider .tier-logo {
-    height: 96px;
-    max-height: 96px;
+    margin: 20px 20px 16px;
   }
 
   .tier-card--provider .info-header {

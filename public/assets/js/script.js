@@ -993,8 +993,15 @@ const PROVIDER_LOGO_FORCE_LIGHT_MAT_SLUGS = new Set([
     'play-tech',
 ]);
 
+function entitySlugForLogoMat(attr) {
+    if (!attr) return '';
+    const slug = providerSlugValue(attr) || casinoSlugNormalized(attr);
+    if (slug) return String(slug).toLowerCase();
+    return slugifyLabel(attr.Name || '');
+}
+
 function providerLogoMatIsDark(attr) {
-    const slug = providerSlugValue(attr).toLowerCase();
+    const slug = entitySlugForLogoMat(attr);
     if (slug && PROVIDER_LOGO_FORCE_LIGHT_MAT_SLUGS.has(slug)) {
         return false;
     }
@@ -1421,14 +1428,6 @@ function homeRankOrdinal(listPos) {
     return Number.isFinite(n) && n > 0 ? `${n}th` : 'N/A';
 }
 
-/** Rank badge classes + optional whole-card podium accent (top 3) */
-function homeRankWrapClass(listPos) {
-    if (listPos >= 1 && listPos <= 3) {
-        return `tier-rank-wrap tier-rank-wrap--podium tier-rank-wrap--p${listPos}`;
-    }
-    return 'tier-rank-wrap';
-}
-
 function homeTierCardPodiumClass(listPos) {
     if (listPos >= 1 && listPos <= 3) {
         return ` tier-card--podium tier-card--podium-${listPos}`;
@@ -1454,9 +1453,13 @@ function renderReviewRankPanelHtml({ listPos, attr, logoUrl, isVerified, totalIn
     const ariaLabel = totalInList
         ? `Rank ${listPos} of ${totalInList} on this list`
         : `Rank ${listPos} in this list`;
+    const logoMatIsDark = providerLogoMatIsDark(attr);
+    const logoMatClass = logoMatIsDark
+        ? 'review-rank-panel__logo--mat-dark'
+        : 'review-rank-panel__logo--mat-light';
     const logoHtml = logoUrl
         ? `<img class="review-rank-panel__logo-img" src="${escapeHtml(logoUrl)}" alt="${name}" loading="lazy" decoding="async">`
-        : `<span class="review-rank-panel__logo-fallback">${name}</span>`;
+        : `<span class="review-rank-panel__logo-fallback review-rank-panel__logo-fallback--${logoMatIsDark ? 'dark' : 'light'}">${name}</span>`;
     const verifiedHtml = isVerified
         ? `<span class="review-rank-panel__verified" title="Tier One verified" aria-label="Verified Tier One casino"><i data-lucide="check" aria-hidden="true"></i></span>`
         : '<span class="review-rank-panel__verified-spacer" aria-hidden="true"></span>';
@@ -1467,7 +1470,7 @@ function renderReviewRankPanelHtml({ listPos, attr, logoUrl, isVerified, totalIn
                 <span class="review-rank-panel__pick-badge">${pickLabel}</span>
                 ${verifiedHtml}
             </div>
-            <div class="review-rank-panel__logo">
+            <div class="review-rank-panel__logo ${logoMatClass}">
                 ${logoHtml}
             </div>
         </div>`;
@@ -1896,7 +1899,6 @@ async function loadProviders() {
         const html = rows.map((p, index) => {
             const attr = p.attributes || p;
             const listPos = index + 1;
-            const rankOrdinal = homeRankOrdinal(listPos);
             const pros = (attr.KeyStrengths || [])
                 .map((x) => `<li class="pro"><i data-lucide="check-circle-2"></i> ${escapeHtml(x.Text || '')}</li>`)
                 .join('');
@@ -1904,7 +1906,6 @@ async function loadProviders() {
             const logoUrl = getProviderCardImageUrl(attr);
             const badgeClass = providerTierBadgeClass(attr);
             const nameSafe = escapeHtml(attr.Name || '');
-            const logoMatClass = providerLogoMatIsDark(attr) ? 'tier-logo--mat-dark' : 'tier-logo--mat-light';
             const portfolioCount = String(attr.GamePortfolioCount || '').trim();
             const hasPortfolioCount = !!portfolioCount;
             const dossierHref = attr.Slug
@@ -1928,15 +1929,13 @@ async function loadProviders() {
             return `
                 <div class="tier-card tier-card--provider active${homeTierCardPodiumClass(listPos)}">
                     <div class="tier-rank-logo-col">
-                        <div class="${homeRankWrapClass(listPos)}" aria-label="${rankOrdinal} of ${rows.length} on this list">
-                            <span class="tier-rank-ordinal">${rankOrdinal}</span>
-                        </div>
-                        <div class="tier-logo-col">
-                            <div class="tier-logo ${logoMatClass}">
-                                ${logoUrl ? `<img class="tier-logo-img" src="${escapeHtml(logoUrl)}" alt="${nameSafe}" loading="lazy" decoding="async">` : `<span class="placeholder-text">${nameSafe}</span>`}
-                                ${attr.IsTopProvider ? '<div class="verified-icon-wrapper"><i data-lucide="check"></i></div>' : ''}
-                            </div>
-                        </div>
+                        ${renderReviewRankPanelHtml({
+                            listPos,
+                            attr,
+                            logoUrl,
+                            isVerified: !!attr.IsTopProvider,
+                            totalInList: rows.length,
+                        })}
                     </div>
                     <div class="tier-info">
                         <div class="tier-provider-head">
