@@ -130,8 +130,7 @@ function skeletonGridHtml(variant, count = 6) {
 function skeletonCardHtml(variant) {
     if (variant === 'listing-card') {
         return `<article class="app-skel app-skel--listing-card listing-card" aria-hidden="true">
-            <div class="app-skel-block app-skel-rank"></div>
-            <div class="app-skel-block app-skel-logo"></div>
+            <div class="app-skel-block app-skel-review-panel"></div>
             <div class="app-skel-body">
                 <div class="app-skel-block app-skel-line--lg"></div>
                 <div class="app-skel-block app-skel-line--md"></div>
@@ -1437,6 +1436,43 @@ function homeTierCardPodiumClass(listPos) {
     return '';
 }
 
+function listingRankPickLabel(listPos) {
+    return `${homeRankOrdinal(listPos)} Pick`;
+}
+
+function reviewRankPanelClass(listPos) {
+    if (listPos >= 1 && listPos <= 3) {
+        return `review-rank-panel review-rank-panel--p${listPos}`;
+    }
+    return 'review-rank-panel review-rank-panel--default';
+}
+
+/** Unified rank badge + logo panel for casino listing and tier cards. */
+function renderReviewRankPanelHtml({ listPos, attr, logoUrl, isVerified, totalInList }) {
+    const name = escapeHtml(attr.Name || '');
+    const pickLabel = escapeHtml(listingRankPickLabel(listPos));
+    const ariaLabel = totalInList
+        ? `Rank ${listPos} of ${totalInList} on this list`
+        : `Rank ${listPos} in this list`;
+    const logoHtml = logoUrl
+        ? `<img class="review-rank-panel__logo-img" src="${escapeHtml(logoUrl)}" alt="${name}" loading="lazy" decoding="async">`
+        : `<span class="review-rank-panel__logo-fallback">${name}</span>`;
+    const verifiedHtml = isVerified
+        ? `<span class="review-rank-panel__verified" title="Tier One verified" aria-label="Verified Tier One casino"><i data-lucide="check" aria-hidden="true"></i></span>`
+        : '<span class="review-rank-panel__verified-spacer" aria-hidden="true"></span>';
+
+    return `
+        <div class="${reviewRankPanelClass(listPos)}" aria-label="${escapeHtml(ariaLabel)}">
+            <div class="review-rank-panel__header">
+                <span class="review-rank-panel__pick-badge">${pickLabel}</span>
+                ${verifiedHtml}
+            </div>
+            <div class="review-rank-panel__logo">
+                ${logoHtml}
+            </div>
+        </div>`;
+}
+
 const TIER_PROS_CAP = 3;
 const TIER_CONS_CAP = 2;
 
@@ -1749,7 +1785,6 @@ async function loadCasinos() {
         const html = rows.map((c, index) => {
             const attr = attrFromCasinoEntry(c);
             const listPos = index + 1;
-            const rankOrdinal = homeRankOrdinal(listPos);
             const logoUrl = getLogoUrl(attr);
             const prosConsHtml = renderCasinoProsConsHTML(attr.Pros, attr.Cons);
             const editorChip = attr.IsTierOne
@@ -1791,15 +1826,13 @@ async function loadCasinos() {
             return `
                 <div class="tier-card tier-card--casino active${homeTierCardPodiumClass(listPos)}">
                     <div class="tier-rank-logo-col">
-                        <div class="${homeRankWrapClass(listPos)}" aria-label="${rankOrdinal} of ${rows.length} on this list">
-                            <span class="tier-rank-ordinal">${rankOrdinal}</span>
-                        </div>
-                        <div class="tier-logo-col">
-                            <div class="tier-logo ${attr.LogoStyle}">
-                                ${logoUrl ? `<img class="tier-logo-img" src="${logoUrl}" alt="${attr.Name}">` : `<span class="placeholder-text">${attr.Name}</span>`}
-                                ${attr.IsTierOne ? '<div class="verified-icon-wrapper"><i data-lucide="check"></i></div>' : ''}
-                            </div>
-                        </div>
+                        ${renderReviewRankPanelHtml({
+                            listPos,
+                            attr,
+                            logoUrl,
+                            isVerified: !!attr.IsTierOne,
+                            totalInList: rows.length,
+                        })}
                     </div>
                     <div class="tier-info">
                         <div class="tier-head-row">
@@ -5686,9 +5719,6 @@ function initCasinosListingPage() {
     function renderCard(c, listPos) {
         const attr = attrFromCasinoEntry(c);
         const logoUrl = getLogoUrl(attr);
-        const logoHtml = logoUrl
-            ? `<img src="${logoUrl}" alt="${attr.Name}" style="max-width:90%; max-height:90%; object-fit:contain;">`
-            : `<span class="logo-text" style="color:#fff;font-size:0.7rem;font-weight:800;text-align:center;padding:4px;">${attr.Name || ''}</span>`;
 
         const tierBadge = attr.IsTierOne
             ? `<span class="badge badge-light badge-sm">TIER ONE</span>` : '';
@@ -5712,17 +5742,15 @@ function initCasinosListingPage() {
             ? ' target="_blank" rel="noopener noreferrer"'
             : '';
 
-        const rankOrdinal = homeRankOrdinal(listPos);
-
         return `
         <article class="listing-card">
-            <div class="listing-card__rank" aria-label="Rank ${listPos} in this list">
-                <span class="listing-card__rank-ordinal">${rankOrdinal}</span>
-            </div>
-            <div class="card-logo-area">
-                <div class="casino-logo-circle luxury-dark" style="background:#0f172a;">
-                    ${logoHtml}
-                </div>
+            <div class="listing-card__review-panel">
+                ${renderReviewRankPanelHtml({
+                    listPos,
+                    attr,
+                    logoUrl,
+                    isVerified: !!attr.IsTierOne,
+                })}
             </div>
             <div class="card-content-area">
                 <div class="card-top">

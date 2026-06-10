@@ -1929,6 +1929,161 @@ body.mobile-menu-open {
   justify-content: center;
 }
 
+/* Premium unified rank + logo review panel (listing + tier casino cards) */
+.review-rank-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  padding: 12px 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, #0c1424 0%, #1a2744 46%, #0f172a 100%);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.1),
+    0 10px 28px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
+}
+
+.listing-card:hover .review-rank-panel,
+.tier-card:hover .review-rank-panel {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.42);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.12),
+    0 16px 36px rgba(15, 23, 42, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.review-rank-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 22px;
+}
+
+.review-rank-panel__pick-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #1c1917;
+  background: linear-gradient(135deg, #b8892e 0%, #f5e6a8 48%, #d4af37 100%);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 1px 4px rgba(138, 100, 32, 0.28);
+  line-height: 1.2;
+}
+
+.review-rank-panel__verified,
+.review-rank-panel__verified-spacer {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+
+.review-rank-panel__verified {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--success);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
+.review-rank-panel__verified svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+.review-rank-panel__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
+  padding: 6px 4px 4px;
+}
+
+.review-rank-panel__logo-img {
+  max-width: 88%;
+  max-height: 54px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.review-rank-panel__logo-fallback {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #f8fafc;
+  text-align: center;
+  line-height: 1.2;
+  padding: 0 6px;
+}
+
+.review-rank-panel--p1 {
+  border-color: rgba(212, 175, 55, 0.42);
+}
+
+.review-rank-panel--p1 .review-rank-panel__pick-badge {
+  background: linear-gradient(135deg, #8a6420 0%, #f5e6a8 50%, #d4af37 100%);
+}
+
+.review-rank-panel--p2 {
+  border-color: rgba(161, 161, 170, 0.38);
+}
+
+.review-rank-panel--p2 .review-rank-panel__pick-badge {
+  color: #27272a;
+  background: linear-gradient(135deg, #71717a 0%, #f4f4f5 50%, #d4d4d8 100%);
+  box-shadow: 0 1px 4px rgba(113, 113, 122, 0.22);
+}
+
+.review-rank-panel--p3 {
+  border-color: rgba(160, 130, 110, 0.38);
+}
+
+.review-rank-panel--p3 .review-rank-panel__pick-badge {
+  color: #44403c;
+  background: linear-gradient(135deg, #6b4226 0%, #e8c9a8 50%, #b8875a 100%);
+  box-shadow: 0 1px 4px rgba(107, 66, 38, 0.22);
+}
+
+.review-rank-panel--default .review-rank-panel__pick-badge {
+  color: #334155;
+  background: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 50%, #cbd5e1 100%);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.tier-rank-logo-col .review-rank-panel {
+  width: 100%;
+}
+
+.listing-card__review-panel {
+  flex-shrink: 0;
+  width: clamp(148px, 20vw, 176px);
+}
+
+.listing-card__review-panel .review-rank-panel {
+  width: 100%;
+}
+
 .tier-logo {
   position: relative;
   width: 100%;
@@ -3755,30 +3910,6 @@ p.bonus-terms.bonus-terms--expanded {
   border-color: rgba(51, 190, 179, 0.35);
 }
 
-/* Editorial rank (tablet/mobile only - see max-width:1024 rules below) */
-.listing-card__rank {
-  display: none;
-  width: 100%;
-  flex-shrink: 0;
-  justify-content: center;
-}
-
-.listing-card__rank-ordinal {
-  display: inline-block;
-  font-family: var(--font-serif);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: #475569;
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: linear-gradient(165deg, #ffffff 0%, #f1f5f9 100%);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-
 .card-title-row {
   display: flex;
   flex-wrap: wrap;
@@ -4301,17 +4432,10 @@ p.bonus-terms.bonus-terms--expanded {
     padding: clamp(20px, 3vw, 28px);
   }
 
-  .listing-card__rank {
-    display: flex;
-    margin-bottom: 0;
-  }
-
-  .card-logo-area {
+  .listing-card__review-panel {
+    width: 100%;
+    max-width: 280px;
     margin: 0 auto;
-    border: none;
-    background: transparent;
-    height: auto;
-    padding-bottom: 8px;
   }
 
   .card-top {
@@ -5056,48 +5180,22 @@ p.bonus-terms.bonus-terms--expanded {
     overflow: hidden;
   }
 
-  /* Rank + logo in one row - uses full card width; no narrow centered column */
+  /* Rank + logo unified panel - full width header strip on tablet */
   .tier-rank-logo-col {
     width: 100%;
     max-width: none;
     margin: 0;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    padding: 16px 16px 14px;
-    background: linear-gradient(165deg, #f8fafc 0%, #f1f5f9 100%);
-    border-bottom: 1px solid var(--border-light);
-  }
-
-  .tier-rank-wrap {
-    width: auto;
-    flex-shrink: 0;
-    min-width: 56px;
-    flex-direction: row;
     justify-content: center;
-    align-items: center;
-    padding: 6px 10px;
-    text-align: center;
+    gap: 0;
+    padding: 16px 16px 14px;
+    background: transparent;
+    border-bottom: none;
   }
 
-  .tier-rank-ordinal {
-    font-size: 0.92rem;
-    width: auto;
-    text-align: center;
-  }
-
-  .tier-rank-logo-col .tier-logo-col {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-    height: auto;
-    max-width: none;
-  }
-
-  .tier-logo {
-    height: 72px;
-    max-height: 72px;
+  .tier-rank-logo-col .review-rank-panel {
+    max-width: 280px;
   }
 
   .tier-info {
@@ -5199,7 +5297,7 @@ p.bonus-terms.bonus-terms--expanded {
   }
 
   /* Casino card at ≤768: center-aligned stack.
-     Row 1: rank, Row 2: logo, Row 3: title (+ editor chip), Row 4: rating.
+     Row 1: unified review panel, Row 2: title (+ editor chip), Row 3: rating.
      Then payments, pros/cons, and the visit-site bonus panel.
      display:contents flattens .tier-rank-logo-col, .tier-info, and .tier-head-row
      so each piece becomes its own grid row without touching the JS template. */
@@ -5207,8 +5305,7 @@ p.bonus-terms.bonus-terms--expanded {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-areas:
-      "rank"
-      "logo"
+      "panel"
       "title"
       "rating"
       "payments"
@@ -5224,29 +5321,12 @@ p.bonus-terms.bonus-terms--expanded {
     display: contents;
   }
 
-  .tier-card--casino .tier-rank-wrap {
-    grid-area: rank;
+  .tier-card--casino .review-rank-panel {
+    grid-area: panel;
     justify-self: center;
-    width: auto;
-    min-width: 56px;
-    margin: 20px 20px 14px;
-    padding: 6px 14px;
-  }
-
-  .tier-card--casino .tier-logo-col {
-    grid-area: logo;
-    justify-self: center;
-    align-self: center;
-    width: 100%;
-    max-width: 200px;
-    margin: 0 20px 16px;
-    padding: 0;
-  }
-
-  .tier-card--casino .tier-logo {
-    width: 100%;
-    height: 88px;
-    max-height: 88px;
+    width: calc(100% - 40px);
+    max-width: 260px;
+    margin: 20px 20px 16px;
   }
 
   .tier-card--casino .tier-head-left {
@@ -17125,16 +17205,11 @@ body.page-guide-post {
   min-height: 120px;
 }
 
-.app-skel--listing-card .app-skel-rank {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-}
-
-.app-skel--listing-card .app-skel-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+.app-skel--listing-card .app-skel-review-panel {
+  width: clamp(148px, 20vw, 176px);
+  height: 120px;
+  border-radius: 14px;
+  flex-shrink: 0;
 }
 
 .app-skel--listing-card .app-skel-body {
@@ -17325,6 +17400,12 @@ body.page-guide-post {
 
   .app-skel--listing-card .app-skel-actions {
     width: 100%;
+  }
+
+  .app-skel--listing-card .app-skel-review-panel {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
   }
 
   .app-skel--tier-card {
