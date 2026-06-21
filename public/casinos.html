@@ -70,10 +70,12 @@
                     <p class="gh-kicker casinos-hero__kicker"><i data-lucide="landmark" aria-hidden="true"></i> Licensed
                         operators · Editorial reviews</p>
                     <h1 class="casinos-hero__title" id="casinos-hero-h1">Online casino <em>reviews</em> &amp;
-                        <em>directory</em></h1>
+                        <em>directory</em>
+                    </h1>
                     <p class="casinos-hero__desc">Compare licensed online casinos using our editorial rankings, bonus
                         lines, payout speed labels, and game coverage notes. Each listing links to a full review. See
-                        <a href="/how-we-rate">how we rate casinos</a> for our scoring framework.</p>
+                        <a href="/how-we-rate">how we rate casinos</a> for our scoring framework.
+                    </p>
                     <div class="home-intro__pills casinos-hero__pills" role="list">
                         <span class="home-intro__pill" role="listitem"><i data-lucide="shield-check"></i> Licensed
                             operators only</span>
@@ -96,90 +98,123 @@
 
         <!-- Listing: sidebar + cards. Grid on desktop = sidebar left, cards right. -->
         <div class="container listing-layout">
-        <div class="listing-filter-backdrop" id="listing-filter-backdrop" aria-hidden="true"></div>
+            <div class="listing-filter-backdrop" id="listing-filter-backdrop" aria-hidden="true"></div>
 
-        <!-- Sidebar Filters (slide-out drawer on tablet & mobile) -->
-        <aside class="listing-sidebar listing-filter-drawer reveal delay-100" id="listing-filter-drawer">
-            <div class="listing-filters-card">
-                <div class="listing-filters-card__head">
-                    <h2 class="filter-title" id="casinos-filters-heading">Filter results</h2>
-                    <button type="button" class="listing-filter-close icon-btn" id="listing-filter-close"
-                        aria-label="Close filters">
-                        <i data-lucide="x" aria-hidden="true"></i>
-                    </button>
+            <!-- Sidebar Filters (slide-out drawer on tablet & mobile) -->
+            <aside class="listing-sidebar listing-filter-drawer reveal delay-100" id="listing-filter-drawer">
+                <div class="listing-filters-card">
+                    <div class="listing-filters-card__head">
+                        <h2 class="filter-title" id="casinos-filters-heading">Filter results</h2>
+                        <button type="button" class="listing-filter-close icon-btn" id="listing-filter-close"
+                            aria-label="Close filters">
+                            <i data-lucide="x" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="listing-filters-grid" role="group" aria-labelledby="casinos-filters-heading">
+                        <div class="filter-group">
+                            <h4 class="filter-heading">Tier</h4>
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="filter-tier-one" value="tierOne">
+                                <span class="checkmark"></span>
+                                <span class="filter-label">Tier One only</span>
+                            </label>
+                        </div>
+
+                        <div class="filter-group">
+                            <h4 class="filter-heading">Sort by</h4>
+                            <label class="custom-radio">
+                                <input type="radio" name="sort" value="Rank:asc" checked>
+                                <span class="radiomark"></span>
+                                <span class="filter-label">Our ranking</span>
+                            </label>
+                            <label class="custom-radio">
+                                <input type="radio" name="sort" value="Name:asc">
+                                <span class="radiomark"></span>
+                                <span class="filter-label">Name (A to Z)</span>
+                            </label>
+                            <label class="custom-radio">
+                                <input type="radio" name="sort" value="Name:desc">
+                                <span class="radiomark"></span>
+                                <span class="filter-label">Name (Z to A)</span>
+                            </label>
+                        </div>
+
+                        <div class="filter-group">
+                            <h4 class="filter-heading">Results per page</h4>
+                            <label class="custom-radio">
+                                <input type="radio" name="pageSize" value="5" checked>
+                                <span class="radiomark"></span>
+                                <span class="filter-label">5</span>
+                            </label>
+                            <label class="custom-radio">
+                                <input type="radio" name="pageSize" value="10">
+                                <span class="radiomark"></span>
+                                <span class="filter-label">10</span>
+                            </label>
+                            <label class="custom-radio">
+                                <input type="radio" name="pageSize" value="25">
+                                <span class="radiomark"></span>
+                                <span class="filter-label">25</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div class="listing-filters-grid" role="group" aria-labelledby="casinos-filters-heading">
-                    <div class="filter-group">
-                        <h4 class="filter-heading">Tier</h4>
-                        <label class="custom-checkbox">
-                            <input type="checkbox" id="filter-tier-one" value="tierOne">
-                            <span class="checkmark"></span>
-                            <span class="filter-label">Tier One only</span>
-                        </label>
-                    </div>
 
-                    <div class="filter-group">
-                        <h4 class="filter-heading">Sort by</h4>
-                        <label class="custom-radio">
-                            <input type="radio" name="sort" value="Rank:asc" checked>
-                            <span class="radiomark"></span>
-                            <span class="filter-label">Our ranking</span>
-                        </label>
-                        <label class="custom-radio">
-                            <input type="radio" name="sort" value="Name:asc">
-                            <span class="radiomark"></span>
-                            <span class="filter-label">Name (A to Z)</span>
-                        </label>
-                        <label class="custom-radio">
-                            <input type="radio" name="sort" value="Name:desc">
-                            <span class="radiomark"></span>
-                            <span class="filter-label">Name (Z to A)</span>
-                        </label>
-                    </div>
-
-                    <div class="filter-group">
-                        <h4 class="filter-heading">Results per page</h4>
-                        <label class="custom-radio">
-                            <input type="radio" name="pageSize" value="5" checked>
-                            <span class="radiomark"></span>
-                            <span class="filter-label">5</span>
-                        </label>
-                        <label class="custom-radio">
-                            <input type="radio" name="pageSize" value="10">
-                            <span class="radiomark"></span>
-                            <span class="filter-label">10</span>
-                        </label>
-                        <label class="custom-radio">
-                            <input type="radio" name="pageSize" value="25">
-                            <span class="radiomark"></span>
-                            <span class="filter-label">25</span>
-                        </label>
-                    </div>
+                <div class="guarantee-box">
+                    <div class="guarantee-icon"><i data-lucide="shield-check"></i></div>
+                    <h4>Editor's Guarantee</h4>
+                    <p>Every listed provider undergoes a 48 hour rigorous audit for compliance and player safety.</p>
                 </div>
-            </div>
+            </aside>
 
-            <div class="guarantee-box">
-                <div class="guarantee-icon"><i data-lucide="shield-check"></i></div>
-                <h4>Editor's Guarantee</h4>
-                <p>Every listed provider undergoes a 48 hour rigorous audit for compliance and player safety.</p>
-            </div>
-        </aside>
+            <section class="listing-main reveal delay-200">
+                <!-- Cards Container: populated by script.js initCasinosListingPage() -->
+                <div class="listing-cards" id="casinos-listing-container">
+                    <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true">
+                        <div class="app-skel-block app-skel-review-panel"></div>
+                        <div class="app-skel-body">
+                            <div class="app-skel-block app-skel-line--lg"></div>
+                            <div class="app-skel-block app-skel-line--md"></div>
+                            <div class="app-skel-block app-skel-line--sm"></div>
+                        </div>
+                        <div class="app-skel-actions">
+                            <div class="app-skel-block app-skel-btn"></div>
+                            <div class="app-skel-block app-skel-btn"></div>
+                        </div>
+                    </article>
+                    <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true">
+                        <div class="app-skel-block app-skel-review-panel"></div>
+                        <div class="app-skel-body">
+                            <div class="app-skel-block app-skel-line--lg"></div>
+                            <div class="app-skel-block app-skel-line--md"></div>
+                            <div class="app-skel-block app-skel-line--sm"></div>
+                        </div>
+                        <div class="app-skel-actions">
+                            <div class="app-skel-block app-skel-btn"></div>
+                            <div class="app-skel-block app-skel-btn"></div>
+                        </div>
+                    </article>
+                    <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true">
+                        <div class="app-skel-block app-skel-review-panel"></div>
+                        <div class="app-skel-body">
+                            <div class="app-skel-block app-skel-line--lg"></div>
+                            <div class="app-skel-block app-skel-line--md"></div>
+                            <div class="app-skel-block app-skel-line--sm"></div>
+                        </div>
+                        <div class="app-skel-actions">
+                            <div class="app-skel-block app-skel-btn"></div>
+                            <div class="app-skel-block app-skel-btn"></div>
+                        </div>
+                    </article>
+                </div>
 
-        <section class="listing-main reveal delay-200">
-            <!-- Cards Container: populated by script.js initCasinosListingPage() -->
-            <div class="listing-cards" id="casinos-listing-container">
-                <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true"><div class="app-skel-block app-skel-review-panel"></div><div class="app-skel-body"><div class="app-skel-block app-skel-line--lg"></div><div class="app-skel-block app-skel-line--md"></div><div class="app-skel-block app-skel-line--sm"></div></div><div class="app-skel-actions"><div class="app-skel-block app-skel-btn"></div><div class="app-skel-block app-skel-btn"></div></div></article>
-                <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true"><div class="app-skel-block app-skel-review-panel"></div><div class="app-skel-body"><div class="app-skel-block app-skel-line--lg"></div><div class="app-skel-block app-skel-line--md"></div><div class="app-skel-block app-skel-line--sm"></div></div><div class="app-skel-actions"><div class="app-skel-block app-skel-btn"></div><div class="app-skel-block app-skel-btn"></div></div></article>
-                <article class="app-skel app-skel--listing-card listing-card" aria-hidden="true"><div class="app-skel-block app-skel-review-panel"></div><div class="app-skel-body"><div class="app-skel-block app-skel-line--lg"></div><div class="app-skel-block app-skel-line--md"></div><div class="app-skel-block app-skel-line--sm"></div></div><div class="app-skel-actions"><div class="app-skel-block app-skel-btn"></div><div class="app-skel-block app-skel-btn"></div></div></article>
-            </div>
-
-            <!-- Pagination: populated by script.js renderPagination() -->
-            <div class="pagination" id="pagination-container" style="display:none;">
-                <a href="#" class="prev disabled" id="btn-prev"><i data-lucide="arrow-left"></i> PREVIOUS</a>
-                <div class="page-numbers" id="page-numbers"></div>
-                <a href="#" class="next" id="btn-next">NEXT <i data-lucide="arrow-right"></i></a>
-            </div>
-        </section>
+                <!-- Pagination: populated by script.js renderPagination() -->
+                <div class="pagination" id="pagination-container" style="display:none;">
+                    <a href="#" class="prev disabled" id="btn-prev"><i data-lucide="arrow-left"></i> PREVIOUS</a>
+                    <div class="page-numbers" id="page-numbers"></div>
+                    <a href="#" class="next" id="btn-next">NEXT <i data-lucide="arrow-right"></i></a>
+                </div>
+            </section>
         </div>
     </main>
 
