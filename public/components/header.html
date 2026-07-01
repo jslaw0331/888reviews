@@ -17,20 +17,34 @@
                 </button>
             </div>
             <ul class="main-nav__list">
-                <li><a href="/">Home</a></li>
-                <li><a href="/casinos">Casinos</a></li>
-                <li><a href="/slots">Slots</a></li>
-                <li><a href="/providers">Providers</a></li>
-                <li><a href="/bonuses">Bonuses</a></li>
-                <li><a href="/guides">Guides</a></li>
-                <li><a href="/news">News</a></li>
+                <li><a href="/">Best Casinos</a></li>
+                <li><a href="/live">Live</a></li>
+                <li><a href="/bonus">Bonus</a></li>
+                <li><a href="/mobile">Mobile Casinos</a></li>
+                <li><a href="/slots">Online Slots</a></li>
+                <li><a href="/blackjack">Blackjack</a></li>
+                <li><a href="/roulette">Roulette</a></li>
+                <li class="main-nav__item main-nav__item--dropdown">
+                    <button type="button" class="main-nav__dropdown-trigger" aria-expanded="false"
+                        aria-controls="main-nav-payments-menu">Payments</button>
+                    <ul class="main-nav__dropdown" id="main-nav-payments-menu">
+                        <li><a href="/ewallet">e-Wallet</a></li>
+                        <li><a href="/touch-n-go">Touch 'n Go</a></li>
+                    </ul>
+                </li>
+                <li class="main-nav__item main-nav__item--dropdown">
+                    <a href="/casinos" class="main-nav__dropdown-label">Reviews</a>
+                    <ul class="main-nav__dropdown" id="main-nav-reviews-menu">
+                        <li><a href="/casinos">All casino reviews</a></li>
+                    </ul>
+                </li>
+                <li><a href="/about">About us</a></li>
             </ul>
             <div class="mobile-nav-panel__foot">
-                <a href="/bonuses" class="btn btn-primary btn-block mobile-nav-cta">Browse bonuses</a>
+                <a href="/bonus" class="btn btn-primary btn-block mobile-nav-cta">Browse bonuses</a>
             </div>
         </nav>
         <div class="header-actions">
-            <a href="/bonuses" class="btn btn-primary btn-small header-bonus-btn">GET BONUS</a>
             <button type="button" class="mobile-menu-btn icon-btn" id="mobile-menu-btn" aria-expanded="false"
                 aria-controls="main-nav" aria-label="Open menu">
                 <i data-lucide="menu"></i>

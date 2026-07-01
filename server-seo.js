@@ -244,6 +244,8 @@ const HUB_PATHS = [
     '/privacy',
     '/terms',
     '/contact',
+    '/ewallet',
+    '/touch-n-go',
 ];
 
 /**

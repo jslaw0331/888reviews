@@ -91,6 +91,8 @@ app.get('/sitemap.xml', async (req, res) => {
             '/privacy',
             '/terms',
             '/contact',
+            '/ewallet',
+            '/touch-n-go',
         ];
         const lines = hubPaths.map((p) => {
             const loc = `${base}${p === '/' ? '/' : p}`;
@@ -214,7 +216,7 @@ app.get(/^\/uploads\/.+/, async (req, res) => {
     }
     const base = process.env.STRAPI_API_URL;
     if (!base) {
-        res.status(503).send('STRAPI_API_URL is not set');
+        res.status(503).send('Content is temporarily unavailable.');
         return;
     }
     const targetUrl = `${base.replace(/\/$/, '')}${req.path}`;
@@ -336,7 +338,7 @@ app.get('/api/:endpoint', async (req, res) => {
         // Build the literal target URL to your secure Strapi server
         if (!process.env.STRAPI_API_URL || !process.env.STRAPI_API_TOKEN) {
             res.status(503).json({
-                error: 'Strapi is not configured (set STRAPI_API_URL and STRAPI_API_TOKEN in the deployment environment).',
+                error: 'Content is temporarily unavailable. Please check back later.',
             });
             return;
         }
@@ -361,7 +363,7 @@ app.get('/api/:endpoint', async (req, res) => {
         if (isTimeout) {
             console.error(`[Strapi proxy] timeout /api/${req.params.endpoint}`);
             res.status(504).json({
-                error: 'Strapi did not respond in time. Check that STRAPI_API_URL is reachable from Vercel and not blocking cloud IPs.',
+                error: 'Content is temporarily unavailable. Please check back later.',
             });
             return;
         }
@@ -375,8 +377,7 @@ app.get('/api/:endpoint', async (req, res) => {
             console.error('Error fetching from Strapi proxy:', error.message);
         }
         res.status(st || 500).json({
-            error: 'Failed to fetch data securely from Strapi',
-            details: error.response?.data || error.message,
+            error: 'Content is temporarily unavailable. Please check back later.',
         });
     }
 });
@@ -496,6 +497,84 @@ app.get('/', (req, res) => {
 });
 app.get('/index.html', (req, res) => {
     res.redirect(301, '/');
+});
+
+/** Malaysia hub sub-pages and legacy canonical paths used in site navigation. */
+const MALAYSIA_NAV_ROUTES = {
+    '/live': 'games-live-casino.html',
+    '/mobile': 'mobile.html',
+    '/blackjack': 'games-blackjack.html',
+    '/roulette': 'games-roulette.html',
+    '/bonus': 'bonuses.html',
+    '/games/live-casino': 'games-live-casino.html',
+    '/games/blackjack': 'games-blackjack.html',
+    '/games/roulette': 'games-roulette.html',
+    '/games/baccarat': 'games-baccarat.html',
+    '/games/live-baccarat': 'games-live-baccarat.html',
+    '/games/live-blackjack': 'games-live-blackjack.html',
+    '/games/live-roulette': 'games-live-roulette.html',
+    '/games/poker': 'games-poker.html',
+    '/games/bingo': 'games-bingo.html',
+    '/real-money': 'real-money.html',
+    '/real-money/slots': 'real-money-slots.html',
+    '/real-money/blackjack': 'real-money-blackjack.html',
+    '/real-money/roulette': 'real-money-roulette.html',
+    '/payments': 'payments.html',
+};
+
+Object.entries(MALAYSIA_NAV_ROUTES).forEach(([route, file]) => {
+    app.get(route, (req, res) => {
+        res.sendFile(path.join(PUBLIC_DIR, file));
+    });
+    app.get(`${route}/`, (req, res) => {
+        res.redirect(301, route);
+    });
+});
+
+/** Malaysia market hub lives at `/`; legacy `/malaysia` URLs redirect. */
+app.get('/ewallet', (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'malaysia-ewallet.html'));
+});
+app.get('/touch-n-go', (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'malaysia-touch-n-go.html'));
+});
+app.get('/malaysia', (req, res) => {
+    res.redirect(301, '/');
+});
+app.get('/malaysia/', (req, res) => {
+    res.redirect(301, '/');
+});
+app.get('/malaysia/ewallet', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/malaysia/ewallet/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/malaysia/touch-n-go', (req, res) => {
+    res.redirect(301, '/touch-n-go');
+});
+app.get('/malaysia/touch-n-go/', (req, res) => {
+    res.redirect(301, '/touch-n-go');
+});
+
+/** Legacy Malaysia hub URLs → current routes. */
+app.get('/casinos/malaysia', (req, res) => {
+    res.redirect(301, '/');
+});
+app.get('/casinos/malaysia/', (req, res) => {
+    res.redirect(301, '/');
+});
+app.get('/casinos/malaysia/ewallet', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/casinos/malaysia/ewallet/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/casinos/malaysia/touch-n-go', (req, res) => {
+    res.redirect(301, '/touch-n-go');
+});
+app.get('/casinos/malaysia/touch-n-go/', (req, res) => {
+    res.redirect(301, '/touch-n-go');
 });
 ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
     const pretty = `/${name.replace(/\.html$/, '')}`;

@@ -6,7 +6,7 @@ async function loadComponent(url) {
         return await response.text();
     } catch (e) {
         console.error(e);
-        return `<div style="color:red; padding:20px; text-align:center; border: 1px dashed red;">Error loading ${url}.<br><br>Run <code>npm start</code> in the project folder and open <code>http://localhost:3000</code> (not file://).<br>Or use Live Server / <code>python -m http.server</code>.</div>`;
+        return `<div style="color:#64748b; padding:20px; text-align:center;">Nothing to show here yet. Check back soon.</div>`;
     }
 }
 
@@ -18,13 +18,21 @@ class SiteHeader extends HTMLElement {
         const currentPath = window.location.pathname;
         const navMatchers = {
             '/': (p) => p === '/' || p === '/index.html',
+            '/live': (p) => p === '/live' || /^\/games\/live/.test(p),
+            '/bonus': (p) => /^\/(bonus|bonuses)(\/|$)/.test(p),
+            '/mobile': (p) => p === '/mobile' || p.startsWith('/mobile/'),
+            '/slots': (p) => /^\/(slots|slot)(\/|$)/.test(p) || p === '/real-money/slots',
+            '/blackjack': (p) => p === '/blackjack' || p.includes('blackjack'),
+            '/roulette': (p) => p === '/roulette' || p.includes('roulette'),
+            '/ewallet': (p) => p === '/ewallet',
+            '/touch-n-go': (p) => p === '/touch-n-go',
             '/casinos': (p) => /^\/(casinos|casino|review)(\/|$)/.test(p),
-            '/slots': (p) => /^\/(slots|slot)(\/|$)/.test(p),
+            '/about': (p) => p === '/about',
             '/providers': (p) => /^\/(providers|provider)(\/|$)/.test(p),
-            '/bonuses': (p) => /^\/(bonuses|bonus)(\/|$)/.test(p),
             '/guides': (p) => /^\/(guides|guide)(\/|$)/.test(p),
             '/news': (p) => /^\/news(\/|$)/.test(p),
         };
+        const paymentPaths = ['/ewallet', '/touch-n-go', '/payments'];
         const isNavLinkActive = (href) => {
             if (!href || href === '#') return false;
             const match = navMatchers[href];
@@ -42,6 +50,24 @@ class SiteHeader extends HTMLElement {
             } else {
                 link.removeAttribute('aria-current');
             }
+        });
+
+        this.querySelectorAll('.main-nav__item--dropdown').forEach((item) => {
+            const childActive = [...item.querySelectorAll('.main-nav__dropdown a')].some((link) =>
+                isNavLinkActive(link.getAttribute('href')),
+            );
+            const paymentActive = item.querySelector('#main-nav-payments-menu')
+                ? paymentPaths.some((p) => currentPath === p || currentPath.startsWith(`${p}/`))
+                : false;
+            item.classList.toggle('active', childActive || paymentActive);
+        });
+
+        this.querySelectorAll('.main-nav__dropdown-trigger').forEach((trigger) => {
+            trigger.addEventListener('click', () => {
+                const item = trigger.closest('.main-nav__item--dropdown');
+                const open = item.classList.toggle('is-open');
+                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
         });
 
         // Initialize Lucide icons

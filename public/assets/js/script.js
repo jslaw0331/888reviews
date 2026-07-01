@@ -212,6 +212,9 @@ function detectBootPageType() {
     if (document.getElementById('cr-page') && document.getElementById('cr-name')) return 'casino-review';
     if (document.getElementById('provider-content') && document.getElementById('pv-title')) return 'provider-detail';
     if (document.getElementById('slot-page-root') && document.getElementById('sv-title')) return 'slot-detail';
+    if (document.getElementById('malaysia-operator-list') || document.getElementById('malaysia-casino-table')) {
+        return 'malaysia-hub';
+    }
     if (document.getElementById('casinos-listing-container')) return 'casinos-listing';
     if (document.getElementById('slots-listing-grid')) return 'slots-listing';
     if (document.getElementById('providers-listing-grid')) return 'providers-listing';
@@ -1728,14 +1731,23 @@ function renderStars(attrOrLabel) {
     return `<span class="stars-meter stars-meter--units" role="img" aria-label="${aria}">${units}</span>`;
 }
 
-function apiErrorMessage(status, json) {
-    if (status === 401 || status === 403) {
-        return 'API unauthorized. Check STRAPI_API_TOKEN and backend API permissions (Settings → API Tokens).';
-    }
-    if (json?.error || json?.details) {
-        return String(json.error || json.details);
-    }
-    return `Request failed (${status || 'network'}). Ensure the backend API is reachable (STRAPI_API_URL) and run npm start (same port as this site).`;
+/** User-facing copy when listings fail to load — same tone as empty states, no technical detail. */
+const CONTENT_EMPTY_MESSAGES = {
+    casinos: 'No casinos found yet.',
+    providers: 'No providers found yet.',
+    slots: 'No slots found yet.',
+    bonuses: 'No bonuses published yet.',
+    guides: 'No guides yet. Check back soon.',
+    news: 'No news posts yet. Check back soon.',
+    default: 'Nothing to show here yet. Check back soon.',
+};
+
+function contentEmptyMessage(kind) {
+    return CONTENT_EMPTY_MESSAGES[kind] || CONTENT_EMPTY_MESSAGES.default;
+}
+
+function apiErrorMessage(_status, _json, kind) {
+    return contentEmptyMessage(kind);
 }
 
 /**
@@ -1774,7 +1786,7 @@ async function loadCasinos() {
         );
         const json = await res.json();
         if (!res.ok) {
-            container.innerHTML = `<p style="text-align:center; padding: 40px; color: #b91c1c;">${apiErrorMessage(res.status, json)}</p>`;
+            container.innerHTML = `<p style="text-align:center; padding: 40px; color: #64748b;">${apiErrorMessage(res.status, json, 'casinos')}</p>`;
             return;
         }
         const { data } = json;
@@ -1872,7 +1884,7 @@ async function loadCasinos() {
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (e) {
         console.error(e);
-        container.innerHTML = '<p style="text-align:center; padding: 40px; color: #b91c1c;">Could not reach the API proxy. Run <code>npm start</code> and open this site at <code>http://localhost:3000</code>. Ensure the backend API is running.</p>';
+        container.innerHTML = `<p style="text-align:center; padding: 40px; color: #64748b;">${contentEmptyMessage('casinos')}</p>`;
     }
 }
 
@@ -1886,7 +1898,7 @@ async function loadProviders() {
         );
         const json = await res.json();
         if (!res.ok) {
-            container.innerHTML = `<p style="text-align:center; padding: 40px; color: #b91c1c;">${apiErrorMessage(res.status, json)}</p>`;
+            container.innerHTML = `<p style="text-align:center; padding: 40px; color: #64748b;">${apiErrorMessage(res.status, json, 'providers')}</p>`;
             return;
         }
         const { data } = json;
@@ -1964,7 +1976,7 @@ async function loadProviders() {
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (e) {
         console.error(e);
-        container.innerHTML = '<p style="text-align:center; padding: 40px; color: #b91c1c;">Could not reach the API proxy. Run <code>npm start</code> and open this site at <code>http://localhost:3000</code>. Ensure the backend API is running.</p>';
+        container.innerHTML = `<p style="text-align:center; padding: 40px; color: #64748b;">${contentEmptyMessage('providers')}</p>`;
     }
 }
 
@@ -3528,8 +3540,8 @@ function showGuidePostError(isNewsPage) {
     const textEl = err?.querySelector('.bonus-detail-error__text');
     if (textEl) {
         textEl.textContent = isNewsPage
-            ? 'We could not load this article.'
-            : 'We could not load this guide.';
+            ? 'This article is not available yet.'
+            : 'This guide is not available yet.';
     }
     document.title = isNewsPage ? 'Article not found | 888reviews' : 'Guide not found | 888reviews';
 }
@@ -3636,7 +3648,7 @@ function populateGuidePostPage(attr, slug) {
                 bodyEl.innerHTML = '';
             }
         } else {
-            bodyEl.innerHTML = `<p>${escapeHtml(excerpt || 'Full article content will appear here when added in the CMS.')}</p>`;
+            bodyEl.innerHTML = `<p>${escapeHtml(excerpt || 'Full article content will appear here soon.')}</p>`;
         }
     }
 
@@ -3821,8 +3833,7 @@ function initGuidesPage() {
                 grid.innerHTML = '';
                 if (cmsEmpty) {
                     statusEl.hidden = false;
-                    statusEl.textContent =
-                        'Guides could not be loaded from the CMS. Run the site with npm start and ensure STRAPI_API_URL is set, or add posts with category guide or strategy in Strapi.';
+                    statusEl.textContent = contentEmptyMessage('guides');
                 } else {
                     statusEl.textContent = '';
                     statusEl.hidden = true;
@@ -3868,8 +3879,7 @@ function initGuidesPage() {
             console.error('[guides]', e);
             grid.innerHTML = '';
             statusEl.hidden = false;
-            statusEl.textContent =
-                'We could not load guides right now. Please refresh, or try again after checking your connection.';
+            statusEl.textContent = contentEmptyMessage('guides');
             if (wrap) wrap.style.display = 'none';
             guidesFirstFetch = false;
         }
@@ -4023,8 +4033,7 @@ function initNewsPage() {
                 grid.innerHTML = '';
                 if (cmsEmpty) {
                     statusEl.hidden = false;
-                    statusEl.textContent =
-                        'News could not be loaded from the CMS. Run the site with npm start and ensure STRAPI_API_URL is set, or add posts with category news in Strapi.';
+                    statusEl.textContent = contentEmptyMessage('news');
                 } else {
                     statusEl.textContent = '';
                     statusEl.hidden = true;
@@ -4070,8 +4079,7 @@ function initNewsPage() {
             console.error('[news]', e);
             grid.innerHTML = '';
             statusEl.hidden = false;
-            statusEl.textContent =
-                'We could not load news right now. Please refresh, or try again after checking your connection.';
+            statusEl.textContent = contentEmptyMessage('news');
             if (wrap) wrap.style.display = 'none';
             newsFirstFetch = false;
         }
@@ -4449,7 +4457,7 @@ function initBonusesPage() {
         } catch (e) {
             console.error(e);
             grid.innerHTML =
-                '<p class="bonuses-grid-error">Could not load bonuses. Run <code>npm start</code> and ensure the backend API is running (same origin as this site).</p>';
+                `<p class="bonuses-grid-empty">${contentEmptyMessage('bonuses')}</p>`;
         }
     })();
 }
@@ -4892,6 +4900,15 @@ async function bootApp() {
         case 'home':
             await Promise.all([loadHomeFeaturedCasino(), loadCasinos(), loadProviders()]);
             return;
+        case 'malaysia-hub': {
+            try {
+                await ensureCasinoBonusSlugMap();
+            } catch (e) {
+                console.warn('Malaysia hub bonus map:', e);
+            }
+            await initMalaysiaHubPage();
+            return;
+        }
         case 'casinos-listing': {
             const casinosEl = document.getElementById('casinos-listing-container');
             if (casinosEl) casinosEl.innerHTML = skeletonGridHtml('listing-card', 5);
@@ -5109,7 +5126,7 @@ function initProvidersListingPage() {
             const json = await res.json();
             if (!res.ok) {
                 clearListingMinHeight();
-                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #b91c1c;">${apiErrorMessage(res.status, json)}</p>`;
+                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${apiErrorMessage(res.status, json, 'providers')}</p>`;
                 if (wrap) wrap.style.display = 'none';
                 providersListingFirstFetch = false;
                 return;
@@ -5154,7 +5171,7 @@ function initProvidersListingPage() {
         } catch (e) {
             console.error(e);
             clearListingMinHeight();
-            grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #e11d48;">Could not reach the API. Run <code>npm start</code>.</p>`;
+            grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${contentEmptyMessage('providers')}</p>`;
             if (wrap) wrap.style.display = 'none';
             providersListingFirstFetch = false;
         }
@@ -5513,7 +5530,7 @@ function initSlotsListingPage() {
             }
             if (!res.ok) {
                 clearListingMinHeight();
-                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #b91c1c;">${apiErrorMessage(res.status, json)}</p>`;
+                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${apiErrorMessage(res.status, json, 'slots')}</p>`;
                 if (wrap) wrap.style.display = 'none';
                 if (totalEl) totalEl.textContent = '-';
                 slotsListingFirstFetch = false;
@@ -5562,7 +5579,7 @@ function initSlotsListingPage() {
         } catch (e) {
             console.error(e);
             clearListingMinHeight();
-            grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #e11d48;">Could not load slots. Run <code>npm start</code> and open this site from the same address, or try again later.</p>`;
+            grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${contentEmptyMessage('slots')}</p>`;
             if (wrap) wrap.style.display = 'none';
             if (totalEl) totalEl.textContent = '-';
             slotsListingFirstFetch = false;
@@ -5696,6 +5713,252 @@ function initCasinosListingFilterDrawer() {
     }
     window.addEventListener('resize', onMqChange);
     setOpen(false);
+}
+
+// ============================================================
+// Malaysia Hub: static table with optional Strapi override
+// ============================================================
+
+function malaysiaHighlightDisplay(attr) {
+    return firstNonEmptyAttr(attr, ['MalaysiaHighlight', 'malaysiaHighlight', 'Highlight', 'highlight']) || '';
+}
+
+function malaysiaBonusLineDisplay(attr) {
+    return firstNonEmptyAttr(attr, ['MalaysiaBonusLine', 'malaysiaBonusLine']) || casinoBonusAmountDisplay(attr) || '';
+}
+
+function malaysiaTableRowClass(listPos) {
+    if (listPos === 1) return ' malaysia-table__row--podium malaysia-table__row--podium-1';
+    if (listPos === 2) return ' malaysia-table__row--podium malaysia-table__row--podium-2';
+    if (listPos === 3) return ' malaysia-table__row--podium malaysia-table__row--podium-3';
+    return '';
+}
+
+function malaysiaOperatorRowClass(listPos) {
+    if (listPos === 1) return ' malaysia-operator-row--podium malaysia-operator-row--podium-1';
+    if (listPos === 2) return ' malaysia-operator-row--podium malaysia-operator-row--podium-2';
+    if (listPos === 3) return ' malaysia-operator-row--podium malaysia-operator-row--podium-3';
+    return '';
+}
+
+function malaysiaCategoryWinner(rows, flagKey) {
+    if (!Array.isArray(rows)) return null;
+    for (const row of rows) {
+        const attr = attrFromCasinoEntry(row);
+        const flags = attr.CategoryFlags || attr.categoryFlags;
+        if (flags && (flags[flagKey] || flags[flagKey.charAt(0).toUpperCase() + flagKey.slice(1)])) {
+            return attr;
+        }
+    }
+    return null;
+}
+
+function updateMalaysiaSummaryTable(rows) {
+    const table = document.getElementById('malaysia-summary-table');
+    if (!table || !Array.isArray(rows) || rows.length === 0) return;
+    const editors = malaysiaCategoryWinner(rows, 'editorsPick');
+    const payout = malaysiaCategoryWinner(rows, 'bestPayout');
+    const slots = malaysiaCategoryWinner(rows, 'bestSlots');
+    const live = malaysiaCategoryWinner(rows, 'bestLive');
+    const fastest = malaysiaCategoryWinner(rows, 'fastestPayout');
+    const mobile = malaysiaCategoryWinner(rows, 'bestMobile');
+    const map = {
+        'summary-editors-pick': editors,
+        'summary-top-bonus': editors,
+        'summary-best-payout': payout,
+        'summary-best-slots': slots,
+        'summary-best-live': live,
+        'summary-fastest-payout': fastest,
+        'summary-best-mobile': mobile,
+    };
+    Object.entries(map).forEach(([id, attr]) => {
+        const cell = document.getElementById(id);
+        if (cell && attr) cell.textContent = attr.Name || attr.name || cell.textContent;
+    });
+}
+
+function updateMalaysiaFeaturedTables(rows) {
+    const bonusPick = malaysiaCategoryWinner(rows, 'editorsPick') || (rows[0] ? attrFromCasinoEntry(rows[0]) : null);
+    const livePick = malaysiaCategoryWinner(rows, 'bestLive');
+    if (bonusPick) {
+        const nameEl = document.getElementById('malaysia-bonus-featured-name');
+        const bonusEl = document.getElementById('malaysia-bonus-featured-offer');
+        const linkEl = document.getElementById('malaysia-bonus-featured-link');
+        if (nameEl) nameEl.textContent = bonusPick.Name || bonusPick.name || nameEl.textContent;
+        if (bonusEl) bonusEl.textContent = malaysiaBonusLineDisplay(bonusPick) || bonusEl.textContent;
+        if (linkEl) {
+            linkEl.href = casinoVisitSiteHref(bonusPick);
+            if (casinoVisitSiteIsExternal(bonusPick)) {
+                linkEl.target = '_blank';
+                linkEl.rel = 'nofollow noopener';
+            }
+        }
+    }
+    if (livePick) {
+        const nameEl = document.getElementById('malaysia-live-featured-name');
+        const bonusEl = document.getElementById('malaysia-live-featured-bonus');
+        const linkEl = document.getElementById('malaysia-live-featured-link');
+        if (nameEl) nameEl.textContent = livePick.Name || livePick.name || nameEl.textContent;
+        if (bonusEl) bonusEl.textContent = malaysiaBonusLineDisplay(livePick) || bonusEl.textContent;
+        if (linkEl) {
+            linkEl.href = casinoVisitSiteHref(livePick);
+            if (casinoVisitSiteIsExternal(livePick)) {
+                linkEl.target = '_blank';
+                linkEl.rel = 'nofollow noopener';
+            }
+        }
+    }
+}
+
+function renderMalaysiaOperatorCard(entry, listPos) {
+    const attr = attrFromCasinoEntry(entry);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="" class="malaysia-operator-row__logo" width="48" height="48" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const rating = escapeHtml(formatRatingScoreLine(attr, `${(5 - (listPos - 1) * 0.1).toFixed(1)}/5`));
+    const bonus = escapeHtml(malaysiaBonusLineDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
+        <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
+        <div class="malaysia-operator-row__brand">${logoHtml}<h3 class="malaysia-operator-row__name">${name}</h3></div>
+        <div class="malaysia-operator-row__rating"><span class="malaysia-operator-row__score">${rating}</span></div>
+        <div class="malaysia-operator-row__bonus"><span class="malaysia-operator-row__field-label">Bonus amount</span><strong>${bonus}</strong></div>
+        <div class="malaysia-operator-row__highlight"><span class="malaysia-operator-row__field-label">Casino site highlight</span><p>${highlight}</p></div>
+        <div class="malaysia-operator-row__cta"><a href="${visitHref}" class="btn btn-primary btn-block"${visitRel}>Visit site</a></div>
+    </article>`;
+}
+
+function renderMalaysiaTableRow(entry, listPos) {
+    const attr = attrFromCasinoEntry(entry);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="" class="malaysia-table__logo" width="32" height="32" loading="lazy">`
+        : `<span class="malaysia-table__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const rating = escapeHtml(formatRatingScoreLine(attr, `${(5 - (listPos - 1) * 0.1).toFixed(1)}/5`));
+    const bonus = escapeHtml(malaysiaBonusLineDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    return `<tr class="malaysia-table__row${malaysiaTableRowClass(listPos)}">
+        <td data-label="Casino"><span class="malaysia-table__rank">${listPos}</span>${logoHtml}<span class="malaysia-table__name">${name}</span></td>
+        <td data-label="Rating">${rating}</td>
+        <td data-label="Bonus">${bonus}</td>
+        <td data-label="Highlight">${highlight}</td>
+        <td data-label="Link"><a href="${visitHref}" class="btn btn-primary btn-small"${visitRel}>Visit site</a></td>
+    </tr>`;
+}
+
+function updateMalaysiaConclusionFromAttr(attr) {
+    if (!attr) return;
+    const nameEl = document.getElementById('malaysia-conclusion-name');
+    const bonusEl = document.getElementById('malaysia-conclusion-bonus');
+    const ratingEl = document.getElementById('malaysia-conclusion-rating');
+    const licensesEl = document.getElementById('malaysia-conclusion-licenses');
+    const highlightsEl = document.getElementById('malaysia-conclusion-highlights');
+    const linkEl = document.getElementById('malaysia-conclusion-link');
+    if (nameEl) nameEl.textContent = attr.Name || attr.name || nameEl.textContent;
+    if (bonusEl) bonusEl.textContent = malaysiaBonusLineDisplay(attr) || bonusEl.textContent;
+    if (ratingEl) ratingEl.textContent = formatRatingScoreLine(attr, ratingEl.textContent);
+    if (licensesEl) {
+        licensesEl.textContent =
+            firstNonEmptyAttr(attr, ['License', 'license', 'Licenses', 'licenses']) || licensesEl.textContent;
+    }
+    if (highlightsEl) {
+        highlightsEl.textContent = malaysiaHighlightDisplay(attr) || highlightsEl.textContent;
+    }
+    if (linkEl) {
+        linkEl.href = casinoVisitSiteHref(attr);
+        linkEl.textContent = `Visit ${attr.Name || attr.name || 'casino'}`;
+        if (casinoVisitSiteIsExternal(attr)) {
+            linkEl.target = '_blank';
+            linkEl.rel = 'nofollow noopener';
+        }
+    }
+}
+
+function findMalaysiaEditorsPick(rows) {
+    if (!Array.isArray(rows)) return null;
+    for (const row of rows) {
+        const attr = attrFromCasinoEntry(row);
+        const flags = attr.CategoryFlags || attr.categoryFlags;
+        if (flags && (flags.editorsPick || flags.EditorsPick)) return attr;
+    }
+    return rows[0] ? attrFromCasinoEntry(rows[0]) : null;
+}
+
+async function fetchMalaysiaHubCasinos() {
+    const attempts = [
+        'populate=*&sort=MalaysiaRank:asc&pagination[limit]=11&filters[Markets][$containsi]=malaysia',
+        'populate=*&sort=Rank:asc&pagination[limit]=11&filters[Markets][$containsi]=malaysia',
+    ];
+    for (const qs of attempts) {
+        try {
+            const res = await fetchCasinosWithBonusPopulate(qs);
+            const json = await res.json();
+            if (res.ok && Array.isArray(json.data) && json.data.length > 0) {
+                return json.data;
+            }
+        } catch (e) {
+            console.warn('Malaysia hub fetch attempt failed:', e);
+        }
+    }
+    return null;
+}
+
+async function initMalaysiaHubPage() {
+    const listEl = document.getElementById('malaysia-operator-list');
+    const tbody = document.getElementById('malaysia-casino-table-body');
+    if (!listEl && !tbody) return;
+
+    const rows = await fetchMalaysiaHubCasinos();
+    if (!rows || rows.length === 0) return;
+
+    if (listEl) {
+        listEl.innerHTML = rows.map((c, i) => renderMalaysiaOperatorCard(c, i + 1)).join('');
+    } else {
+        tbody.innerHTML = rows.map((c, i) => renderMalaysiaTableRow(c, i + 1)).join('');
+    }
+    updateMalaysiaConclusionFromAttr(findMalaysiaEditorsPick(rows));
+    updateMalaysiaSummaryTable(rows);
+    updateMalaysiaFeaturedTables(rows);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function appendHubListingFilters(qs, container) {
+    if (!container) return { qs, hasHubFilters: false };
+    let out = qs;
+    let hasHubFilters = false;
+    const hubMarket = container.dataset.hubMarket;
+    const hubPayment = container.dataset.hubPayment;
+    const hubLive = container.dataset.hubLive;
+    const hubGame = container.dataset.hubGame;
+    const hubMobile = container.dataset.hubMobile;
+    if (hubMarket) {
+        out += `&filters[Markets][$containsi]=${encodeURIComponent(hubMarket)}`;
+        hasHubFilters = true;
+    }
+    if (hubPayment) {
+        out += `&filters[MalaysiaPaymentTags][$containsi]=${encodeURIComponent(hubPayment)}`;
+        hasHubFilters = true;
+    }
+    if (hubLive === 'true') {
+        out += '&filters[HasLiveCasino][$eq]=true';
+        hasHubFilters = true;
+    }
+    if (hubGame) {
+        out += `&filters[LiveGameTypes][$containsi]=${encodeURIComponent(hubGame)}`;
+        hasHubFilters = true;
+    }
+    if (hubMobile) {
+        out += `&filters[MobilePlatform][$containsi]=${encodeURIComponent(hubMobile)}`;
+        hasHubFilters = true;
+    }
+    return { qs: out, hasHubFilters };
 }
 
 // ============================================================
@@ -5833,17 +6096,29 @@ function initCasinosListingPage() {
 
         let qs = `populate=*&sort=${currentSort}&pagination[page]=${currentPage}&pagination[pageSize]=${currentPageSize}`;
         if (filterTierOne) qs += `&filters[IsTierOne][$eq]=true`;
+        const hubFilterResult = appendHubListingFilters(qs, container);
+        qs = hubFilterResult.qs;
 
         const clearListingMinHeight = () => {
             container.style.minHeight = '';
         };
 
-        try {
-            const res = await fetchCasinosWithBonusPopulate(qs);
+        async function fetchListing(queryString) {
+            const res = await fetchCasinosWithBonusPopulate(queryString);
             const json = await res.json();
+            return { res, json };
+        }
+
+        try {
+            let { res, json } = await fetchListing(qs);
+            if (!res.ok && hubFilterResult.hasHubFilters) {
+                let fallbackQs = `populate=*&sort=${currentSort}&pagination[page]=${currentPage}&pagination[pageSize]=${currentPageSize}`;
+                if (filterTierOne) fallbackQs += `&filters[IsTierOne][$eq]=true`;
+                ({ res, json } = await fetchListing(fallbackQs));
+            }
             if (!res.ok) {
                 clearListingMinHeight();
-                container.innerHTML = `<p style="text-align:center; padding: 60px; color: #e11d48;">${apiErrorMessage(res.status, json)}</p>`;
+                container.innerHTML = `<p style="text-align:center; padding: 60px; color: #64748b;">${apiErrorMessage(res.status, json, 'casinos')}</p>`;
                 casinosListingFirstFetch = false;
                 return;
             }
@@ -5871,7 +6146,7 @@ function initCasinosListingPage() {
         } catch (e) {
             console.error(e);
             clearListingMinHeight();
-            container.innerHTML = `<p style="text-align:center; padding: 60px; color: #e11d48;">Could not reach the API proxy. Run <code>npm start</code> and open <code>http://localhost:3000</code>.</p>`;
+            container.innerHTML = `<p style="text-align:center; padding: 60px; color: #64748b;">${contentEmptyMessage('casinos')}</p>`;
             casinosListingFirstFetch = false;
         }
     }
