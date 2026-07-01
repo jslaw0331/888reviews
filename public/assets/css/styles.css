@@ -18337,9 +18337,9 @@ body.page-guide-post {
   border: 0;
 }
 
-.page-malaysia-sub .casinos-seo a,
-.page-malaysia .casinos-seo a,
-.page-malaysia .malaysia-section a {
+.page-malaysia-sub .casinos-seo a:not(.btn),
+.page-malaysia .casinos-seo a:not(.btn),
+.page-malaysia .malaysia-section a:not(.btn) {
   color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
