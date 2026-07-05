@@ -2,15 +2,18 @@
 <html lang="en">
 <head>
     <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-TS95HFR5');</script>
+    <script>
+(function(){
+  function loadGtm(){(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-TS95HFR5');}
+  if('requestIdleCallback' in window){requestIdleCallback(loadGtm,{timeout:3000});}
+  else{window.addEventListener('load',loadGtm,{once:true});}
+})();
+</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="strapi-public-url" content="https://api.888reviews.com">
     <meta name="description" id="bd-meta-description" content="">
     <meta name="robots" content="index, follow">
     <link rel="canonical" id="bd-canonical" href="">
@@ -19,24 +22,24 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <meta property="og:description" id="bd-og-description" content="">
     <meta property="og:url" id="bd-og-url" content="">
     <meta property="og:site_name" content="888reviews">
-    <meta property="og:image" id="bd-og-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta property="og:image" id="bd-og-image" content="https://888reviews.com/assets/img/888review-siteicon.webp">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" id="bd-twitter-title" content="">
     <meta name="twitter:description" id="bd-twitter-description" content="">
-    <meta name="twitter:image" id="bd-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:image" id="bd-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.webp">
     <title>Casino bonus | 888reviews</title>
     <script type="application/ld+json" id="bd-jsonld-webpage"></script>
     <script type="application/ld+json" id="bd-jsonld-breadcrumb"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-    <link rel="preload" href="/components/header.html" as="fetch" crossorigin>
-    <link rel="preload" href="/components/footer.html" as="fetch" crossorigin>
-    <link rel="preload" href="/components/sidebar.html" as="fetch" crossorigin>
-    <link rel="stylesheet" href="/assets/css/styles.css">
-    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
-    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+
+        <!-- build:css -->
+    <link rel="stylesheet" href="/assets/css/dist/base.24f3b900.css">
+    <link rel="stylesheet" href="/assets/css/dist/detail.09d1d323.css">
+    <link rel="stylesheet" href="/assets/css/fonts.css">
+    <!-- endbuild:css -->
+<link rel="icon" href="/assets/img/888review-siteicon.webp" type="image/webp">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.webp">
 </head>
 <body class="page-bonus-detail">
     <!-- Google Tag Manager (noscript) -->
@@ -44,13 +47,62 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <site-header></site-header>
+    <div class="site-header-inlined" data-inlined="true">
+<header class="header" id="main-header">
+    <div class="container header-inner">
+        <div class="logo">
+            <a href="/">
+                <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="site-logo site-logo--header"
+                    width="270" height="270" decoding="async" fetchpriority="high">
+            </a>
+        </div>
+        <nav class="main-nav" id="main-nav" aria-label="Primary">
+            <div class="mobile-nav-panel__top">
+                <a href="/" class="mobile-nav-panel__brand">
+                    <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="mobile-nav-panel__logo"
+                        width="270" height="270" decoding="async">
+                </a>
+                <button type="button" class="mobile-nav-close icon-btn" id="mobile-menu-close" aria-label="Close menu">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <ul class="main-nav__list">
+                <li><a href="/">Casinos</a></li>
+                <li><a href="/bonus">Bonus</a></li>
+                <li class="main-nav__item main-nav__item--dropdown">
+                    <button type="button" class="main-nav__dropdown-trigger" aria-expanded="false"
+                        aria-haspopup="true" aria-controls="main-nav-games-menu">Games</button>
+                    <ul class="main-nav__dropdown" id="main-nav-games-menu" role="menu">
+                        <li role="none"><a href="/slots" role="menuitem">Slots</a></li>
+                        <li role="none"><a href="/blackjack" role="menuitem">Blackjack</a></li>
+                        <li role="none"><a href="/roulette" role="menuitem">Roulette</a></li>
+                        <li role="none"><a href="/baccarat" role="menuitem">Baccarat</a></li>
+                    </ul>
+                </li>
+                <li><a href="/mobile">Mobile</a></li>
+                <li><a href="/ewallet">e-Wallet</a></li>
+                <li><a href="/reviews">Reviews</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+            <div class="mobile-nav-panel__foot">
+                <a href="/bonus" class="btn btn-primary btn-block mobile-nav-cta">Browse bonuses</a>
+            </div>
+        </nav>
+        <div class="header-actions">
+            <button type="button" class="mobile-menu-btn icon-btn" id="mobile-menu-btn" aria-expanded="false"
+                aria-controls="main-nav" aria-label="Open menu">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </div>
+</header>
+</div>
 
     <div id="bonus-error" class="bonus-detail-error container" hidden>
         <p class="bonus-detail-error__text">This bonus is not available yet.</p>
-        <p class="bonus-detail-error__hint"><a href="/">Home</a> · <a href="/bonuses">Bonuses</a> · <a
-                href="/casinos">Casinos</a></p>
-        <a href="/bonuses" class="btn btn-primary">Browse all bonuses</a>
+        <p class="bonus-detail-error__hint"><a href="/">Home</a> · <a href="/bonus">Bonuses</a> · <a
+                href="/reviews">Casinos</a></p>
+        <a href="/bonus" class="btn btn-primary">Browse all bonuses</a>
     </div>
 
     <main class="bonus-detail-page detail-page--loading" id="bonus-page-root">
@@ -62,7 +114,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             <a href="/" class="bd-breadcrumb__link">Home</a>
                         </li>
                         <li class="bd-breadcrumb__item">
-                            <a href="/bonuses" class="bd-breadcrumb__link">
+                            <a href="/bonus" class="bd-breadcrumb__link">
                                 <span class="bd-breadcrumb__label bd-breadcrumb__label--long">Casino Bonuses</span>
                                 <span class="bd-breadcrumb__label bd-breadcrumb__label--short" aria-hidden="true">Bonuses</span>
                             </a>
@@ -72,7 +124,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         </li>
                     </ol>
                 </nav>
-                <a href="/bonuses" class="bd-breadcrumb__back">
+                <a href="/bonus" class="bd-breadcrumb__back">
                     <i data-lucide="arrow-left" aria-hidden="true"></i>
                     <span>All bonuses</span>
                 </a>
@@ -207,8 +259,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="bd-sidebar-card">
                         <h3 class="bd-sidebar-title">Explore</h3>
                         <ul class="bd-sidebar-links">
-                            <li><a href="/bonuses">All casino bonuses</a></li>
-                            <li><a href="/casinos">Casino reviews</a></li>
+                            <li><a href="/bonus">All casino bonuses</a></li>
+                            <li><a href="/reviews">Casino reviews</a></li>
                         </ul>
                     </div>
                     <div class="bd-sidebar-card bd-sidebar-card--hint">
@@ -219,11 +271,68 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </section>
     </main>
 
-    <site-footer></site-footer>
+    <div class="site-footer-inlined" data-inlined="true">
+<!-- Footer -->
+<footer class="footer footer-light">
+    <div class="container">
+        <div class="footer-grid-4">
+            <div class="footer-brand-light">
+                <div class="fbl-title"><img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS"
+                        class="site-logo site-logo--footer" width="270" height="270" decoding="async"
+                        style="height:48px; width:auto; margin-bottom: 12px;"></div>
+                <p>A premier editorial destination for the discerning player. We curate the best in luxury digital
+                    gaming.</p>
+                <div class="fbl-icons">
+                    <i data-lucide="globe"></i>
+                    <i data-lucide="shield-check"></i>
+                    <i data-lucide="file-text"></i>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>RESOURCES</h4>
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>COMMUNITY</h4>
+                <ul>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/guides">Guides</a></li>
+                    <li><a href="/news">News</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>SUPPORT</h4>
+                <ul>
+                    <li><a href="https://www.begambleaware.org" class="text-blue" rel="noopener noreferrer"
+                            target="_blank">Responsible Gaming</a></li>
+                </ul>
+                <div class="fbl-copyright">
+                    &copy; ${year} 888reviews<br>Responsible Gaming<br>Play with your head, not over it.
+                </div>
+            </div>
+        </div>
+        <div class="footer-disclosure">
+            <p>18+ only. Gambling can be addictive. Play responsibly. Content is for informational purposes. We
+                may earn commissions via outbound links — this does not influence editorial scores. Always verify
+                eligibility, terms, and local legality before depositing.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Scroll to Top Button -->
+<button id="scrollToTopBtn" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
+    <i data-lucide="chevron-up"></i>
+</button>
+</div>
     <!-- SEO/perf: deferred scripts — markdown → Lucide UMD → layout components → page bundle(s). -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/assets/js/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/script.js?v=48" defer></script>
+    <script src="/assets/js/dist/core.d600187c.js" defer></script>
+
 </body>
 </html>

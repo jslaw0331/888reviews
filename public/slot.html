@@ -3,18 +3,18 @@
 
 <head>
     <!-- Google Tag Manager -->
-    <script>(function (w, d, s, l, i) {
-            w[l] = w[l] || []; w[l].push({
-                'gtm.start':
-                    new Date().getTime(), event: 'gtm.js'
-            }); var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-TS95HFR5');</script>
+    <script>
+(function(){
+  function loadGtm(){(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-TS95HFR5');}
+  if('requestIdleCallback' in window){requestIdleCallback(loadGtm,{timeout:3000});}
+  else{window.addEventListener('load',loadGtm,{once:true});}
+})();
+</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="strapi-public-url" content="https://api.888reviews.com">
     <meta name="description" id="sv-meta-description" content="">
     <meta name="robots" content="index, follow">
     <link rel="canonical" id="sv-canonical" href="">
@@ -23,25 +23,22 @@
     <meta property="og:title" id="sv-og-title" content="">
     <meta property="og:description" id="sv-og-description" content="">
     <meta property="og:url" id="sv-og-url" content="">
-    <meta property="og:image" id="sv-og-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta property="og:image" id="sv-og-image" content="https://888reviews.com/assets/img/888review-siteicon.webp">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" id="sv-twitter-title" content="">
     <meta name="twitter:description" id="sv-twitter-description" content="">
-    <meta name="twitter:image" id="sv-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:image" id="sv-twitter-image" content="https://888reviews.com/assets/img/888review-siteicon.webp">
     <title>Slot review | 888reviews</title>
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
     <!-- Styles -->
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-    <link rel="preload" href="/components/header.html" as="fetch" crossorigin>
-    <link rel="preload" href="/components/footer.html" as="fetch" crossorigin>
-    <link rel="preload" href="/components/sidebar.html" as="fetch" crossorigin>
-    <link rel="stylesheet" href="/assets/css/styles.css">
-    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
-    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+        <!-- build:css -->
+    <link rel="stylesheet" href="/assets/css/dist/base.24f3b900.css">
+    <link rel="stylesheet" href="/assets/css/dist/detail.09d1d323.css">
+    <link rel="stylesheet" href="/assets/css/fonts.css">
+    <!-- endbuild:css -->
+<link rel="icon" href="/assets/img/888review-siteicon.webp" type="image/webp">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.webp">
 </head>
 
 <body class="page-slot-detail">
@@ -50,12 +47,61 @@
             style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <site-header></site-header>
+    <div class="site-header-inlined" data-inlined="true">
+<header class="header" id="main-header">
+    <div class="container header-inner">
+        <div class="logo">
+            <a href="/">
+                <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="site-logo site-logo--header"
+                    width="270" height="270" decoding="async" fetchpriority="high">
+            </a>
+        </div>
+        <nav class="main-nav" id="main-nav" aria-label="Primary">
+            <div class="mobile-nav-panel__top">
+                <a href="/" class="mobile-nav-panel__brand">
+                    <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="mobile-nav-panel__logo"
+                        width="270" height="270" decoding="async">
+                </a>
+                <button type="button" class="mobile-nav-close icon-btn" id="mobile-menu-close" aria-label="Close menu">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <ul class="main-nav__list">
+                <li><a href="/">Casinos</a></li>
+                <li><a href="/bonus">Bonus</a></li>
+                <li class="main-nav__item main-nav__item--dropdown">
+                    <button type="button" class="main-nav__dropdown-trigger" aria-expanded="false"
+                        aria-haspopup="true" aria-controls="main-nav-games-menu">Games</button>
+                    <ul class="main-nav__dropdown" id="main-nav-games-menu" role="menu">
+                        <li role="none"><a href="/slots" role="menuitem">Slots</a></li>
+                        <li role="none"><a href="/blackjack" role="menuitem">Blackjack</a></li>
+                        <li role="none"><a href="/roulette" role="menuitem">Roulette</a></li>
+                        <li role="none"><a href="/baccarat" role="menuitem">Baccarat</a></li>
+                    </ul>
+                </li>
+                <li><a href="/mobile">Mobile</a></li>
+                <li><a href="/ewallet">e-Wallet</a></li>
+                <li><a href="/reviews">Reviews</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+            <div class="mobile-nav-panel__foot">
+                <a href="/bonus" class="btn btn-primary btn-block mobile-nav-cta">Browse bonuses</a>
+            </div>
+        </nav>
+        <div class="header-actions">
+            <button type="button" class="mobile-menu-btn icon-btn" id="mobile-menu-btn" aria-expanded="false"
+                aria-controls="main-nav" aria-label="Open menu">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </div>
+</header>
+</div>
 
     <div id="slot-error" class="container bonus-detail-error" style="display:none;">
         <p class="bonus-detail-error__text">This slot review is not available yet.</p>
         <p class="bonus-detail-error__hint"><a href="/">Home</a> · <a href="/slots">Slots</a> · <a
-                href="/casinos">Casinos</a></p>
+                href="/reviews">Casinos</a></p>
         <a href="/slots" class="btn btn-primary">Browse all slots</a>
     </div>
 
@@ -120,7 +166,7 @@
                         <span>Play</span>
                         <i data-lucide="external-link" aria-hidden="true"></i>
                     </a>
-                    <a href="/casinos" class="ph-btn-anchor">Where to play</a>
+                    <a href="/reviews" class="ph-btn-anchor">Where to play</a>
                 </div>
                 <p class="sv-hero-responsible">Safer play: set limits before you deposit. See each operator for tools
                     and help.</p>
@@ -416,11 +462,67 @@
 
     </main>
 
-    <site-footer></site-footer>
+    <div class="site-footer-inlined" data-inlined="true">
+<!-- Footer -->
+<footer class="footer footer-light">
+    <div class="container">
+        <div class="footer-grid-4">
+            <div class="footer-brand-light">
+                <div class="fbl-title"><img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS"
+                        class="site-logo site-logo--footer" width="270" height="270" decoding="async"
+                        style="height:48px; width:auto; margin-bottom: 12px;"></div>
+                <p>A premier editorial destination for the discerning player. We curate the best in luxury digital
+                    gaming.</p>
+                <div class="fbl-icons">
+                    <i data-lucide="globe"></i>
+                    <i data-lucide="shield-check"></i>
+                    <i data-lucide="file-text"></i>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>RESOURCES</h4>
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>COMMUNITY</h4>
+                <ul>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/guides">Guides</a></li>
+                    <li><a href="/news">News</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>SUPPORT</h4>
+                <ul>
+                    <li><a href="https://www.begambleaware.org" class="text-blue" rel="noopener noreferrer"
+                            target="_blank">Responsible Gaming</a></li>
+                </ul>
+                <div class="fbl-copyright">
+                    &copy; ${year} 888reviews<br>Responsible Gaming<br>Play with your head, not over it.
+                </div>
+            </div>
+        </div>
+        <div class="footer-disclosure">
+            <p>18+ only. Gambling can be addictive. Play responsibly. Content is for informational purposes. We
+                may earn commissions via outbound links — this does not influence editorial scores. Always verify
+                eligibility, terms, and local legality before depositing.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Scroll to Top Button -->
+<button id="scrollToTopBtn" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
+    <i data-lucide="chevron-up"></i>
+</button>
+</div>
     <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/assets/js/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/script.js" defer></script>
+    <script src="/assets/js/dist/core.d600187c.js" defer></script>
     <script src="/assets/js/player-reviews.js?v=17" defer></script>
 </body>
 

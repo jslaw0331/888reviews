@@ -2,14 +2,14 @@
     <div class="container header-inner">
         <div class="logo">
             <a href="/">
-                <img src="/assets/img/888review-siteicon.png" alt="888 REVIEWS" class="site-logo site-logo--header"
+                <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="site-logo site-logo--header"
                     width="270" height="270" decoding="async" fetchpriority="high">
             </a>
         </div>
         <nav class="main-nav" id="main-nav" aria-label="Primary">
             <div class="mobile-nav-panel__top">
                 <a href="/" class="mobile-nav-panel__brand">
-                    <img src="/assets/img/888review-siteicon.png" alt="888 REVIEWS" class="mobile-nav-panel__logo"
+                    <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="mobile-nav-panel__logo"
                         width="270" height="270" decoding="async">
                 </a>
                 <button type="button" class="mobile-nav-close icon-btn" id="mobile-menu-close" aria-label="Close menu">
@@ -17,28 +17,22 @@
                 </button>
             </div>
             <ul class="main-nav__list">
-                <li><a href="/">Best Casinos</a></li>
-                <li><a href="/live">Live</a></li>
+                <li><a href="/">Casinos</a></li>
                 <li><a href="/bonus">Bonus</a></li>
-                <li><a href="/mobile">Mobile Casinos</a></li>
-                <li><a href="/slots">Online Slots</a></li>
-                <li><a href="/blackjack">Blackjack</a></li>
-                <li><a href="/roulette">Roulette</a></li>
                 <li class="main-nav__item main-nav__item--dropdown">
                     <button type="button" class="main-nav__dropdown-trigger" aria-expanded="false"
-                        aria-controls="main-nav-payments-menu">Payments</button>
-                    <ul class="main-nav__dropdown" id="main-nav-payments-menu">
-                        <li><a href="/ewallet">e-Wallet</a></li>
-                        <li><a href="/touch-n-go">Touch 'n Go</a></li>
+                        aria-haspopup="true" aria-controls="main-nav-games-menu">Games</button>
+                    <ul class="main-nav__dropdown" id="main-nav-games-menu" role="menu">
+                        <li role="none"><a href="/slots" role="menuitem">Slots</a></li>
+                        <li role="none"><a href="/blackjack" role="menuitem">Blackjack</a></li>
+                        <li role="none"><a href="/roulette" role="menuitem">Roulette</a></li>
+                        <li role="none"><a href="/baccarat" role="menuitem">Baccarat</a></li>
                     </ul>
                 </li>
-                <li class="main-nav__item main-nav__item--dropdown">
-                    <a href="/casinos" class="main-nav__dropdown-label">Reviews</a>
-                    <ul class="main-nav__dropdown" id="main-nav-reviews-menu">
-                        <li><a href="/casinos">All casino reviews</a></li>
-                    </ul>
-                </li>
-                <li><a href="/about">About us</a></li>
+                <li><a href="/mobile">Mobile</a></li>
+                <li><a href="/ewallet">e-Wallet</a></li>
+                <li><a href="/reviews">Reviews</a></li>
+                <li><a href="/about">About</a></li>
             </ul>
             <div class="mobile-nav-panel__foot">
                 <a href="/bonus" class="btn btn-primary btn-block mobile-nav-cta">Browse bonuses</a>

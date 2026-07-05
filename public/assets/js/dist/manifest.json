@@ -1,0 +1,15 @@
+{
+  "js": {
+    "core": {
+      "file": "dist/core.d600187c.js",
+      "hash": "d600187c",
+      "bytes": 270116
+    },
+    "static": {
+      "file": "dist/static.fc23c566.js",
+      "hash": "fc23c566",
+      "bytes": 615
+    }
+  },
+  "builtAt": "2026-07-05T15:07:27.756Z"
+}

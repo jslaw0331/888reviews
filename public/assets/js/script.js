@@ -72,10 +72,9 @@ const HOME_TOP_PROVIDERS_LIMIT = 5;
 /** Featured operator on the homepage hero + Tier One sidebar (Strapi Slug, case-insensitive). */
 const HOME_FEATURED_CASINO_SLUG = 'bk-8';
 
-/** Path to casino review page: /casino/{slug} */
-function casinoReviewPath(slug) {
-    if (!slug) return '#';
-    return `/casino/${encodeURIComponent(slug)}`;
+/** Internal link for casino listings (individual /casino/{slug} pages removed). */
+function casinoReviewPath(_slug) {
+    return '/reviews';
 }
 
 /** Path to provider dossier page: /provider/{slug} */
@@ -209,12 +208,20 @@ function clearDetailPageLoading(rootEl) {
 function detectBootPageType() {
     if (document.getElementById('gp-page-root')) return 'guide-post';
     if (document.getElementById('bonus-page-root') && document.getElementById('bd-title')) return 'bonus-detail';
-    if (document.getElementById('cr-page') && document.getElementById('cr-name')) return 'casino-review';
     if (document.getElementById('provider-content') && document.getElementById('pv-title')) return 'provider-detail';
     if (document.getElementById('slot-page-root') && document.getElementById('sv-title')) return 'slot-detail';
     if (document.getElementById('malaysia-operator-list') || document.getElementById('malaysia-casino-table')) {
         return 'malaysia-hub';
     }
+    if (document.getElementById('mobile-operator-list')) return 'mobile-hub';
+    if (document.getElementById('bonus-page-operator-list')) return 'bonus-hub';
+    if (document.getElementById('live-casino-operator-list')) return 'live-casino-hub';
+    if (document.getElementById('reviews-operator-list')) return 'reviews-hub';
+    if (document.getElementById('e-wallet-operator-list')) return 'e-wallet-hub';
+    if (document.getElementById('roulette-operator-list')) return 'roulette-hub';
+    if (document.getElementById('blackjack-operator-list')) return 'blackjack-hub';
+    if (document.getElementById('baccarat-operator-list')) return 'baccarat-hub';
+    if (document.getElementById('slot-page-operator-list')) return 'slot-page-hub';
     if (document.getElementById('casinos-listing-container')) return 'casinos-listing';
     if (document.getElementById('slots-listing-grid')) return 'slots-listing';
     if (document.getElementById('providers-listing-grid')) return 'providers-listing';
@@ -391,15 +398,14 @@ function casinoAffiliateUrl(attr) {
         const u = String(raw).trim();
         return /^https?:\/\//i.test(u) ? u : '';
     };
-    return coerceHttp(attr.AffiliateLink);
+    return coerceHttp(attr.AffiliateLink ?? attr.affiliateLink ?? attr.websiteUrl);
 }
 
-/** VISIT SITE: external URL when configured, else internal review so the control is never a useless `#`. */
+/** VISIT SITE: external URL when configured, else reviews directory. */
 function casinoVisitSiteHref(attr) {
     const ext = casinoAffiliateUrl(attr);
     if (ext) return ext;
-    const slug = firstNonEmptyAttr(attr, ['Slug', 'slug', 'URLSlug', 'urlSlug']);
-    return slug ? casinoReviewPath(slug) : '#';
+    return '/reviews';
 }
 
 function casinoVisitSiteIsExternal(attr) {
@@ -521,12 +527,25 @@ function renderCasinoPaymentChipsHtml(attr) {
         .join('');
 }
 
-/** Strapi Blocks: inline nodes (text, hard_break) to HTML. */
+/** Strapi Blocks: inline nodes (text, hard_break, link) to HTML. */
+function richTextLinkHtml(href, inner) {
+    const h = escapeHtml(String(href || ''));
+    if (!h) return inner || '';
+    const ext = /^https?:\/\//i.test(h);
+    const tgt = ext ? ' target="_blank" rel="noopener noreferrer"' : ' rel="noopener noreferrer"';
+    return `<a href="${h}"${tgt}>${inner || ''}</a>`;
+}
+
 function strapiInlineToHtml(nodes) {
     if (!nodes || !Array.isArray(nodes)) return '';
     return nodes
         .map((node) => {
             if (!node) return '';
+            if (node.type === 'link') {
+                const href = node.url || node.attrs?.href || '';
+                const inner = strapiInlineToHtml(node.children ?? node.content);
+                return richTextLinkHtml(href, inner);
+            }
             if (node.type === 'text') {
                 let t = escapeHtml(node.text ?? '');
                 const marks = node.marks || [];
@@ -538,10 +557,14 @@ function strapiInlineToHtml(nodes) {
                     else if (m.type === 'strike') t = `<s>${t}</s>`;
                     else if (m.type === 'code') t = `<code>${t}</code>`;
                     else if (m.type === 'link' && m.attrs && m.attrs.href) {
-                        const href = escapeHtml(String(m.attrs.href));
-                        t = `<a href="${href}" target="_blank" rel="noopener noreferrer">${t}</a>`;
+                        t = richTextLinkHtml(m.attrs.href, t);
                     }
                 });
+                if (node.bold) t = `<strong>${t}</strong>`;
+                if (node.italic) t = `<em>${t}</em>`;
+                if (node.underline) t = `<u>${t}</u>`;
+                if (node.strikethrough || node.strike) t = `<s>${t}</s>`;
+                if (node.code) t = `<code>${t}</code>`;
                 return t;
             }
             if (node.type === 'hard_break') return '<br>';
@@ -553,7 +576,7 @@ function strapiInlineToHtml(nodes) {
 /** Strapi Blocks: one block node to HTML. */
 function strapiBlockNodeToHtml(node) {
     if (!node || !node.type) return '';
-    const kids = node.content;
+    const kids = node.content ?? node.children;
     switch (node.type) {
         case 'paragraph':
             return `<p>${strapiInlineToHtml(kids) || '&nbsp;'}</p>`;
@@ -565,8 +588,16 @@ function strapiBlockNodeToHtml(node) {
             return `<ul>${(kids || []).map(strapiBlockNodeToHtml).join('')}</ul>`;
         case 'orderedList':
             return `<ol>${(kids || []).map(strapiBlockNodeToHtml).join('')}</ol>`;
+        case 'list': {
+            const tag = node.format === 'ordered' ? 'ol' : 'ul';
+            return `<${tag}>${(kids || []).map(strapiBlockNodeToHtml).join('')}</${tag}>`;
+        }
         case 'listItem':
+        case 'list-item': {
+            const inline = strapiInlineToHtml(kids);
+            if (inline) return `<li>${inline}</li>`;
             return `<li>${(kids || []).map(strapiBlockNodeToHtml).join('')}</li>`;
+        }
         case 'blockquote':
             return `<blockquote>${(kids || []).map(strapiBlockNodeToHtml).join('')}</blockquote>`;
         case 'code':
@@ -652,6 +683,9 @@ function richTextToHtml(raw) {
     if (typeof raw === 'object' && raw !== null && raw.type === 'doc') {
         return strapiBlocksToHtml(raw);
     }
+    if (Array.isArray(raw) && raw.length > 0 && raw.some((n) => n && n.type)) {
+        return raw.map(strapiBlockNodeToHtml).join('');
+    }
     if (typeof raw === 'string') {
         const t = raw.trim();
         if (!t) return '';
@@ -691,11 +725,23 @@ function richTextToPlainText(raw) {
                     if (!n) return '';
                     if (n.type === 'text') return n.text ?? '';
                     if (n.content) return walk(n.content);
+                    if (n.children) return walk(n.children);
                     return '';
                 })
                 .join(' ');
         };
         return walk(raw.content).replace(/\s+/g, ' ').trim();
+    }
+    if (Array.isArray(raw) && raw.length > 0 && raw.some((n) => n && n.type)) {
+        const html = raw.map(strapiBlockNodeToHtml).join('');
+        if (html) {
+            if (typeof document !== 'undefined') {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+            }
+            return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
     }
     if (typeof raw === 'string') {
         const t = raw.trim();
@@ -710,6 +756,7 @@ function richTextToPlainText(raw) {
         }
         return t;
     }
+    if (typeof raw === 'object') return '';
     return String(raw).replace(/\s+/g, ' ').trim();
 }
 
@@ -721,114 +768,8 @@ function safeLucideIcon(raw) {
     return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) ? s : 'star';
 }
 
-function setReviewMetaDescription(attr) {
-    const excerptPlain = richTextToPlainText(attr.ReviewExcerpt ?? attr.reviewExcerpt);
-    const desc =
-        firstNonEmptyAttr(attr, [
-            'MetaDescription',
-            'SEODescription',
-            'seoDescription',
-            'metaDescription',
-        ]) ||
-        excerptPlain ||
-        (attr.Name ? `Expert review of ${attr.Name}: bonuses, games, payouts, and trust signals.` : '');
-    const clipped = desc.length > 320 ? `${desc.slice(0, 317)}…` : desc;
-    let meta = document.getElementById('cr-meta-description');
-    if (!meta) {
-        meta = document.createElement('meta');
-        meta.setAttribute('name', 'description');
-        meta.id = 'cr-meta-description';
-        document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', clipped);
-}
-
-/** Self-referencing canonical and Open Graph tags for casino review detail pages (`review.html`). */
-function setReviewCanonicalAndSocial(name) {
-    const path = window.location.pathname || '/';
-    const absBase = getPublicSiteOrigin();
-    const canonicalAbs = `${absBase}${path.startsWith('/') ? path : `/${path}`}`;
-    const canonEl = document.getElementById('cr-canonical');
-    if (canonEl) canonEl.setAttribute('href', canonicalAbs);
-    const ogUrl = document.getElementById('cr-og-url');
-    if (ogUrl) ogUrl.setAttribute('content', canonicalAbs);
-
-    const pageTitle = `${name} Review | 888reviews`;
-    const ogTitle = document.getElementById('cr-og-title');
-    if (ogTitle) ogTitle.setAttribute('content', pageTitle);
-
-    const metaDesc = document.getElementById('cr-meta-description');
-    const desc = metaDesc ? metaDesc.getAttribute('content') : '';
-    const ogDesc = document.getElementById('cr-og-description');
-    if (ogDesc && desc) ogDesc.setAttribute('content', desc);
-
-    const twTitle = document.getElementById('cr-twitter-title');
-    if (twTitle) twTitle.setAttribute('content', pageTitle);
-    const twDesc = document.getElementById('cr-twitter-description');
-    if (twDesc && desc) twDesc.setAttribute('content', desc);
-
-    let imageAbs = `${absBase}/assets/img/888review-siteicon.png`;
-    const heroImg =
-        document.getElementById('cr-hero-banner-img') || document.getElementById('cr-hero-img');
-    const src = heroImg && heroImg.getAttribute('src');
-    if (src && /^https?:\/\//i.test(src)) imageAbs = src;
-    else if (src && src.startsWith('/')) imageAbs = `${absBase}${src}`;
-
-    const ogImg = document.getElementById('cr-og-image');
-    if (ogImg) ogImg.setAttribute('content', imageAbs);
-    const twImg = document.getElementById('cr-twitter-image');
-    if (twImg) twImg.setAttribute('content', imageAbs);
-}
-
 const DEFAULT_PROVIDER_CARD_IMAGE =
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop';
-
-/** Max images in the “Inside the experience” gallery on casino review pages. */
-const REVIEW_GALLERY_MAX_IMAGES = 3;
-
-/** Casino review page: when hero/gallery are empty in the API or fail to load. */
-const CASINO_REVIEW_PLACEHOLDER_IMAGES = [
-    'https://images.unsplash.com/photo-1596838132731-dd50e6f54c9a?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=1200&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1542171221-39e1f579979c?w=1200&auto=format&fit=crop',
-];
-
-/** Build load order: API URL first, then every placeholder (deduped) so a bad link always has fallbacks after it. */
-function galleryImageFallbackChain(primarySrc) {
-    const out = [];
-    const seen = new Set();
-    for (const u of [primarySrc, ...CASINO_REVIEW_PLACEHOLDER_IMAGES]) {
-        if (!u || seen.has(u)) continue;
-        seen.add(u);
-        out.push(u);
-    }
-    return out;
-}
-
-/** After API URLs are injected, try each URL in the chain on error so broken media links never show the browser broken icon. */
-function wireReviewGalleryImages(grid) {
-    if (!grid) return;
-    grid.querySelectorAll('img.cr-gallery-img').forEach((img) => {
-        const first = img.getAttribute('src') || '';
-        const chain = galleryImageFallbackChain(first);
-        let idx = 0;
-        img.addEventListener(
-            'error',
-            function onImgErr() {
-                idx += 1;
-                if (idx < chain.length) {
-                    img.src = chain[idx];
-                    return;
-                }
-                img.removeEventListener('error', onImgErr);
-                img.classList.add('cr-gallery-img--empty');
-                img.removeAttribute('src');
-                img.alt = '';
-            },
-        );
-    });
-}
 
 /** Flatten Strapi media field (single or repeatable) to URL strings (main + formats + nested data). */
 function normalizeStrapiMediaToUrls(field) {
@@ -907,29 +848,6 @@ function hasHeroEditorImage(attr) {
         raw = d?.attributes?.url ?? d?.url ?? '';
     }
     return !!String(raw).trim();
-}
-
-/** Gallery fields often named Gallery, Images, Screenshots, etc. */
-function collectCasinoGalleryUrls(attr) {
-    const fields = [
-        attr.Gallery,
-        attr.Images,
-        attr.Screenshots,
-        attr.ReviewImages,
-        attr.ReviewGallery,
-    ];
-    const urls = [];
-    const seen = new Set();
-    for (const field of fields) {
-        for (const u of normalizeStrapiMediaToUrls(field)) {
-            const abs = resolveMediaUrl(u);
-            if (abs && !seen.has(abs)) {
-                seen.add(abs);
-                urls.push(abs);
-            }
-        }
-    }
-    return urls;
 }
 
 function getProviderCardImageUrl(attr) {
@@ -1147,6 +1065,7 @@ function slotPlayLinkUrl(attr) {
 function getSlotCardImageUrl(attr) {
     if (!attr) return DEFAULT_SLOT_CARD_IMAGE;
     const fromFields = [
+        ...normalizeStrapiMediaToUrls(attr.coverImage),
         ...normalizeStrapiMediaToUrls(attr.CoverImage),
         ...normalizeStrapiMediaToUrls(attr.HeroImage),
         ...normalizeStrapiMediaToUrls(attr.Thumbnail),
@@ -1225,6 +1144,12 @@ async function ensureStrapiPublicUrl() {
     if (typeof window === 'undefined') return;
     if (window.__STRAPI_PUBLIC_URL__ !== undefined) return;
     window.__STRAPI_PUBLIC_URL__ = '';
+    const meta = document.querySelector('meta[name="strapi-public-url"]');
+    const fromMeta = meta?.getAttribute('content')?.trim();
+    if (fromMeta) {
+        window.__STRAPI_PUBLIC_URL__ = fromMeta.replace(/\/$/, '');
+        return;
+    }
     try {
         const r = await fetch(`${API_URL}/api/config`);
         if (!r.ok) return;
@@ -1623,6 +1548,19 @@ function normalizeToFiveStarScale(raw) {
     return Math.min(5, Math.max(0, n));
 }
 
+/** Display rating without unnecessary decimals (5 not 5.00; 4.9 not 4.90). */
+function formatRatingNumber(value) {
+    const n = coerceToNumber(value);
+    if (n == null || !Number.isFinite(n)) return '';
+    const rounded = Math.round(n * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatRatingSlashFive(value) {
+    const num = formatRatingNumber(value);
+    return num ? `${num}/5` : '';
+}
+
 /**
  * Curator score on a 0-5 scale for display (no default when data is missing).
  * Used on the casino review page ring and headline.
@@ -1676,16 +1614,16 @@ function ratingScoreFromAttr(attr) {
 function formatRatingScoreHeadline(attr) {
     const v = getCuratorScoreOutOfFive(attr);
     if (v == null) return 'N/A';
-    return v.toFixed(1);
+    return formatRatingNumber(v) || 'N/A';
 }
 
 /** Line next to stars on cards: "4.7 / 5" or label text. */
-function formatRatingScoreLine(attr, emptyFallback = '5.0 / 5.0') {
+function formatRatingScoreLine(attr, emptyFallback = '5 / 5') {
     const raw = attr.RatingScore ?? attr.ratingScore ?? attr.rating_score;
     const n = coerceToNumber(raw);
     if (n != null) {
         const v5 = normalizeToFiveStarScale(raw);
-        if (v5 != null) return `${v5.toFixed(1)} / 5`;
+        if (v5 != null) return `${formatRatingNumber(v5)} / 5`;
     }
     const lab = attr.RatingLabel ?? attr.ratingLabel;
     if (lab != null && String(lab).trim() !== '') return ratingLabelToString(lab);
@@ -1693,7 +1631,7 @@ function formatRatingScoreLine(attr, emptyFallback = '5.0 / 5.0') {
 }
 
 /** "4.9" + " / 5" split for typographic emphasis on provider cards. */
-function formatRatingScoreLineRich(attr, emptyFallback = '5.0 / 5.0') {
+function formatRatingScoreLineRich(attr, emptyFallback = '5 / 5') {
     const line = formatRatingScoreLine(attr, emptyFallback);
     const m = line.match(/^([\d.]+)(\s*\/\s*\d+(?:\.\d+)?)$/);
     if (m) {
@@ -1715,18 +1653,20 @@ function providerTierBadgeClass(attr) {
  */
 function renderStars(attrOrLabel) {
     let score;
-    if (attrOrLabel != null && typeof attrOrLabel === 'object' && !Array.isArray(attrOrLabel)) {
+    if (typeof attrOrLabel === 'number' && Number.isFinite(attrOrLabel)) {
+        score = attrOrLabel;
+    } else if (attrOrLabel != null && typeof attrOrLabel === 'object' && !Array.isArray(attrOrLabel)) {
         score = ratingScoreFromAttr(attrOrLabel);
     } else {
         score = parseRatingToFive(attrOrLabel);
     }
     const s = Number.isFinite(score) ? Math.max(0, Math.min(5, score)) : 0;
-    const aria = `${s.toFixed(1)} out of 5 stars`;
+    const aria = `${formatRatingNumber(s)} out of 5 stars`;
     let units = '';
     for (let i = 1; i <= 5; i++) {
         const fillPct = Math.min(100, Math.max(0, (s - (i - 1)) * 100));
-        const fp = Number.isFinite(fillPct) ? fillPct : 0;
-        units += `<span class="star-unit"><span class="star-unit__track" aria-hidden="true">★</span><span class="star-unit__fill" style="width:${fp}%" aria-hidden="true">★</span></span>`;
+        const fp = Number.isFinite(fillPct) ? (fillPct >= 99.5 ? 100 : fillPct) : 0;
+        units += `<span class="star-unit"><span class="star-unit__track" aria-hidden="true">★</span><span class="star-unit__fill" style="width:${fp}%"><span class="star-unit__fill-inner" aria-hidden="true">★</span></span></span>`;
     }
     return `<span class="stars-meter stars-meter--units" role="img" aria-label="${aria}">${units}</span>`;
 }
@@ -2864,18 +2804,6 @@ function applyBonusSidebarSlot(asideId, prefix, attr, bonusTag, bonusAmt, bonusD
     }
 }
 
-/** Sticky bonus column beside “Our Verdict” on casino review pages (single card; not duplicated in Player reviews). */
-function applyVerdictBonusSidebar(attr, bonusTag, bonusAmt, bonusDesc) {
-    const terms = casinoBonusTermsDisplay(attr);
-    const show =
-        !!(String(bonusAmt || '').trim() ||
-            String(bonusTag || '').trim() ||
-            String(bonusDesc || '').trim() ||
-            String(terms || '').trim());
-
-    applyBonusSidebarSlot('cr-verdict-bonus-sidebar', 'cr-vb', attr, bonusTag, bonusAmt, bonusDesc, terms, show);
-}
-
 /**
  * Hero: minimal card. Prefer BK8 from API; else #1 by Rank.
  * Uses a ranked list scan first so we do not depend on Strapi filter operators or exact Slug casing.
@@ -3625,7 +3553,7 @@ function populateGuidePostPage(attr, slug) {
     }
 
     const pubOriginGuide = getPublicSiteOrigin();
-    const defaultShareImgGuide = `${pubOriginGuide}/assets/img/888review-siteicon.png`;
+    const defaultShareImgGuide = `${pubOriginGuide}/assets/img/888review-siteicon.webp`;
     let shareImgGuide = cover || '';
     if (shareImgGuide && shareImgGuide.startsWith('/')) shareImgGuide = `${pubOriginGuide}${shareImgGuide}`;
     if (!shareImgGuide) shareImgGuide = defaultShareImgGuide;
@@ -4725,7 +4653,7 @@ function populateBonusDetailPage(attr, slug) {
     }
 
     const pubOriginBonus = getPublicSiteOrigin();
-    const defaultShareImgBonus = `${pubOriginBonus}/assets/img/888review-siteicon.png`;
+    const defaultShareImgBonus = `${pubOriginBonus}/assets/img/888review-siteicon.webp`;
     let shareImgBonus = '';
     if (img && img.getAttribute('src')) shareImgBonus = img.getAttribute('src');
     if (shareImgBonus && shareImgBonus.startsWith('/')) shareImgBonus = `${pubOriginBonus}${shareImgBonus}`;
@@ -4822,7 +4750,7 @@ function populateBonusDetailPage(attr, slug) {
                 '@type': 'ListItem',
                 position: 2,
                 name: 'Casino Bonuses',
-                item: `${pub}/bonuses`,
+                item: `${pub}/bonus`,
             },
             { '@type': 'ListItem', position: 3, name: name, item: absoluteUrl },
         ],
@@ -4873,43 +4801,70 @@ async function initBonusDetailPage() {
 }
 
 async function bootApp() {
-    try {
-        await ensureStrapiPublicUrl();
-    } catch (e) {
-        console.warn('Content API public URL:', e);
-    }
-
     const pageType = detectBootPageType();
 
     switch (pageType) {
         case 'guide-post':
+            await ensureStrapiPublicUrl();
             await initGuidePostPage();
             return;
         case 'bonus-detail':
+            await ensureStrapiPublicUrl();
             await initBonusDetailPage();
             return;
-        case 'casino-review':
-            await initReviewPage();
-            return;
         case 'provider-detail':
+            await ensureStrapiPublicUrl();
             await initProviderDetailPage();
             return;
         case 'slot-detail':
+            await ensureStrapiPublicUrl();
             await initSlotDetailPage();
             return;
         case 'home':
+            await ensureStrapiPublicUrl();
             await Promise.all([loadHomeFeaturedCasino(), loadCasinos(), loadProviders()]);
             return;
-        case 'malaysia-hub': {
-            try {
-                await ensureCasinoBonusSlugMap();
-            } catch (e) {
-                console.warn('Malaysia hub bonus map:', e);
-            }
+        case 'malaysia-hub':
             await initMalaysiaHubPage();
             return;
-        }
+        case 'live-casino-hub':
+            await ensureStrapiPublicUrl();
+            await initLiveCasinoPage();
+            return;
+        case 'reviews-hub':
+            await ensureStrapiPublicUrl();
+            await initReviewsHubPage();
+            return;
+        case 'e-wallet-hub':
+            await ensureStrapiPublicUrl();
+            await initEWalletPage();
+            return;
+        case 'slot-page-hub':
+            await ensureStrapiPublicUrl();
+            await initSlotPage();
+            return;
+        case 'roulette-hub':
+            await ensureStrapiPublicUrl();
+            await initRoulettePage();
+            return;
+        case 'blackjack-hub':
+            await ensureStrapiPublicUrl();
+            await initBlackjackPage();
+            return;
+        case 'baccarat-hub':
+            await ensureStrapiPublicUrl();
+            await initBaccaratPage();
+            return;
+        case 'mobile-hub':
+            await ensureStrapiPublicUrl();
+            await initMobilePage();
+            return;
+        case 'bonus-hub':
+            await ensureStrapiPublicUrl();
+            await initBonusHubPage();
+            return;
         case 'casinos-listing': {
+            await ensureStrapiPublicUrl();
             const casinosEl = document.getElementById('casinos-listing-container');
             if (casinosEl) casinosEl.innerHTML = skeletonGridHtml('listing-card', 5);
             try {
@@ -4921,24 +4876,23 @@ async function bootApp() {
             return;
         }
         case 'slots-listing': {
+            await ensureStrapiPublicUrl();
             const slotsEl = document.getElementById('slots-listing-grid');
             if (slotsEl) slotsEl.innerHTML = skeletonGridHtml('slot-card', 6);
             initSlotsListingPage();
             return;
         }
         case 'providers-listing': {
+            await ensureStrapiPublicUrl();
             const providersEl = document.getElementById('providers-listing-grid');
             if (providersEl) providersEl.innerHTML = skeletonGridHtml('provider-card', 6);
             initProvidersListingPage();
             return;
         }
-        case 'bonuses-listing': {
-            const bonusesEl = document.getElementById('bonuses-grid');
-            if (bonusesEl) bonusesEl.innerHTML = skeletonGridHtml('bonus-card', 6);
-            initBonusesPage();
+        case 'bonuses-listing':
             return;
-        }
         case 'guides-listing': {
+            await ensureStrapiPublicUrl();
             const guidesEl = document.getElementById('guides-grid');
             const guidesStatus = document.getElementById('guides-status');
             if (guidesEl) guidesEl.innerHTML = skeletonGridHtml('guide-card', 6);
@@ -4947,6 +4901,7 @@ async function bootApp() {
             return;
         }
         case 'news-listing': {
+            await ensureStrapiPublicUrl();
             const newsEl = document.getElementById('news-grid');
             const newsStatus = document.getElementById('news-status');
             if (newsEl) newsEl.innerHTML = skeletonGridHtml('guide-card', 6);
@@ -5727,6 +5682,97 @@ function malaysiaBonusLineDisplay(attr) {
     return firstNonEmptyAttr(attr, ['MalaysiaBonusLine', 'malaysiaBonusLine']) || casinoBonusAmountDisplay(attr) || '';
 }
 
+/** Split bonus into intro / amount / extra for homepage operator cards. */
+function malaysiaBonusPartsDisplay(attr) {
+    const intro = firstNonEmptyAttr(attr, ['MalaysiaBonusIntro', 'malaysiaBonusIntro']);
+    const amount = firstNonEmptyAttr(attr, ['MalaysiaBonusAmount', 'malaysiaBonusAmount']);
+    const extra = firstNonEmptyAttr(attr, ['MalaysiaBonusExtra', 'malaysiaBonusExtra']);
+    if (intro || amount || extra) {
+        return {
+            intro: intro || 'Up to',
+            amount: amount || malaysiaBonusLineDisplay(attr) || '—',
+            extra: extra || '',
+        };
+    }
+    const line = malaysiaBonusLineDisplay(attr);
+    if (!line) return { intro: '', amount: '—', extra: '' };
+    const weeklyMatch = line.match(/^(Weekly giveaways up to)\s*(.+)$/i);
+    if (weeklyMatch) return { intro: weeklyMatch[1], amount: weeklyMatch[2], extra: '' };
+    const pctMatch = line.match(/^(\d+% up to)\s*(.+)$/i);
+    if (pctMatch) {
+        const rest = pctMatch[2];
+        const plusIdx = rest.search(/\s+\+\s+/i);
+        if (plusIdx > -1) {
+            return {
+                intro: pctMatch[1],
+                amount: rest.slice(0, plusIdx).trim(),
+                extra: rest.slice(plusIdx).trim(),
+            };
+        }
+        return { intro: pctMatch[1], amount: rest, extra: '' };
+    }
+    const upToMatch = line.match(/^(Up to)\s*(.+)$/i);
+    if (upToMatch) {
+        const rest = upToMatch[2];
+        const plusIdx = rest.search(/\s+\+\s+/i);
+        if (plusIdx > -1) {
+            return {
+                intro: upToMatch[1],
+                amount: rest.slice(0, plusIdx).trim(),
+                extra: rest.slice(plusIdx).trim(),
+            };
+        }
+        return { intro: upToMatch[1], amount: rest, extra: '' };
+    }
+    return { intro: '', amount: line, extra: '' };
+}
+
+function applyTopCasinoItemRatingOverride(merged, item) {
+    if (!merged || !item) return merged;
+    const raw = item.ratingOverride;
+    if (raw == null || raw === '') return merged;
+    const score = Number(raw);
+    if (!Number.isFinite(score)) return merged;
+    merged.RatingScore = score;
+    merged.ratingScore = score;
+    merged.rating_score = score;
+    return merged;
+}
+
+function malaysiaOperatorRatingDisplay(attr, listPos) {
+    return formatRatingScoreLine(attr, `${formatRatingSlashFive(5 - (listPos - 1) * 0.1)}`).replace(
+        ' / ',
+        '/',
+    );
+}
+
+function malaysiaOperatorRatingHtml(attr, listPos) {
+    const line = malaysiaOperatorRatingDisplay(attr, listPos);
+    const match = line.match(/^([\d.]+)\/(\d+(?:\.\d+)?)$/);
+    if (match) {
+        return `<span class="malaysia-operator-row__score">
+            <span class="malaysia-operator-row__score-value"><strong>${match[1]}</strong><span class="malaysia-operator-row__score-denom">/${match[2]}</span></span>
+        </span>`;
+    }
+    return `<span class="malaysia-operator-row__score"><span class="malaysia-operator-row__score-value">${line}</span></span>`;
+}
+
+function casinoVisitSiteLabel(attr) {
+    const ext = casinoAffiliateUrl(attr);
+    if (ext) {
+        try {
+            const host = new URL(ext).hostname.replace(/^www\./i, '');
+            return `Visit ${host}`;
+        } catch {
+            /* fall through */
+        }
+    }
+    const slug = firstNonEmptyAttr(attr, ['Slug', 'slug']);
+    if (slug) return `Visit ${slug.replace(/-/g, '.')}`;
+    const name = firstNonEmptyAttr(attr, ['Name', 'name']);
+    return name ? `Visit ${name}` : 'Visit site';
+}
+
 function malaysiaTableRowClass(listPos) {
     if (listPos === 1) return ' malaysia-table__row--podium malaysia-table__row--podium-1';
     if (listPos === 2) return ' malaysia-table__row--podium malaysia-table__row--podium-2';
@@ -5753,59 +5799,68 @@ function malaysiaCategoryWinner(rows, flagKey) {
     return null;
 }
 
+function setMalaysiaSummaryPick(id, attr, options = {}) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const fallback = options.display || el.dataset.default || el.textContent.trim();
+    if (!attr) {
+        el.textContent = fallback;
+        el.className = 'malaysia-picks-item__value';
+        return;
+    }
+    const display = options.display || attr.Name || attr.name || fallback;
+    const href = casinoVisitSiteHref(attr);
+    if (href && href !== '#') {
+        const rel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+        el.outerHTML = `<a href="${escapeHtml(href)}" class="malaysia-picks-item__link" id="${id}"${rel}>${escapeHtml(display)}</a>`;
+    } else {
+        el.textContent = display;
+        el.className = 'malaysia-picks-item__value';
+    }
+}
+
 function updateMalaysiaSummaryTable(rows) {
-    const table = document.getElementById('malaysia-summary-table');
-    if (!table || !Array.isArray(rows) || rows.length === 0) return;
+    const grid = document.getElementById('malaysia-summary-grid');
+    if (!grid || !Array.isArray(rows) || rows.length === 0) return;
     const editors = malaysiaCategoryWinner(rows, 'editorsPick');
     const payout = malaysiaCategoryWinner(rows, 'bestPayout');
     const slots = malaysiaCategoryWinner(rows, 'bestSlots');
     const live = malaysiaCategoryWinner(rows, 'bestLive');
     const fastest = malaysiaCategoryWinner(rows, 'fastestPayout');
     const mobile = malaysiaCategoryWinner(rows, 'bestMobile');
-    const map = {
-        'summary-editors-pick': editors,
-        'summary-top-bonus': editors,
-        'summary-best-payout': payout,
-        'summary-best-slots': slots,
-        'summary-best-live': live,
-        'summary-fastest-payout': fastest,
-        'summary-best-mobile': mobile,
-    };
-    Object.entries(map).forEach(([id, attr]) => {
-        const cell = document.getElementById(id);
-        if (cell && attr) cell.textContent = attr.Name || attr.name || cell.textContent;
-    });
+    setMalaysiaSummaryPick('summary-editors-pick', editors);
+    setMalaysiaSummaryPick('summary-top-bonus', editors);
+    setMalaysiaSummaryPick('summary-best-slots', slots);
+    setMalaysiaSummaryPick('summary-best-live', live);
+    setMalaysiaSummaryPick('summary-fastest-payout', fastest);
+    setMalaysiaSummaryPick('summary-best-mobile', mobile);
+    const payoutEl = document.getElementById('summary-best-payout');
+    if (payoutEl && payout) {
+        const display = payoutEl.dataset.default || payoutEl.textContent.trim();
+        setMalaysiaSummaryPick('summary-best-payout', payout, { display });
+    }
 }
 
 function updateMalaysiaFeaturedTables(rows) {
     const bonusPick = malaysiaCategoryWinner(rows, 'editorsPick') || (rows[0] ? attrFromCasinoEntry(rows[0]) : null);
     const livePick = malaysiaCategoryWinner(rows, 'bestLive');
     if (bonusPick) {
-        const nameEl = document.getElementById('malaysia-bonus-featured-name');
-        const bonusEl = document.getElementById('malaysia-bonus-featured-offer');
-        const linkEl = document.getElementById('malaysia-bonus-featured-link');
-        if (nameEl) nameEl.textContent = bonusPick.Name || bonusPick.name || nameEl.textContent;
-        if (bonusEl) bonusEl.textContent = malaysiaBonusLineDisplay(bonusPick) || bonusEl.textContent;
-        if (linkEl) {
-            linkEl.href = casinoVisitSiteHref(bonusPick);
-            if (casinoVisitSiteIsExternal(bonusPick)) {
-                linkEl.target = '_blank';
-                linkEl.rel = 'nofollow noopener';
-            }
+        const container = document.getElementById('malaysia-bonus-featured');
+        if (container) {
+            const attr = attrFromCasinoEntry(bonusPick);
+            container.innerHTML = renderHomepageBonusCard({ casino: attr }, attr);
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
         }
     }
     if (livePick) {
-        const nameEl = document.getElementById('malaysia-live-featured-name');
-        const bonusEl = document.getElementById('malaysia-live-featured-bonus');
-        const linkEl = document.getElementById('malaysia-live-featured-link');
-        if (nameEl) nameEl.textContent = livePick.Name || livePick.name || nameEl.textContent;
-        if (bonusEl) bonusEl.textContent = malaysiaBonusLineDisplay(livePick) || bonusEl.textContent;
-        if (linkEl) {
-            linkEl.href = casinoVisitSiteHref(livePick);
-            if (casinoVisitSiteIsExternal(livePick)) {
-                linkEl.target = '_blank';
-                linkEl.rel = 'nofollow noopener';
-            }
+        const container = document.getElementById('malaysia-live-featured');
+        if (container) {
+            const attr = attrFromCasinoEntry(livePick);
+            container.innerHTML = renderHomepageFeaturedOperatorRow({ casino: attr }, attr, {
+                ratingLabel: 'Live casino rating',
+                defaultCta: 'Play live',
+            });
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
         }
     }
 }
@@ -5815,20 +5870,42 @@ function renderMalaysiaOperatorCard(entry, listPos) {
     const name = escapeHtml(attr.Name || attr.name || 'Casino');
     const logoUrl = getLogoUrl(attr);
     const logoHtml = logoUrl
-        ? `<img src="${escapeHtml(logoUrl)}" alt="" class="malaysia-operator-row__logo" width="48" height="48" loading="lazy">`
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
         : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
-    const rating = escapeHtml(formatRatingScoreLine(attr, `${(5 - (listPos - 1) * 0.1).toFixed(1)}/5`));
-    const bonus = escapeHtml(malaysiaBonusLineDisplay(attr) || '—');
+    const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Up to');
+    const bonusAmount = escapeHtml(bonusParts.amount);
+    const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
     const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    const bonusExtraHtml = bonusExtra
+        ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
+        : '';
     return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
         <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
-        <div class="malaysia-operator-row__brand">${logoHtml}<h3 class="malaysia-operator-row__name">${name}</h3></div>
-        <div class="malaysia-operator-row__rating"><span class="malaysia-operator-row__score">${rating}</span></div>
-        <div class="malaysia-operator-row__bonus"><span class="malaysia-operator-row__field-label">Bonus amount</span><strong>${bonus}</strong></div>
-        <div class="malaysia-operator-row__highlight"><span class="malaysia-operator-row__field-label">Casino site highlight</span><p>${highlight}</p></div>
-        <div class="malaysia-operator-row__cta"><a href="${visitHref}" class="btn btn-primary btn-block"${visitRel}>Visit site</a></div>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">Rating</span>
+                ${ratingHtml}
+            </div>
+            <div class="malaysia-operator-row__bonus">
+                <span class="malaysia-operator-row__field-label">${bonusIntro}</span>
+                <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
+            </div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">Casino Highlight</span>
+                <p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${highlight}</span></span></p>
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
+        </div>
     </article>`;
 }
 
@@ -5839,7 +5916,7 @@ function renderMalaysiaTableRow(entry, listPos) {
     const logoHtml = logoUrl
         ? `<img src="${escapeHtml(logoUrl)}" alt="" class="malaysia-table__logo" width="32" height="32" loading="lazy">`
         : `<span class="malaysia-table__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
-    const rating = escapeHtml(formatRatingScoreLine(attr, `${(5 - (listPos - 1) * 0.1).toFixed(1)}/5`));
+    const rating = escapeHtml(formatRatingScoreLine(attr, formatRatingSlashFive(5 - (listPos - 1) * 0.1)));
     const bonus = escapeHtml(malaysiaBonusLineDisplay(attr) || '—');
     const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
@@ -5855,30 +5932,7 @@ function renderMalaysiaTableRow(entry, listPos) {
 
 function updateMalaysiaConclusionFromAttr(attr) {
     if (!attr) return;
-    const nameEl = document.getElementById('malaysia-conclusion-name');
-    const bonusEl = document.getElementById('malaysia-conclusion-bonus');
-    const ratingEl = document.getElementById('malaysia-conclusion-rating');
-    const licensesEl = document.getElementById('malaysia-conclusion-licenses');
-    const highlightsEl = document.getElementById('malaysia-conclusion-highlights');
-    const linkEl = document.getElementById('malaysia-conclusion-link');
-    if (nameEl) nameEl.textContent = attr.Name || attr.name || nameEl.textContent;
-    if (bonusEl) bonusEl.textContent = malaysiaBonusLineDisplay(attr) || bonusEl.textContent;
-    if (ratingEl) ratingEl.textContent = formatRatingScoreLine(attr, ratingEl.textContent);
-    if (licensesEl) {
-        licensesEl.textContent =
-            firstNonEmptyAttr(attr, ['License', 'license', 'Licenses', 'licenses']) || licensesEl.textContent;
-    }
-    if (highlightsEl) {
-        highlightsEl.textContent = malaysiaHighlightDisplay(attr) || highlightsEl.textContent;
-    }
-    if (linkEl) {
-        linkEl.href = casinoVisitSiteHref(attr);
-        linkEl.textContent = `Visit ${attr.Name || attr.name || 'casino'}`;
-        if (casinoVisitSiteIsExternal(attr)) {
-            linkEl.target = '_blank';
-            linkEl.rel = 'nofollow noopener';
-        }
-    }
+    applyMalaysiaConclusionCard('malaysia-conclusion-card', { casino: attr });
 }
 
 function findMalaysiaEditorsPick(rows) {
@@ -5891,10 +5945,5077 @@ function findMalaysiaEditorsPick(rows) {
     return rows[0] ? attrFromCasinoEntry(rows[0]) : null;
 }
 
-async function fetchMalaysiaHubCasinos() {
+/** Lighter homepage populate for first paint (operator list, logos, bonus lines). */
+const HOMEPAGE_POPULATE_LITE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[homepageBonus][populate][casino][populate]=logo' +
+    '&populate[homepageBonus][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*';
+
+/** Strapi v5 homepage single type — nested component + relation populate. */
+const HOMEPAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[featuredSlots][populate][slot][populate]=coverImage' +
+    '&populate[featuredSlots][populate][playAtCasino][populate]=logo' +
+    '&populate[homepageBonus][populate][casino][populate]=logo' +
+    '&populate[homepageBonus][populate][bonusOverride]=*' +
+    '&populate[homepageBonus][populate][features]=*' +
+    '&populate[liveDealerFeatured][populate][casino][populate]=logo' +
+    '&populate[liveDealerFeatured][populate][bonusOverride]=*' +
+    '&populate[liveDealerFeatured][populate][features]=*' +
+    '&populate[liveDealerGames][populate]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionCta][populate][certificationLogos]=true';
+
+const HOMEPAGE_POPULATE_FALLBACK = 'populate=*';
+
+async function fetchHomepage() {
+    try {
+        let res = await fetch(`${API_URL}/api/homepage?${HOMEPAGE_POPULATE_LITE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            const detail = json?.error?.message || res.status;
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Homepage CMS lite populate failed, retrying full:', detail);
+                res = await fetch(`${API_URL}/api/homepage?${HOMEPAGE_POPULATE}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            const detail = json?.error?.message || res.status;
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Homepage CMS populate failed, retrying shallow:', detail);
+                res = await fetch(`${API_URL}/api/homepage?${HOMEPAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Homepage CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Homepage CMS fetch failed:', e);
+        return null;
+    }
+}
+
+/** Map Strapi v5 casino relation fields to names used by listing helpers. */
+function normalizeV5CasinoAttr(casino) {
+    if (!casino) return null;
+    const base = attrFromCasinoEntry(casino);
+    return {
+        ...base,
+        Name: base.Name || base.name,
+        Slug: base.Slug || base.slug,
+        RatingScore: base.RatingScore ?? base.ratingScore,
+        AffiliateLink: base.AffiliateLink ?? base.affiliateLink ?? base.websiteUrl,
+        Rank: base.Rank ?? base.rank,
+    };
+}
+
+function homepageBonusOverrideLine(override) {
+    if (!override) return '';
+    const intro = String(override.intro || '').trim();
+    const amount = String(override.amount || '').trim();
+    const extra = String(override.extra || '').trim();
+    return [intro, amount, extra].filter(Boolean).join(' ');
+}
+
+function homepageTopCasinoToAttr(item, enriched) {
+    const casino = normalizeV5CasinoAttr(item?.casino) || {};
+    const merged = enriched ? { ...enriched, ...casino } : { ...casino };
+    if (item?.highlight) {
+        merged.MalaysiaHighlight = item.highlight;
+        merged.malaysiaHighlight = item.highlight;
+    }
+    const bonusLine = homepageBonusOverrideLine(item?.bonusOverride);
+    if (bonusLine) {
+        merged.MalaysiaBonusLine = bonusLine;
+        merged.malaysiaBonusLine = bonusLine;
+    }
+    const override = item?.bonusOverride;
+    if (override) {
+        if (override.intro) {
+            merged.MalaysiaBonusIntro = override.intro;
+            merged.malaysiaBonusIntro = override.intro;
+        }
+        if (override.amount) {
+            merged.MalaysiaBonusAmount = override.amount;
+            merged.malaysiaBonusAmount = override.amount;
+        }
+        if (override.extra) {
+            merged.MalaysiaBonusExtra = override.extra;
+            merged.malaysiaBonusExtra = override.extra;
+        }
+    }
+    return applyTopCasinoItemRatingOverride(merged, item);
+}
+
+function buildCasinoSlugMap(casinoRows) {
+    const map = new Map();
+    if (!Array.isArray(casinoRows)) return map;
+    for (const row of casinoRows) {
+        const attr = normalizeV5CasinoAttr(attrFromCasinoEntry(row));
+        const slug = firstNonEmptyAttr(attr, ['Slug', 'slug']).toLowerCase();
+        if (slug) map.set(slug, attr);
+    }
+    return map;
+}
+
+function buildHomepageOperatorRows(homepage, casinoRows) {
+    const topCasinos = homepage?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return null;
+    const slugMap = buildCasinoSlugMap(casinoRows);
+    return topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .map((item) => {
+            const slug = firstNonEmptyAttr(item?.casino || {}, ['slug', 'Slug']).toLowerCase();
+            return homepageTopCasinoToAttr(item, slug ? slugMap.get(slug) : null);
+        });
+}
+
+function setHomepageText(el, value, mode = 'text') {
+    if (!el || value == null || String(value).trim() === '') return;
+    if (mode === 'rich') setRichTextHtml(el, value);
+    else if (mode === 'html') el.innerHTML = String(value);
+    else el.textContent = String(value);
+}
+
+function applyHomepageSectionIntro(h2Id, value) {
+    if (!value || String(value).trim() === '') return;
+    const h2 = document.getElementById(h2Id);
+    if (!h2) return;
+    const section = h2.closest('.malaysia-section');
+    const bodyContainer = section?.querySelector('.malaysia-section__body') || h2.closest('.container');
+    if (!bodyContainer) return;
+    let intro = bodyContainer.querySelector(':scope > p');
+    if (!intro) {
+        intro = document.createElement('p');
+        bodyContainer.insertBefore(intro, bodyContainer.firstElementChild);
+    }
+    setRichTextHtml(intro, value);
+}
+
+function applyHomepageMeta(homepage) {
+    const title = homepage.metaTitle;
+    const desc = homepage.metaDescription;
+    if (title) document.title = title;
+    if (!desc) return;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle && title) ogTitle.setAttribute('content', title);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle && title) twTitle.setAttribute('content', title);
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function enrichHomepageFeaturedBlock(block, casinoRows) {
+    if (!block?.casino) return block;
+    const slug = (block.casino.slug || block.casino.Slug || '').toLowerCase();
+    const enriched = casinoRows && slug ? buildCasinoSlugMap(casinoRows).get(slug) : null;
+    if (!enriched) return block;
+    return { ...block, casino: { ...block.casino, ...enriched } };
+}
+
+function malaysiaBonusFeaturedRatingHtml(attr, block) {
+    const score =
+        block?.bonusRatingOverride != null
+            ? Number(block.bonusRatingOverride)
+            : ratingScoreFromAttr(attr);
+    if (!Number.isFinite(score)) {
+        return malaysiaOperatorRatingHtml(attr, 1);
+    }
+    const num = formatRatingNumber(score);
+    return `<span class="malaysia-operator-row__score">
+            <span class="malaysia-operator-row__score-value"><strong>${num}</strong><span class="malaysia-operator-row__score-denom">/5</span></span>
+        </span>`;
+}
+
+function renderHomepageFeaturedOperatorRow(block, attr, options = {}) {
+    const ratingLabel = options.ratingLabel || 'Rating';
+    const defaultCta = options.defaultCta || 'Play here';
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+
+    const override = block?.bonusOverride || {};
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const offerLabel = escapeHtml(
+        options.offerLabel ||
+            String(override.intro || bonusParts.intro || 'Up to').trim(),
+    );
+    const bonusAmount = escapeHtml(
+        String(override.amount || '').trim() || bonusParts.amount || malaysiaBonusLineDisplay(attr) || '—',
+    );
+    const bonusExtra = String(override.extra || bonusParts.extra || '').trim();
+    const bonusExtraHtml = bonusExtra
+        ? `<span class="malaysia-operator-row__bonus-extra">${escapeHtml(bonusExtra)}</span>`
+        : '';
+
+    const features = Array.isArray(block?.features)
+        ? block.features.map((f) => f.label).filter(Boolean)
+        : [];
+    const highlightHtml = features.length
+        ? features
+              .map(
+                  (label) =>
+                      `<p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${escapeHtml(label)}</span></span></p>`,
+              )
+              .join('')
+        : `<p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>—</span></span></p>`;
+
+    const ctaText = escapeHtml(block?.ctaText || defaultCta);
+    const visitHref = escapeHtml(block?.ctaLinkOverride || casinoVisitSiteHref(attr));
+    const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
+    const visitRel =
+        casinoVisitSiteIsExternal(attr) || block?.ctaLinkOverride
+            ? ' rel="nofollow noopener" target="_blank"'
+            : ' rel="nofollow noopener"';
+    const ratingHtml = malaysiaBonusFeaturedRatingHtml(attr, block);
+
+    return `<article class="malaysia-operator-row malaysia-operator-row--podium malaysia-operator-row--podium-1" role="listitem">
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="${ctaText} at ${name}"><span class="sr-only">${ctaText} at ${name}</span></a>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">${escapeHtml(ratingLabel)}</span>
+                ${ratingHtml}
+            </div>
+            <div class="malaysia-operator-row__bonus">
+                <span class="malaysia-operator-row__field-label">${offerLabel}</span>
+                <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
+            </div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">Highlights</span>
+                ${highlightHtml}
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>${ctaText}</a>
+            <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
+        </div>
+    </article>`;
+}
+
+function renderHomepageBonusCard(block, attr) {
+    return renderHomepageFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Bonus rating',
+        defaultCta: 'Get bonus',
+    });
+}
+
+function applyHomepageFeaturedOperator(containerId, block, options) {
+    const container = document.getElementById(containerId);
+    if (!container || !block?.casino) return;
+
+    const attr = normalizeV5CasinoAttr(block.casino);
+    container.innerHTML = renderHomepageFeaturedOperatorRow(block, attr, options);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function applyHomepageBonus(homepage, casinoRows) {
+    const block = enrichHomepageFeaturedBlock(homepage?.homepageBonus, casinoRows);
+    applyHomepageFeaturedOperator('malaysia-bonus-featured', block, {
+        ratingLabel: 'Bonus rating',
+        defaultCta: 'Get bonus',
+    });
+}
+
+function applyHomepageLiveDealer(homepage, casinoRows) {
+    const block = enrichHomepageFeaturedBlock(homepage?.liveDealerFeatured, casinoRows);
+    applyHomepageFeaturedOperator('malaysia-live-featured', block, {
+        ratingLabel: 'Live casino rating',
+        defaultCta: 'Play live',
+    });
+}
+
+function renderMalaysiaConclusionCerts(logos) {
+    if (Array.isArray(logos) && logos.length > 0) {
+        return logos
+            .map((media) => {
+                const url = media?.url;
+                if (!url) return '';
+                const src = logoImgSrcForDisplay(url);
+                const alt = media?.alternativeText || media?.name || 'Certification';
+                return `<img src="${escapeHtml(src)}" width="88" height="32" alt="${escapeHtml(alt)}" loading="lazy">`;
+            })
+            .filter(Boolean)
+            .join('');
+    }
+    return `<img src="/assets/img/trust/ecogra.svg" width="88" height="32" alt="eCOGRA certified" loading="lazy">
+        <img src="/assets/img/trust/gamcare.svg" width="88" height="32" alt="GamCare" loading="lazy">
+        <span class="malaysia-trust__badge">Anjouan</span>`;
+}
+
+function malaysiaConclusionRatingBlockHtml(ratingText, starsHtml) {
+    const line = String(ratingText || '');
+    const match = line.match(/^([\d.]+)\/(\d+(?:\.\d+)?)$/);
+    const scoreHtml = match
+        ? `<span class="malaysia-conclusion-card__score-value"><strong>${match[1]}</strong><span class="malaysia-conclusion-card__score-denom">/${match[2]}</span></span>`
+        : escapeHtml(line);
+    return `<div class="malaysia-conclusion-card__rating-block">
+        <p class="malaysia-conclusion-card__rating">${scoreHtml}</p>
+        <div class="malaysia-conclusion-card__stars">${starsHtml}</div>
+    </div>`;
+}
+
+function malaysiaConclusionBonusHtml(block, attr) {
+    const override = block?.bonusOverride || {};
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const intro = String(override.intro || bonusParts.intro || '').trim();
+    const amount =
+        String(override.amount || '').trim() ||
+        bonusParts.amount ||
+        malaysiaBonusLineDisplay(attr) ||
+        '—';
+    const extra = String(override.extra || bonusParts.extra || '').trim();
+    const introHtml = intro
+        ? `<span class="malaysia-conclusion-card__bonus-intro">${escapeHtml(intro)}</span>`
+        : '';
+    const extraHtml = extra
+        ? `<span class="malaysia-conclusion-card__bonus-extra">${escapeHtml(extra)}</span>`
+        : '';
+    return `<div class="malaysia-conclusion-card__bonus">${introHtml}<p class="malaysia-conclusion-card__amount">${escapeHtml(amount)}</p>${extraHtml}</div>`;
+}
+
+function renderMalaysiaConclusionCard(block, options = {}) {
+    if (!block?.casino) return '';
+    const attr = normalizeV5CasinoAttr(block.casino);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-conclusion-card__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-conclusion-card__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+
+    const score =
+        block.ratingOverride != null
+            ? Number(block.ratingOverride)
+            : block.bonusRatingOverride != null
+              ? Number(block.bonusRatingOverride)
+              : ratingScoreFromAttr(attr);
+    const ratingText = Number.isFinite(score)
+        ? formatRatingSlashFive(score)
+        : formatRatingScoreLine(attr, '5/5').replace(' / ', '/');
+    const starsHtml = Number.isFinite(score) ? renderStars(score) : renderStars(attr);
+
+    const features = Array.isArray(block.features)
+        ? block.features.filter((f) => f?.label)
+        : [];
+    const fallbackFeatures = malaysiaHighlightDisplay(attr)
+        ? malaysiaHighlightDisplay(attr)
+              .split(/\s*·\s*/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .map((label) => ({ label }))
+        : [];
+    const featureItems = features.length ? features : fallbackFeatures;
+
+    const featuresHtml = featureItems.length
+        ? featureItems
+              .map((item, i) => {
+                  const label = item.label || item;
+                  const isLead = item.isPrimary === true || (item.isPrimary !== false && i === 0);
+                  return `<li class="malaysia-conclusion-card__feature${isLead ? ' malaysia-conclusion-card__feature--lead' : ''}"><i data-lucide="check-circle-2" aria-hidden="true"></i><span>${escapeHtml(label)}</span></li>`;
+              })
+              .join('')
+        : `<li class="malaysia-conclusion-card__feature malaysia-conclusion-card__feature--lead"><i data-lucide="check-circle-2" aria-hidden="true"></i><span>—</span></li>`;
+
+    const ctaText = escapeHtml(block.ctaText || 'Play Here!');
+    const visitHref = escapeHtml(block.ctaLinkOverride || casinoVisitSiteHref(attr));
+    const visitRel =
+        casinoVisitSiteIsExternal(attr) || block.ctaLinkOverride
+            ? ' rel="nofollow noopener" target="_blank"'
+            : ' rel="nofollow noopener"';
+
+    const certsHtml = options.hideCerts
+        ? ''
+        : `<div class="malaysia-conclusion-card__certs" aria-label="Certifications">${renderMalaysiaConclusionCerts(block.certificationLogos)}</div>`;
+
+    return `<article class="malaysia-conclusion-card__inner">
+        <div class="malaysia-conclusion-card__brand">
+            ${logoHtml}
+            ${malaysiaConclusionRatingBlockHtml(ratingText, starsHtml)}
+        </div>
+        <div class="malaysia-conclusion-card__panel">
+            <div class="malaysia-conclusion-card__panel-grid">
+                <ul class="malaysia-conclusion-card__features" role="list">${featuresHtml}</ul>
+                ${certsHtml}
+            </div>
+        </div>
+        <div class="malaysia-conclusion-card__offer">
+            ${malaysiaConclusionBonusHtml(block, attr)}
+            <a href="${visitHref}" class="btn-play-here malaysia-conclusion-card__cta"${visitRel}>
+                <span class="malaysia-conclusion-card__cta-icon" aria-hidden="true"><i data-lucide="circle-play"></i></span>
+                <span>${ctaText}</span>
+            </a>
+        </div>
+    </article>`;
+}
+
+function applyMalaysiaConclusionCard(containerId, block, options = {}) {
+    const container = document.getElementById(containerId);
+    if (!container || !block?.casino) return;
+    const normalized = {
+        ...block,
+        ratingOverride: block.ratingOverride ?? block.bonusRatingOverride,
+    };
+    container.innerHTML = renderMalaysiaConclusionCard(normalized, options);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function applyHomepageConclusionCta(block) {
+    applyMalaysiaConclusionCard('malaysia-conclusion-card', block);
+}
+
+function renderMalaysiaFeaturedSlotCard(item, isFeatured) {
+    const slot = item?.slot || {};
+    const casino = normalizeV5CasinoAttr(item?.playAtCasino) || {};
+    const slotName = slot.name || slot.Name || 'Slot';
+    const imgUrl = getSlotCardImageUrl({
+        coverImage: slot.coverImage,
+        CoverImage: slot.CoverImage,
+        Image: slot.image || slot.Image,
+    });
+    const casinoName = casino.Name || casino.name || '';
+    const ctaLabel =
+        String(item?.ctaLabel || '').trim() ||
+        (casinoName ? `Play at ${casinoName}` : 'Play now');
+    const visitHref = casinoVisitSiteHref(casino);
+    const visitRel = casinoVisitSiteIsExternal(casino)
+        ? ' target="_blank" rel="nofollow noopener"'
+        : '';
+    const featuredClass = isFeatured ? ' malaysia-featured-slot--featured' : '';
+    const fallback = escapeHtml(DEFAULT_SLOT_CARD_IMAGE);
+
+    return `<a href="${escapeHtml(visitHref)}" class="malaysia-featured-slot${featuredClass}"${visitRel} aria-label="${escapeHtml(`${slotName} — ${ctaLabel}`)}">
+        <div class="malaysia-featured-slot__logo">
+            <img src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallback}';">
+        </div>
+        <span class="malaysia-featured-slot__cta btn btn-primary btn-small">${escapeHtml(ctaLabel)}</span>
+    </a>`;
+}
+
+function applyHomepageFeaturedSlots(homepage, casinoRows) {
+    const container = document.getElementById('malaysia-featured-slots');
+    if (!container) return;
+    const items = homepage?.featuredSlots;
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    const featuredIndex = items.findIndex((item) => item?.isFeatured);
+    const featuredIdx = featuredIndex >= 0 ? featuredIndex : 0;
+    const slugMap = casinoRows ? buildCasinoSlugMap(casinoRows) : new Map();
+
+    container.innerHTML = items
+        .map((item, i) => {
+            const slug = (item?.playAtCasino?.slug || item?.playAtCasino?.Slug || '').toLowerCase();
+            const enriched = slug ? slugMap.get(slug) : null;
+            const merged =
+                enriched && item?.playAtCasino
+                    ? { ...item, playAtCasino: { ...item.playAtCasino, ...enriched } }
+                    : item;
+            return renderMalaysiaFeaturedSlotCard(merged, i === featuredIdx);
+        })
+        .join('');
+
+    container.dataset.count = String(items.length);
+}
+
+function renderMalaysiaOfficialListItem(attr) {
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+
+    return `<li class="malaysia-official-list__item">
+        <a href="${visitHref}" class="malaysia-official-list__link"${visitRel}>${name}</a>
+    </li>`;
+}
+
+function applyHomepageOfficialList(homepage, casinoRows) {
+    const listEl = document.getElementById('malaysia-official-list');
+    const topCasinos = homepage?.topCasinos;
+    if (!listEl || !Array.isArray(topCasinos) || topCasinos.length === 0) return;
+
+    const slugMap = buildCasinoSlugMap(casinoRows);
+    const items = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .map((item) => {
+            const slug = firstNonEmptyAttr(item?.casino || {}, ['slug', 'Slug']).toLowerCase();
+            const attr = homepageTopCasinoToAttr(item, slug ? slugMap.get(slug) : null);
+            if (!attr?.Name && !attr?.name) return '';
+            return renderMalaysiaOfficialListItem(attr);
+        })
+        .filter(Boolean);
+
+    if (!items.length) return;
+
+    listEl.innerHTML = items.join('');
+}
+
+function formatListingUpdatedDate(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    const d = new Date(s.includes('T') ? s : `${s}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return s;
+    const day = d.getDate();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}.${month}.${year}`;
+}
+
+const MALAYSIA_LISTING_TRUST_BADGES = [
+    { icon: 'lock', label: 'Secure' },
+    { icon: 'thumbs-up', label: 'Trusted' },
+    { icon: 'circle-check', label: 'Verified' },
+];
+
+function renderMalaysiaListingTrustBadges(badges) {
+    const apiRows = Array.isArray(badges)
+        ? badges.filter((b) => b && String(b.label || b.Label || '').trim())
+        : [];
+    const rows = apiRows.length > 0 ? apiRows : MALAYSIA_LISTING_TRUST_BADGES;
+    return rows
+        .map((badge) => {
+            const icon = safeLucideIcon(badge.icon || badge.Icon || 'star');
+            const label = escapeHtml(badge.label || badge.Label || '');
+            if (!label) return '';
+            return `<li class="malaysia-listing-meta__badge">
+                <span class="malaysia-listing-meta__badge-icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+                <span>${label}</span>
+            </li>`;
+        })
+        .filter(Boolean)
+        .join('');
+}
+
+function applyHomepageListingMetaBar(homepage) {
+    const bar = document.getElementById('malaysia-listing-meta');
+    if (!bar) return;
+
+    const updatedEl = document.getElementById('malaysia-listing-updated');
+    const disclosureEl = document.getElementById('malaysia-listing-disclosure');
+    const trustEl = document.getElementById('malaysia-listing-trust');
+
+    const updatedRaw = homepage?.lastUpdated || homepage?.updatedAt || homepage?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+
+    const disclosureText = homepage?.advertiserDisclosure || homepage?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+
+    if (trustEl) {
+        const apiBadges = homepage?.listingTrustBadges || homepage?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+}
+
+function applyHomepageFromCms(homepage) {
+    if (!homepage) return;
+
+    applyHomepageMeta(homepage);
+
+    setHomepageText(document.getElementById('malaysia-operators-h2'), homepage.topCasinosHeading);
+    applyHomepageSectionIntro('malaysia-operators-h2', homepage.topCasinosIntro);
+
+    setHomepageText(document.getElementById('malaysia-slots-h2'), homepage.slotsHeading);
+    applyHomepageSectionIntro('malaysia-slots-h2', homepage.slotsIntro);
+
+    setHomepageText(document.getElementById('malaysia-live-h2'), homepage.liveDealerHeading);
+    applyHomepageSectionIntro('malaysia-live-h2', homepage.liveDealerIntro);
+    if (homepage.liveDealerOutro) {
+        const section = document.getElementById('malaysia-live-h2')?.closest('section');
+        const paragraphs = section?.querySelectorAll(':scope > p');
+        const last = paragraphs?.[paragraphs.length - 1];
+        if (last) setRichTextHtml(last, homepage.liveDealerOutro);
+    }
+
+    setHomepageText(document.getElementById('malaysia-conclusion-h2'), homepage.conclusionHeading);
+    setHomepageText(document.querySelector('#malaysia-conclusion-cta > p'), homepage.conclusionBody, 'rich');
+}
+
+/** Strapi v5 live-casino single type — nested component + relation populate. */
+const LIVE_CASINO_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[featuredWelcomeBonus][populate][casino][populate]=logo' +
+    '&populate[featuredWelcomeBonus][populate][bonusOverride]=*' +
+    '&populate[featuredWelcomeBonus][populate][features]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionCta][populate][certificationLogos]=true' +
+    '&populate[paymentMethods]=*' +
+    '&populate[blacklistItems]=*';
+
+const LIVE_CASINO_POPULATE_FALLBACK = 'populate=*';
+
+async function fetchLiveCasino() {
+    try {
+        let res = await fetch(`${API_URL}/api/live-casino?${LIVE_CASINO_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Live casino CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/live-casino?${LIVE_CASINO_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Live casino CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Live casino CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function liveCasinoTopCasinoToAttr(item) {
+    const casino = normalizeV5CasinoAttr(item?.casino) || {};
+    const merged = { ...casino };
+    if (item?.highlight) {
+        merged.MalaysiaHighlight = item.highlight;
+        merged.malaysiaHighlight = item.highlight;
+    }
+    const override = item?.bonusOverride;
+    if (override) {
+        if (override.intro) merged.malaysiaBonusIntro = override.intro;
+        if (override.amount) merged.malaysiaBonusAmount = override.amount;
+        if (override.extra) merged.malaysiaBonusExtra = override.extra;
+        const line = [override.intro, override.amount, override.extra].filter(Boolean).join(' ');
+        if (line) {
+            merged.MalaysiaBonusLine = line;
+            merged.malaysiaBonusLine = line;
+        }
+    }
+    return applyTopCasinoItemRatingOverride(merged, item);
+}
+
+function renderLiveCasinoOperatorRow(item, listPos, options = {}) {
+    const highlightLabel = options.highlightLabel || 'Live casino highlight';
+    const attr = liveCasinoTopCasinoToAttr(item);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusAmount = escapeHtml(bonusParts.amount);
+    const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
+    const highlight =
+        options.highlightValue != null && options.highlightValue !== ''
+            ? escapeHtml(String(options.highlightValue))
+            : escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    const bonusExtraHtml = bonusExtra
+        ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
+        : '';
+    return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">Rating</span>
+                ${ratingHtml}
+            </div>
+            <div class="malaysia-operator-row__bonus">
+                <span class="malaysia-operator-row__field-label">${bonusIntro}</span>
+                <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
+            </div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">${escapeHtml(highlightLabel)}</span>
+                <p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${highlight}</span></span></p>
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
+        </div>
+    </article>`;
+}
+
+function applyLiveCasinoMeta(page) {
+    if (!page) return;
+    const title = page.metaTitle || 'Best Live Casinos Malaysia 2026 | Top Live Dealer Sites | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best live casinos in Malaysia for 2026: HD live dealer tables, bonuses, and trusted payment methods. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyLiveCasinoHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('live-casino-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('live-casino-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applyLiveCasinoListingMeta(page) {
+    const bar = document.getElementById('live-casino-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('live-casino-listing-updated');
+    const disclosureEl = document.getElementById('live-casino-listing-disclosure');
+    const trustEl = document.getElementById('live-casino-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+}
+
+function applyLiveCasinoOperators(page) {
+    const listEl = document.getElementById('live-casino-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows.map((item, i) => renderLiveCasinoOperatorRow(item, item.rank || i + 1)).join('');
+}
+
+function applyLiveCasinoBonusFeatured(page) {
+    const container = document.getElementById('live-casino-bonus-featured');
+    const block = page?.featuredWelcomeBonus;
+    if (!container || !block?.casino) return;
+    const attr = normalizeV5CasinoAttr(block.casino);
+    container.innerHTML = renderHomepageFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Casino rating',
+        defaultCta: block.ctaText || 'Claim bonus',
+        offerLabel: block.bonusOverride?.intro || 'Welcome bonus',
+    });
+    const termsEl = document.getElementById('live-casino-welcome-bonus-terms');
+    if (termsEl && page.welcomeBonusTerms) {
+        setHomepageText(termsEl, page.welcomeBonusTerms);
+    }
+}
+
+function renderLiveCasinoBottomTrio(block) {
+    if (!block?.casino) return '';
+    const attr = normalizeV5CasinoAttr(block.casino);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="live-casino-bottom-trio__logo" width="120" height="48" loading="lazy">`
+        : `<span class="live-casino-bottom-trio__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+
+    const score =
+        block.ratingOverride != null ? Number(block.ratingOverride) : ratingScoreFromAttr(attr);
+    const ratingText = Number.isFinite(score)
+        ? formatRatingSlashFive(score)
+        : formatRatingScoreLine(attr, '5/5').replace(' / ', '/');
+    const starsHtml = Number.isFinite(score) ? renderStars(score) : renderStars(attr);
+
+    const ctaText = escapeHtml(block.ctaText || 'Visit Site!');
+    const visitHref = escapeHtml(block.ctaLinkOverride || casinoVisitSiteHref(attr));
+    const visitRel =
+        casinoVisitSiteIsExternal(attr) || block.ctaLinkOverride
+            ? ' rel="nofollow noopener" target="_blank"'
+            : ' rel="nofollow noopener"';
+
+    const cmsFeatures = Array.isArray(block.features)
+        ? block.features.map((f) => f.label).filter(Boolean)
+        : [];
+    const defaultFeatures = [
+        'Native speaking live dealers',
+        'Multiple alternative payment methods',
+        'Top-rated mobile apps',
+    ];
+    const bulletLabels =
+        cmsFeatures.length >= 3
+            ? cmsFeatures.slice(0, 3)
+            : cmsFeatures.length
+              ? [...cmsFeatures, ...defaultFeatures].slice(0, 3)
+              : defaultFeatures;
+    const bulletsHtml = bulletLabels
+        .map((label) => `<li>${escapeHtml(label)}</li>`)
+        .join('');
+
+    return `<div class="live-casino-bottom-trio__grid">
+        <article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--featured">
+            <p class="live-casino-bottom-trio__head"><span>2026&rsquo;s Best</span><strong>Malaysian Casino</strong></p>
+            <div class="live-casino-bottom-trio__featured-row">
+                <div class="live-casino-bottom-trio__logo-box">${logoHtml}</div>
+                <div class="live-casino-bottom-trio__rating-box">
+                    <span class="live-casino-bottom-trio__rating-label">Casino Rating</span>
+                    <div class="live-casino-bottom-trio__stars">${starsHtml}</div>
+                    <span class="live-casino-bottom-trio__rating-score">${escapeHtml(ratingText)}</span>
+                </div>
+            </div>
+            <a href="${visitHref}" class="live-casino-bottom-trio__cta"${visitRel}>${ctaText}</a>
+        </article>
+        <article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--explore">
+            <p class="live-casino-bottom-trio__head"><span>Malaysia</span><strong>Explore All Casino Types</strong></p>
+            <ul class="live-casino-bottom-trio__bullets" role="list">${bulletsHtml}</ul>
+            <a href="/" class="live-casino-bottom-trio__outline-btn">See All Malaysian Online Casinos</a>
+        </article>
+        <article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--guides">
+            <p class="live-casino-bottom-trio__head"><strong>More Guides</strong></p>
+            <div class="live-casino-bottom-trio__guides">
+                <a href="/roulette" class="live-casino-bottom-trio__guide">
+                    <span class="live-casino-bottom-trio__guide-icon" aria-hidden="true">
+                        <img src="/assets/img/icon/roulette-wheel-icon.webp" alt="" width="46" height="46" loading="lazy">
+                    </span>
+                    <span class="live-casino-bottom-trio__guide-label">Online Roulette</span>
+                </a>
+                <a href="/baccarat" class="live-casino-bottom-trio__guide">
+                    <span class="live-casino-bottom-trio__guide-icon" aria-hidden="true">
+                        <img src="/assets/img/icon/cards-icon.webp" alt="" width="46" height="46" loading="lazy">
+                    </span>
+                    <span class="live-casino-bottom-trio__guide-label">Online Baccarat</span>
+                </a>
+            </div>
+        </article>
+    </div>`;
+}
+
+function applyLiveCasinoConclusion(page) {
+    const container = document.getElementById('live-casino-bottom-trio');
+    const block = page?.conclusionCta;
+    if (!container || !block?.casino) return;
+    container.innerHTML = renderLiveCasinoBottomTrio(block);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function liveCasinoPaymentTypeBadge(type) {
+    const label = String(type || '—');
+    const t = label.toLowerCase();
+    let variant = 'default';
+    if (t.includes('e-wallet') || t.includes('ewallet')) variant = 'ewallet';
+    else if (t.includes('bank')) variant = 'bank';
+    else if (t.includes('card') || t.includes('debit') || t.includes('credit')) variant = 'card';
+    else if (t.includes('crypto')) variant = 'crypto';
+    return `<span class="live-casino-type-badge live-casino-type-badge--${variant}">${escapeHtml(label)}</span>`;
+}
+
+function liveCasinoTimingCell(value) {
+    const label = String(value || '—');
+    const isFast = /instant|up to 5 minutes|up to 15 minutes/i.test(label);
+    const cls = isFast ? ' live-casino-data-table__timing--fast' : '';
+    return `<span class="live-casino-data-table__timing${cls}">${escapeHtml(label)}</span>`;
+}
+
+function applyLiveCasinoPayments(page) {
+    const tbody = document.querySelector('#live-casino-payments-table tbody');
+    const methods = page?.paymentMethods;
+    if (!tbody || !Array.isArray(methods) || methods.length === 0) return;
+    tbody.innerHTML = methods
+        .map(
+            (m) => `<tr>
+            <td data-label="Payment method"><span class="live-casino-data-table__method">${escapeHtml(m.name || '—')}</span></td>
+            <td data-label="Payment type">${liveCasinoPaymentTypeBadge(m.paymentType)}</td>
+            <td data-label="Avg. deposit time">${liveCasinoTimingCell(m.avgDepositTime)}</td>
+            <td data-label="Avg. withdrawal time">${liveCasinoTimingCell(m.avgWithdrawalTime)}</td>
+            <td data-label="Notes"><span class="live-casino-data-table__notes">${escapeHtml(m.notes || '—')}</span></td>
+        </tr>`,
+        )
+        .join('');
+}
+
+function applyLiveCasinoBlacklist(page) {
+    const tbody = document.querySelector('#live-casino-blacklist-table tbody');
+    const items = page?.blacklistItems;
+    if (tbody && Array.isArray(items) && items.length > 0) {
+        tbody.innerHTML = items
+            .map(
+                (item) => `<tr>
+                <td data-label="Blacklisted casino">${escapeHtml(item.casinoName || '—')}</td>
+                <td data-label="Primary reason">${escapeHtml(item.reason || '—')}</td>
+            </tr>`,
+            )
+            .join('');
+    }
+    const noteEl = document.getElementById('live-casino-blacklist-note');
+    if (noteEl && page?.blacklistNote) {
+        setRichTextHtml(noteEl, page.blacklistNote);
+    }
+}
+
+function applyLiveCasinoSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['live-casino-operators-h2', page.topCasinosHeading],
+        ['live-casino-operators-intro', page.topCasinosIntro, 'rich'],
+        ['live-casino-operators-outro', page.topCasinosOutro, 'rich'],
+        ['live-casino-rating-h2', page.ratingHeading],
+        ['live-casino-rating-intro', page.ratingIntro, 'rich'],
+        ['live-casino-rating-outro', page.ratingOutro, 'rich'],
+        ['live-casino-games-h2', page.gamesHeading],
+        ['live-casino-games-intro', page.gamesIntro, 'rich'],
+        ['live-casino-providers-h2', page.providersHeading],
+        ['live-casino-providers-intro', page.providersIntro, 'rich'],
+        ['live-casino-providers-outro', page.providersOutro, 'rich'],
+        ['live-casino-bonus-h2', page.bonusesHeading],
+        ['live-casino-bonus-intro', page.bonusesIntro, 'rich'],
+        ['live-casino-welcome-bonus-h3', page.welcomeBonusHeading],
+        ['live-casino-welcome-bonus-body', page.welcomeBonusBody, 'rich'],
+        ['live-casino-cashback-h3', page.cashbackHeading],
+        ['live-casino-cashback-body', page.cashbackBody, 'rich'],
+        ['live-casino-wagering-h3', page.wageringHeading],
+        ['live-casino-wagering-body', page.wageringBody, 'rich'],
+        ['live-casino-checklist-h2', page.checklistHeading],
+        ['live-casino-checklist-intro', page.checklistIntro, 'rich'],
+        ['live-casino-checklist-outro', page.checklistOutro, 'rich'],
+        ['live-casino-payments-h2', page.paymentsHeading],
+        ['live-casino-payments-intro', page.paymentsIntro, 'rich'],
+        ['live-casino-payments-outro', page.paymentsOutro, 'rich'],
+        ['live-casino-types-h2', page.typesHeading],
+        ['live-casino-types-intro', page.typesIntro, 'rich'],
+        ['live-casino-high-roller-h3', page.highRollerHeading],
+        ['live-casino-high-roller-body', page.highRollerBody, 'rich'],
+        ['live-casino-low-stakes-h3', page.lowStakesHeading],
+        ['live-casino-low-stakes-body', page.lowStakesBody, 'rich'],
+        ['live-casino-legal-h2', page.legalHeading],
+        ['live-casino-legal-body', page.legalBody, 'rich'],
+        ['live-casino-blacklist-h2', page.blacklistHeading],
+        ['live-casino-blacklist-intro', page.blacklistIntro, 'rich'],
+        ['live-casino-conclusion-h2', page.conclusionHeading],
+        ['live-casino-conclusion-body', page.conclusionBody, 'rich'],
+        ['live-casino-faq-h2', page.faqHeading],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+    const criteriaEl = document.getElementById('live-casino-rating-criteria');
+    const criteria = page.ratingCriteria;
+    if (criteriaEl && Array.isArray(criteria) && criteria.length > 0) {
+        criteriaEl.innerHTML = criteria
+            .map(
+                (c) => `<article class="live-casino-criteria-card" role="listitem">
+                <h3 class="live-casino-criteria-card__title">${escapeHtml(c.title || c.heading || '')}</h3>
+                <p class="live-casino-criteria-card__body">${escapeHtml(c.body || c.description || '')}</p>
+            </article>`,
+            )
+            .join('');
+    }
+    const gamesEl = document.getElementById('live-casino-game-categories');
+    const gameCategories = page.gameCategories;
+    if (gamesEl && Array.isArray(gameCategories) && gameCategories.length > 0) {
+        gamesEl.innerHTML = gameCategories
+            .map(
+                (g) => `<h3>${escapeHtml(g.title || g.heading || '')}</h3><p>${escapeHtml(g.body || g.description || '')}</p>`,
+            )
+            .join('');
+    }
+    const tagsEl = document.getElementById('live-casino-provider-tags');
+    const tags = page.providerTags;
+    if (tagsEl && Array.isArray(tags) && tags.length > 0) {
+        tagsEl.textContent = tags.map((t) => (typeof t === 'string' ? t : t.label || t.name || '')).filter(Boolean).join(' · ');
+    }
+    const stepsEl = document.getElementById('live-casino-checklist-steps');
+    const steps = page.checklistSteps;
+    if (stepsEl && Array.isArray(steps) && steps.length > 0) {
+        stepsEl.innerHTML = steps
+            .map(
+                (s, i) =>
+                    `<li><strong>Step ${s.step || i + 1}: ${escapeHtml(s.title || s.heading || '')}</strong> — ${escapeHtml(s.body || s.description || '')}</li>`,
+            )
+            .join('');
+    }
+}
+
+function buildLiveCasinoJsonLd(page, operators) {
+    const itemListEl = document.getElementById('live-casino-ld-itemlist');
+    if (itemListEl && Array.isArray(operators) && operators.length > 0) {
+        const items = operators.slice(0, 10).map((item, i) => {
+            const attr = liveCasinoTopCasinoToAttr(item);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Live Casinos in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const faqItems = page?.faqItems;
+    const faqEl = document.getElementById('live-casino-ld-faq');
+    if (faqEl && Array.isArray(faqItems) && faqItems.length > 0) {
+        faqEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqItems.map((f) => ({
+                '@type': 'Question',
+                name: f.question || f.title || '',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: f.answer || f.body || richTextToPlainText(f.answerRich) || '',
+                },
+            })),
+        });
+    }
+    const webEl = document.getElementById('live-casino-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Live Casinos Malaysia 2026',
+            url: 'https://888reviews.com/live-casino',
+            description:
+                page.metaDescription ||
+                'Compare the best live casinos in Malaysia for 2026: live dealer tables, bonuses, and trusted payment methods.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initLiveCasinoPage() {
+    const listEl = document.getElementById('live-casino-operator-list');
+    if (!listEl) return;
+
+    const page = await fetchLiveCasino();
+    if (!page) return;
+
+    applyLiveCasinoMeta(page);
+    applyLiveCasinoHero(page);
+    applyLiveCasinoSectionText(page);
+    applyLiveCasinoListingMeta(page);
+    applyLiveCasinoOperators(page);
+    applyLiveCasinoBonusFeatured(page);
+    applyLiveCasinoConclusion(page);
+    applyLiveCasinoPayments(page);
+    applyLiveCasinoBlacklist(page);
+    buildLiveCasinoJsonLd(page, page.topCasinos);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 review-page single type — nested component + relation populate. */
+const REVIEWS_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[topRatedSpotlight][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[featuredSlots][populate][slot][populate]=coverImage' +
+    '&populate[featuredSlots][populate][playAtCasino][populate]=logo' +
+    '&populate[paymentMethods]=*' +
+    '&populate[bonusComparisonRows]=*' +
+    '&populate[gameCategories]=*' +
+    '&populate[ratingCriteria]=*';
+
+const REVIEWS_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+function mergeReviewsTopCasinos(deepRows, shallowRows) {
+    if (!Array.isArray(deepRows)) return shallowRows;
+    if (!Array.isArray(shallowRows)) return deepRows;
+    return deepRows.map((deep) => {
+        const shallow = shallowRows.find((s) => s.id === deep.id || s.rank === deep.rank);
+        if (!shallow) return deep;
+        return {
+            ...shallow,
+            ...deep,
+            casino: deep.casino ?? shallow.casino,
+            bonusOverride: deep.bonusOverride ?? shallow.bonusOverride,
+            highlight: deep.highlight ?? shallow.highlight,
+            ratingOverride: deep.ratingOverride ?? shallow.ratingOverride,
+        };
+    });
+}
+
+async function fetchReviewPage() {
+    try {
+        let res = await fetch(`${API_URL}/api/review-page?${REVIEWS_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Review page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/review-page?${REVIEWS_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Review page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        let data = json.data;
+        const shallowRes = await fetch(`${API_URL}/api/review-page?${REVIEWS_PAGE_POPULATE_FALLBACK}`);
+        const shallowJson = await shallowRes.json();
+        if (shallowRes.ok && shallowJson?.data) {
+            const shallow = shallowJson.data;
+            data = {
+                ...shallow,
+                ...data,
+                topCasinos: mergeReviewsTopCasinos(data.topCasinos, shallow.topCasinos),
+                ratingCriteria: data.ratingCriteria?.length ? data.ratingCriteria : shallow.ratingCriteria,
+                bonusComparisonRows: data.bonusComparisonRows?.length
+                    ? data.bonusComparisonRows
+                    : shallow.bonusComparisonRows,
+                gameCategories: data.gameCategories?.length ? data.gameCategories : shallow.gameCategories,
+                featuredSlots: data.featuredSlots?.length ? data.featuredSlots : shallow.featuredSlots,
+                paymentMethods: data.paymentMethods?.length ? data.paymentMethods : shallow.paymentMethods,
+                topRatedSpotlight: data.topRatedSpotlight?.casino
+                    ? data.topRatedSpotlight
+                    : shallow.topRatedSpotlight,
+                conclusionCta: data.conclusionCta?.casino ? data.conclusionCta : shallow.conclusionCta,
+            };
+        }
+        return data;
+    } catch (e) {
+        console.warn('Review page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function reviewsTopCasinoToAttr(item, slugMap) {
+    const casino = bonusHubEnrichedCasino(item?.casino, slugMap) || {};
+    const merged = { ...casino };
+    if (item?.highlight) {
+        merged.MalaysiaHighlight = item.highlight;
+        merged.malaysiaHighlight = item.highlight;
+    }
+    const override = item?.bonusOverride;
+    if (override) {
+        if (override.intro) merged.malaysiaBonusIntro = override.intro;
+        if (override.amount) merged.malaysiaBonusAmount = override.amount;
+        if (override.extra) merged.malaysiaBonusExtra = override.extra;
+        const line = [override.intro, override.amount, override.extra].filter(Boolean).join(' ');
+        if (line) {
+            merged.MalaysiaBonusLine = line;
+            merged.malaysiaBonusLine = line;
+        }
+    }
+    return applyTopCasinoItemRatingOverride(merged, item);
+}
+
+function renderReviewsOperatorRow(item, listPos, slugMap) {
+    const attr = reviewsTopCasinoToAttr(item, slugMap);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusAmount = escapeHtml(bonusParts.amount);
+    const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    const bonusExtraHtml = bonusExtra
+        ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
+        : '';
+    return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">Rating</span>
+                ${ratingHtml}
+            </div>
+            <div class="malaysia-operator-row__bonus">
+                <span class="malaysia-operator-row__field-label">${bonusIntro}</span>
+                <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
+            </div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">Casino highlight</span>
+                <p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${highlight}</span></span></p>
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
+        </div>
+    </article>`;
+}
+
+function applyReviewsMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Online Casino Reviews Malaysia 2026 | Top Site Ratings | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Independent online casino reviews for Malaysian players: hands-on testing, ranked operators, bonus guides, and trusted payment methods. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    ['og:title', 'og:description', 'twitter:title', 'twitter:description'].forEach((name) => {
+        const el =
+            name.startsWith('og:')
+                ? document.querySelector(`meta[property="${name}"]`)
+                : document.querySelector(`meta[name="${name}"]`);
+        if (el) el.setAttribute('content', name.includes('title') ? title : desc);
+    });
+}
+
+function applyReviewsHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('reviews-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('reviews-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applyReviewsListingMeta(page) {
+    const bar = document.getElementById('reviews-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('reviews-listing-updated');
+    const disclosureEl = document.getElementById('reviews-listing-disclosure');
+    const trustEl = document.getElementById('reviews-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+}
+
+function applyReviewsOperators(page, slugMap) {
+    const listEl = document.getElementById('reviews-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows
+        .map((item, i) => renderReviewsOperatorRow(item, item.rank || i + 1, slugMap))
+        .join('');
+}
+
+function applyReviewsSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['reviews-operators-h2', page.topCasinosHeading],
+        ['reviews-operators-intro', page.topCasinosIntro, 'rich'],
+        ['reviews-operators-outro', page.topCasinosOutro, 'rich'],
+        ['reviews-rating-h2', page.ratingHeading],
+        ['reviews-rating-intro', page.ratingIntro, 'rich'],
+        ['reviews-rating-outro', page.ratingOutro, 'rich'],
+        ['reviews-spotlight-h2', page.topRatedHeading],
+        ['reviews-legal-h2', page.legalHeading],
+        ['reviews-legal-intro', page.legalIntro, 'rich'],
+        ['reviews-bonuses-h2', page.bonusesHeading],
+        ['reviews-bonuses-intro', page.bonusesIntro, 'rich'],
+        ['reviews-bonuses-outro', page.bonusesOutro, 'rich'],
+        ['reviews-welcome-h3', page.welcomeBonusHeading],
+        ['reviews-welcome-body', page.welcomeBonusBody, 'rich'],
+        ['reviews-nodeposit-h3', page.noDepositHeading],
+        ['reviews-nodeposit-body', page.noDepositBody, 'rich'],
+        ['reviews-freespins-h3', page.freeSpinsHeading],
+        ['reviews-freespins-body', page.freeSpinsBody, 'rich'],
+        ['reviews-wagering-h3', page.wageringHeading],
+        ['reviews-wagering-body', page.wageringBody, 'rich'],
+        ['reviews-games-h2', page.gamesHeading],
+        ['reviews-games-intro', page.gamesIntro, 'rich'],
+        ['reviews-games-outro', page.gamesOutro, 'rich'],
+        ['reviews-payments-h2', page.paymentsHeading],
+        ['reviews-payments-intro', page.paymentsIntro, 'rich'],
+        ['reviews-payments-outro', page.paymentsOutro, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+    const legalBodyEl = document.getElementById('reviews-legal-body');
+    if (legalBodyEl && page.legalBody) {
+        const html = richTextToHtml(page.legalBody);
+        if (html) {
+            legalBodyEl.classList.remove('reviews-legal-topics');
+            legalBodyEl.classList.add('reviews-legal-body-plain');
+            legalBodyEl.innerHTML = html;
+        }
+    }
+}
+
+const REVIEWS_RATING_ICONS = [
+    'shield-check',
+    'gamepad-2',
+    'badge-percent',
+    'banknote',
+    'headphones',
+    'smartphone',
+];
+
+function applyReviewsRatingCriteria(page) {
+    const listEl = document.getElementById('reviews-rating-criteria');
+    const criteria = page?.ratingCriteria;
+    if (!listEl || !Array.isArray(criteria) || criteria.length === 0) return;
+    listEl.innerHTML = criteria
+        .map((c, i) => {
+            const title = escapeHtml(c.heading || c.title || '');
+            const icon = REVIEWS_RATING_ICONS[i] || 'circle-check';
+            const bodyHtml =
+                richTextToHtml(c.body) || plainTextToParagraphsHtml(c.description || c.body || '');
+            const bodyInner = bodyHtml
+                ? `<div class="rich-text-body reviews-rating-criteria__body">${bodyHtml}</div>`
+                : '';
+            return `<li class="reviews-rating-criteria__item" role="listitem" data-step="${i + 1}">
+                <div class="reviews-rating-criteria__header">
+                    <div class="reviews-rating-criteria__icon-wrap">
+                        <span class="reviews-rating-criteria__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+                    </div>
+                    <h3 class="reviews-rating-criteria__title">${title}</h3>
+                </div>
+                ${bodyInner}
+            </li>`;
+        })
+        .join('');
+}
+
+function applyReviewsSpotlightBrandLogo(attr, name) {
+    const logoUrl = getLogoUrl(attr);
+    const editorLogo = document.getElementById('reviews-spotlight-editor-logo');
+    if (!logoUrl || !editorLogo) return;
+    editorLogo.src = logoUrl;
+    editorLogo.alt = name;
+    editorLogo.hidden = false;
+}
+
+function applyReviewsSpotlight(page, slugMap) {
+    const spotlight = page?.topRatedSpotlight;
+    if (!spotlight) return;
+    if (spotlight.intro) {
+        setHomepageText(document.getElementById('reviews-spotlight-intro'), spotlight.intro, 'rich');
+    }
+    if (spotlight.disclaimerNote) {
+        const noteEl = document.getElementById('reviews-spotlight-note');
+        if (noteEl) noteEl.textContent = `*Note: ${spotlight.disclaimerNote}`;
+    }
+    const casino = bonusHubEnrichedCasino(spotlight.casino, slugMap);
+    if (!casino) return;
+    const attr = normalizeV5CasinoAttr(casino);
+    const name = attr.Name || attr.name || 'Casino';
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const editorCta = document.getElementById('reviews-spotlight-editor-cta');
+    if (editorCta) {
+        const labelEl = editorCta.querySelector('.reviews-spotlight-card__pill-label');
+        if (labelEl) labelEl.textContent = name;
+        else editorCta.textContent = name;
+        editorCta.href = visitHref;
+        if (visitRel.includes('target')) {
+            editorCta.target = '_blank';
+            editorCta.rel = 'nofollow noopener';
+        }
+        editorCta.setAttribute('aria-label', `Visit ${name}`);
+    }
+    applyReviewsSpotlightBrandLogo(attr, name);
+    const gridEl = document.getElementById('reviews-spotlight-grid');
+    if (gridEl && typeof lucide !== 'undefined') lucide.createIcons({ root: gridEl });
+}
+
+const REVIEWS_BONUS_ICONS = ['gift', 'sparkles', 'badge-percent', 'wallet', 'rotate-ccw'];
+
+function reviewsBonusTypeCell(bonusType, index) {
+    const icon = REVIEWS_BONUS_ICONS[index] || 'gift';
+    const label = escapeHtml(bonusType || '—');
+    return `<span class="reviews-bonus-table__type"><span class="reviews-bonus-table__type-icon" aria-hidden="true"><i data-lucide="${icon}"></i></span><span class="live-casino-data-table__method">${label}</span></span>`;
+}
+
+function applyReviewsBonusTable(page) {
+    const tbody = document.getElementById('reviews-bonus-tbody');
+    const rows = page?.bonusComparisonRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows
+        .map(
+            (r, i) => `<tr>
+            <td data-label="Bonus type">${reviewsBonusTypeCell(r.bonusType, i)}</td>
+            <td data-label="What is it?">${escapeHtml(r.whatIsIt || '—')}</td>
+            <td data-label="Best for">${escapeHtml(r.bestFor || '—')}</td>
+            <td data-label="Watch out for"><span class="live-casino-data-table__notes">${escapeHtml(r.watchOutFor || '—')}</span></td>
+        </tr>`,
+        )
+        .join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
+}
+
+function reviewsGameCategoryIcon(heading, index) {
+    const h = String(heading || '').toLowerCase();
+    if (/slot/.test(h)) return 'dice-5';
+    if (/blackjack|roulette|table/.test(h)) return 'spade';
+    if (/live/.test(h)) return 'radio';
+    return ['dice-5', 'spade', 'radio', 'gamepad-2'][index] || 'gamepad-2';
+}
+
+function applyReviewsGameCategories(page) {
+    const gamesEl = document.getElementById('reviews-game-categories');
+    const gameCategories = page?.gameCategories;
+    if (!gamesEl || !Array.isArray(gameCategories) || gameCategories.length === 0) return;
+
+    const slotsWrap = document.getElementById('reviews-featured-slots-wrap');
+    const slotsPanelMarkup = slotsWrap
+        ? `<div class="reviews-featured-slots-panel"><p class="reviews-featured-slots-panel__label">Popular slot picks</p>${slotsWrap.outerHTML}</div>`
+        : '';
+    let slotsInserted = false;
+
+    gamesEl.innerHTML = gameCategories
+        .map((g, i) => {
+            const title = escapeHtml(g.heading || g.title || '');
+            const rawTitle = g.heading || g.title || '';
+            const bodyHtml =
+                richTextToHtml(g.body) || plainTextToParagraphsHtml(g.description || g.body || '');
+            const bodyInner = bodyHtml
+                ? `<div class="rich-text-body reviews-game-category__body">${bodyHtml}</div>`
+                : '';
+            const icon = reviewsGameCategoryIcon(rawTitle, i);
+            const isSlots = !slotsInserted && /slot/i.test(rawTitle);
+            if (isSlots) slotsInserted = true;
+            const slotsPanel = isSlots ? slotsPanelMarkup : '';
+            return `<article class="reviews-game-category">
+                <div class="reviews-game-category__head">
+                    <span class="reviews-game-category__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+                    <h3>${title}</h3>
+                </div>
+                ${bodyInner}
+                ${slotsPanel}
+            </article>`;
+        })
+        .join('');
+
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: gamesEl });
+}
+
+function applyReviewsFeaturedSlots(page, casinoRows) {
+    const container = document.getElementById('reviews-featured-slots');
+    const wrap = document.getElementById('reviews-featured-slots-wrap');
+    const items = page?.featuredSlots;
+    if (!container || !Array.isArray(items) || items.length === 0) return;
+    const featuredIndex = items.findIndex((item) => item?.isFeatured);
+    const featuredIdx = featuredIndex >= 0 ? featuredIndex : 0;
+    const slugMap = casinoRows ? buildCasinoSlugMap(casinoRows) : new Map();
+    container.innerHTML = items
+        .map((item, i) => {
+            const slug = (item?.playAtCasino?.slug || item?.playAtCasino?.Slug || '').toLowerCase();
+            const enriched = slug ? slugMap.get(slug) : null;
+            const merged =
+                enriched && item?.playAtCasino
+                    ? { ...item, playAtCasino: { ...item.playAtCasino, ...enriched } }
+                    : item;
+            return renderMalaysiaFeaturedSlotCard(merged, i === featuredIdx);
+        })
+        .join('');
+    container.dataset.count = String(items.length);
+    if (wrap) wrap.hidden = false;
+}
+
+function reviewsPaymentMethodCell(name) {
+    const label = String(name || '—').trim();
+    const logoUrl = eWalletPayLogoUrl(label);
+    if (logoUrl) {
+        return `<span class="reviews-payments-table__method reviews-payments-table__method--has-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-label="${escapeHtml(label)}"><span class="reviews-payments-table__method-label">${escapeHtml(label)}</span></span>`;
+    }
+    return `<span class="live-casino-data-table__method">${escapeHtml(label)}</span>`;
+}
+
+function applyReviewsPayments(page) {
+    const tbody = document.querySelector('#reviews-payments-table tbody');
+    const methods = page?.paymentMethods;
+    if (!tbody || !Array.isArray(methods) || methods.length === 0) return;
+    tbody.innerHTML = methods
+        .map(
+            (m) => `<tr>
+            <td data-label="Payment method">${reviewsPaymentMethodCell(m.name)}</td>
+            <td data-label="Payment type">${liveCasinoPaymentTypeBadge(m.paymentType)}</td>
+            <td data-label="Avg. deposit time">${liveCasinoTimingCell(m.avgDepositTime)}</td>
+            <td data-label="Avg. withdrawal time">${liveCasinoTimingCell(m.avgWithdrawalTime)}</td>
+            <td data-label="Notes"><span class="live-casino-data-table__notes">${escapeHtml(m.notes || '—')}</span></td>
+        </tr>`,
+        )
+        .join('');
+}
+
+function uniquePaymentLogoNames(names) {
+    const seen = new Set();
+    const out = [];
+    for (const name of names) {
+        const label = String(name || '').trim();
+        if (!label) continue;
+        const slug = eWalletPayLogoSlug(label) || label.toLowerCase();
+        if (seen.has(slug)) continue;
+        seen.add(slug);
+        out.push(label);
+    }
+    return out;
+}
+
+function reviewsPaymentLogoTile(name) {
+    const label = String(name || '').trim();
+    const logoUrl = eWalletPayLogoUrl(label);
+    if (logoUrl) {
+        return `<span class="reviews-payments-logos__item reviews-payments-logos__item--has-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="listitem" aria-label="${escapeHtml(label)}"><span class="reviews-payments-logos__label">${escapeHtml(label)}</span></span>`;
+    }
+    return `<span class="reviews-payments-logos__item reviews-payments-logos__item--text" role="listitem">${escapeHtml(label)}</span>`;
+}
+
+function applyReviewsPaymentLogos(page) {
+    const grid = document.getElementById('reviews-payment-logos');
+    if (!grid) return;
+    const methods = page?.paymentMethods;
+    const names = Array.isArray(methods)
+        ? methods.map((m) => m.name).filter(Boolean)
+        : [];
+    const extra = ['Mastercard', 'Skrill', 'Neteller', 'Bank Transfer'];
+    const allNames = uniquePaymentLogoNames([...names, ...extra]);
+    grid.innerHTML = allNames.map((name) => reviewsPaymentLogoTile(name)).join('');
+}
+
+function applyReviewsConclusion(page, slugMap) {
+    const container = document.getElementById('reviews-bottom-trio');
+    const block = page?.conclusionCta;
+    if (!container || !block?.casino) return;
+    const enriched = bonusHubEnrichedCasino(block.casino, slugMap);
+    if (!enriched) return;
+    container.innerHTML = renderLiveCasinoBottomTrio({ ...block, casino: enriched });
+}
+
+function buildReviewsJsonLd(page, operators) {
+    const itemListEl = document.getElementById('reviews-ld-itemlist');
+    if (itemListEl && Array.isArray(operators) && operators.length > 0) {
+        const items = operators.slice(0, 10).map((item, i) => {
+            const attr = reviewsTopCasinoToAttr(item, null);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Online Casino Reviews Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const faqEl = document.getElementById('reviews-ld-faq');
+    const accordion = document.getElementById('reviews-faq-accordion');
+    if (faqEl && accordion) {
+        const entities = [...accordion.querySelectorAll('.accordion-item')]
+            .map((item) => {
+                const question = item.querySelector('.accordion-title')?.textContent?.trim() || '';
+                const answer = item.querySelector('.accordion-inner')?.textContent?.trim() || '';
+                if (!question || !answer) return null;
+                return {
+                    '@type': 'Question',
+                    name: question,
+                    acceptedAnswer: { '@type': 'Answer', text: answer },
+                };
+            })
+            .filter(Boolean);
+        if (entities.length) {
+            faqEl.textContent = JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                mainEntity: entities,
+            });
+        }
+    }
+    const webEl = document.getElementById('reviews-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Online Casino Reviews Malaysia 2026',
+            url: 'https://888reviews.com/reviews',
+            description:
+                page.metaDescription ||
+                'Independent online casino reviews for Malaysian players: hands-on testing, ranked operators, and trusted payment methods.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initReviewsHubPage() {
+    const listEl = document.getElementById('reviews-operator-list');
+    if (!listEl) return;
+
+    const [page, casinoRows] = await Promise.all([fetchReviewPage(), fetchBonusHubCasinos()]);
+    if (!page) return;
+
+    const slugMap = casinoRows ? buildCasinoSlugMap(casinoRows) : new Map();
+
+    applyReviewsMeta(page);
+    applyReviewsHero(page);
+    applyReviewsSectionText(page);
+    applyReviewsListingMeta(page);
+    applyReviewsOperators(page, slugMap);
+    applyReviewsRatingCriteria(page);
+    applyReviewsSpotlight(page, slugMap);
+    applyReviewsBonusTable(page);
+    applyReviewsGameCategories(page);
+    applyReviewsFeaturedSlots(page, casinoRows);
+    applyReviewsPayments(page);
+    applyReviewsPaymentLogos(page);
+    applyReviewsConclusion(page, slugMap);
+    buildReviewsJsonLd(page, page.topCasinos);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 e-wallet-page single type — nested component + relation populate. */
+const E_WALLET_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[topCasinos][populate][acceptedEWallets]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[depositWithdrawalRows][populate][casino][populate]=logo' +
+    '&populate[gameTypePicks][populate][recommendedEWallets]=*' +
+    '&populate[comparisonRows][populate]=*' +
+    '&populate[whyReasons]=*' +
+    '&populate[howToSteps]=*' +
+    '&populate[faqItems]=*' +
+    '&populate[conclusionTakeaways]=*';
+
+const E_WALLET_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+const E_WALLET_HIGHLIGHT_LABEL = 'accepted E-wallet';
+
+function eWalletAcceptedWalletsDisplay(item) {
+    const raw = item?.acceptedEWallets;
+    if (raw == null || raw === '') return '';
+    if (typeof raw === 'string') return raw.trim();
+    if (Array.isArray(raw)) {
+        return raw
+            .map((w) => {
+                if (typeof w === 'string') return w.trim();
+                if (w && typeof w === 'object') return w.label || w.name || w.wallet || w.title || '';
+                return '';
+            })
+            .filter(Boolean)
+            .join(', ');
+    }
+    return '';
+}
+
+function mergeEWalletGameTypePicks(deepRows, shallowRows) {
+    if (!Array.isArray(deepRows)) return shallowRows;
+    if (!Array.isArray(shallowRows)) return deepRows;
+    return deepRows.map((deep) => {
+        const shallow = shallowRows.find((s) => s.id === deep.id);
+        if (!shallow) return deep;
+        return {
+            ...shallow,
+            ...deep,
+            recommendedEWallets: deep.recommendedEWallets ?? shallow.recommendedEWallets,
+        };
+    });
+}
+
+function mergeEWalletTopCasinos(deepRows, shallowRows) {
+    if (!Array.isArray(deepRows)) return shallowRows;
+    if (!Array.isArray(shallowRows)) return deepRows;
+    return deepRows.map((deep) => {
+        const shallow = shallowRows.find((s) => s.id === deep.id || s.rank === deep.rank);
+        if (!shallow) return deep;
+        return {
+            ...shallow,
+            ...deep,
+            acceptedEWallets: deep.acceptedEWallets ?? shallow.acceptedEWallets,
+        };
+    });
+}
+
+function eWalletDepositRowHasCasino(row) {
+    const casino = row?.casino;
+    if (!casino || typeof casino !== 'object') return false;
+    const attr = attrFromCasinoEntry(casino);
+    return Boolean(attr?.name || attr?.Name);
+}
+
+function hasPopulatedEWalletDepositRows(rows) {
+    return Array.isArray(rows) && rows.length > 0 && rows.some(eWalletDepositRowHasCasino);
+}
+
+function mergeEWalletDepositRows(deepRows, shallowRows) {
+    const deep = Array.isArray(deepRows) ? deepRows : [];
+    const shallow = Array.isArray(shallowRows) ? shallowRows : [];
+    const source = deep.length ? deep : shallow;
+    const other = deep.length ? shallow : deep;
+    if (!source.length) return [];
+    return source.map((row) => {
+        const match = other.find((r) => r.id === row.id);
+        const casino = eWalletDepositRowHasCasino(row)
+            ? row.casino
+            : match?.casino && eWalletDepositRowHasCasino(match)
+              ? match.casino
+              : row.casino ?? match?.casino;
+        return {
+            ...(match || {}),
+            ...row,
+            minDeposit: row.minDeposit ?? match?.minDeposit,
+            depositTime: row.depositTime ?? match?.depositTime,
+            minWithdrawal: row.minWithdrawal ?? match?.minWithdrawal,
+            withdrawalTime: row.withdrawalTime ?? match?.withdrawalTime,
+            fee: row.fee ?? match?.fee,
+            casino,
+        };
+    });
+}
+
+async function fetchEWalletDepositRowsPopulated() {
+    try {
+        const qs = 'populate[depositWithdrawalRows][populate][casino][populate]=logo';
+        const res = await fetch(`${API_URL}/api/e-wallet-page?${qs}`);
+        const json = await res.json();
+        if (!res.ok || !json?.data) return null;
+        return json.data.depositWithdrawalRows;
+    } catch (e) {
+        console.warn('E-wallet deposit rows fetch failed:', e);
+        return null;
+    }
+}
+
+function pickEWalletComponentArray(deepVal, shallowVal) {
+    return Array.isArray(deepVal) && deepVal.length ? deepVal : shallowVal;
+}
+
+async function fetchEWalletConclusionCtaPopulated() {
+    try {
+        const qs =
+            'populate[conclusionCta][populate][casino][populate]=logo' +
+            '&populate[conclusionCta][populate][bonusOverride]=*' +
+            '&populate[conclusionCta][populate][features]=*';
+        const res = await fetch(`${API_URL}/api/e-wallet-page?${qs}`);
+        const json = await res.json();
+        if (!res.ok || !json?.data) return null;
+        return json.data.conclusionCta;
+    } catch (e) {
+        console.warn('E-wallet conclusion CTA fetch failed:', e);
+        return null;
+    }
+}
+
+function mergeEWalletConclusionCta(deepCta, shallowCta) {
+    const deep = deepCta && typeof deepCta === 'object' ? deepCta : {};
+    const shallow = shallowCta && typeof shallowCta === 'object' ? shallowCta : {};
+    return {
+        ...shallow,
+        ...deep,
+        casino: deep.casino ?? shallow.casino,
+        bonusOverride: deep.bonusOverride ?? shallow.bonusOverride,
+        features: Array.isArray(deep.features) && deep.features.length ? deep.features : shallow.features,
+        certificationLogos: deep.certificationLogos ?? shallow.certificationLogos,
+        ctaText: deep.ctaText ?? shallow.ctaText,
+        ctaLinkOverride: deep.ctaLinkOverride ?? shallow.ctaLinkOverride,
+        ratingOverride: deep.ratingOverride ?? deep.bonusRatingOverride ?? shallow.ratingOverride ?? shallow.bonusRatingOverride,
+    };
+}
+
+async function fetchEWalletPage() {
+    try {
+        let res = await fetch(`${API_URL}/api/e-wallet-page?${E_WALLET_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('E-wallet page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/e-wallet-page?${E_WALLET_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('E-wallet page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        let data = json.data;
+        const needsShallowMerge =
+            !Array.isArray(data.comparisonRows) ||
+            !data.comparisonRows.length ||
+            !Array.isArray(data.whyReasons) ||
+            !data.whyReasons.length ||
+            !Array.isArray(data.howToSteps) ||
+            !data.howToSteps.length ||
+            !Array.isArray(data.faqItems) ||
+            !data.faqItems.length ||
+            !Array.isArray(data.depositWithdrawalRows) ||
+            !data.depositWithdrawalRows.length;
+        if (needsShallowMerge) {
+            const shallowRes = await fetch(`${API_URL}/api/e-wallet-page?${E_WALLET_PAGE_POPULATE_FALLBACK}`);
+            const shallowJson = await shallowRes.json();
+            if (shallowRes.ok && shallowJson?.data) {
+                const shallow = shallowJson.data;
+                data = {
+                    ...shallow,
+                    ...data,
+                    topCasinos: mergeEWalletTopCasinos(data.topCasinos, shallow.topCasinos),
+                    gameTypePicks: mergeEWalletGameTypePicks(data.gameTypePicks, shallow.gameTypePicks),
+                    depositWithdrawalRows: mergeEWalletDepositRows(
+                        data.depositWithdrawalRows,
+                        shallow.depositWithdrawalRows
+                    ),
+                    comparisonRows: pickEWalletComponentArray(data.comparisonRows, shallow.comparisonRows),
+                    whyReasons: pickEWalletComponentArray(data.whyReasons, shallow.whyReasons),
+                    howToSteps: pickEWalletComponentArray(data.howToSteps, shallow.howToSteps),
+                    faqItems: pickEWalletComponentArray(data.faqItems, shallow.faqItems),
+                    conclusionTakeaways: pickEWalletComponentArray(
+                        data.conclusionTakeaways,
+                        shallow.conclusionTakeaways
+                    ),
+                    conclusionCta: mergeEWalletConclusionCta(data.conclusionCta, shallow.conclusionCta),
+                };
+            }
+        }
+        if (!hasPopulatedEWalletDepositRows(data.depositWithdrawalRows)) {
+            const populatedRows = await fetchEWalletDepositRowsPopulated();
+            data.depositWithdrawalRows = mergeEWalletDepositRows(
+                populatedRows,
+                data.depositWithdrawalRows
+            );
+        }
+        if (!data.conclusionCta?.casino) {
+            const populatedCta = await fetchEWalletConclusionCtaPopulated();
+            data.conclusionCta = mergeEWalletConclusionCta(populatedCta, data.conclusionCta);
+        }
+        return data;
+    } catch (e) {
+        console.warn('E-wallet page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function renderEWalletOperatorRow(item, listPos) {
+    const accepted = eWalletAcceptedWalletsDisplay(item) || '—';
+    return renderLiveCasinoOperatorRow(item, listPos, {
+        highlightLabel: E_WALLET_HIGHLIGHT_LABEL,
+        highlightValue: accepted,
+    });
+}
+
+function applyEWalletMeta(page) {
+    if (!page) return;
+    const title = page.metaTitle || 'Best E-Wallet Casinos Malaysia 2026 | TnG & DuitNow | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best e-wallet casinos in Malaysia for 2026: Touch \'n Go, DuitNow, GrabPay, Skrill, and Neteller. Fast deposits and trusted operators. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyEWalletHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('e-wallet-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('e-wallet-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applyEWalletListingMeta(page) {
+    const bar = document.getElementById('e-wallet-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('e-wallet-listing-updated');
+    const disclosureEl = document.getElementById('e-wallet-listing-disclosure');
+    const trustEl = document.getElementById('e-wallet-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+}
+
+function applyEWalletOperators(page) {
+    const listEl = document.getElementById('e-wallet-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows.map((item, i) => renderEWalletOperatorRow(item, item.rank || i + 1)).join('');
+}
+
+function eWalletWhyReasonIcon(heading, index) {
+    const h = String(heading || '').toLowerCase();
+    if (/instant|transaction|speed|fast/.test(h)) return 'zap';
+    if (/privacy|security/.test(h)) return 'shield-check';
+    if (/easy|access/.test(h)) return 'smartphone';
+    if (/reward|exclusive|bonus/.test(h)) return 'gift';
+    return ['zap', 'shield-check', 'smartphone', 'gift'][index % 4];
+}
+
+function renderEWalletWhyCard(title, bodyInner, icon) {
+    return `<article class="live-casino-criteria-card e-wallet-why-card" role="listitem">
+        <div class="e-wallet-why-card__head">
+            <span class="e-wallet-why-card__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+            <h3 class="live-casino-criteria-card__title">${title}</h3>
+        </div>
+        ${bodyInner}
+    </article>`;
+}
+
+function applyEWalletWhyReasons(page) {
+    const gridEl = document.getElementById('e-wallet-why-reasons');
+    const reasons = page?.whyReasons;
+    if (!gridEl || !Array.isArray(reasons) || reasons.length === 0) return;
+    gridEl.innerHTML = reasons
+        .map((r, i) => {
+            const title = escapeHtml(r.heading || r.title || '');
+            const bodyHtml = richTextToHtml(r.body) || plainTextToParagraphsHtml(r.description || '');
+            const bodyInner = bodyHtml
+                ? `<div class="rich-text-body live-casino-criteria-card__body">${bodyHtml}</div>`
+                : '';
+            const icon = eWalletWhyReasonIcon(r.heading || r.title, i);
+            return renderEWalletWhyCard(title, bodyInner, icon);
+        })
+        .join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: gridEl });
+}
+
+function eWalletGameTypeIcon(category, index) {
+    const c = String(category || '').toLowerCase();
+    if (/slot/.test(c)) return 'dice-5';
+    if (/live/.test(c)) return 'radio';
+    if (/sport/.test(c)) return 'trophy';
+    if (/4d|lottery|other/.test(c)) return 'ticket';
+    return ['dice-5', 'radio', 'trophy', 'ticket'][index % 4];
+}
+
+function eWalletPayLogoSlug(name) {
+    const n = String(name || '')
+        .toLowerCase()
+        .replace(/[''`’]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+    if (/touch|tng/.test(n)) return 'touchngo';
+    if (n.includes('grabpay') || n === 'grab') return 'grabpay';
+    if (n.includes('shopee')) return 'shopeepay';
+    if (n.includes('boost')) return 'boost';
+    if (n.includes('googlepay') || n.includes('google')) return 'googlepay';
+    if (n.includes('applepay') || n.includes('apple')) return 'apple-pay';
+    if (n.includes('duitnow') || n.includes('duit')) return 'duitnow';
+    if (n.includes('visa')) return 'visa';
+    if (n.includes('mastercard') || n.includes('master')) return 'mastercard';
+    if (/crypto|bitcoin|btc|eth|usdt/.test(n)) return 'bitcoin';
+    if (n.includes('banktransfer') || (n.includes('bank') && n.includes('transfer'))) return 'banktransfer';
+    if (n.includes('skrill')) return 'skrill';
+    if (n.includes('neteller')) return 'neteller';
+    if (n.includes('astropay') || n.includes('astro')) return 'astropay';
+    return '';
+}
+
+function eWalletPayLogoUrl(name) {
+    const slug = eWalletPayLogoSlug(name);
+    return slug ? `/assets/img/paylogo/${slug}.webp` : '';
+}
+
+function renderEWalletWalletTag(label) {
+    const name = String(label || '').trim();
+    if (!name) return '';
+    const logoUrl = eWalletPayLogoUrl(name);
+    if (logoUrl) {
+        return `<li class="e-wallet-wallet-tags__item e-wallet-wallet-tags__item--logo">
+            <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(name)}" class="e-wallet-wallet-tags__logo" width="96" height="28" loading="lazy">
+        </li>`;
+    }
+    return `<li class="e-wallet-wallet-tags__item e-wallet-wallet-tags__item--text">${escapeHtml(name)}</li>`;
+}
+
+function eWalletWalletTagsHtml(wallets) {
+    if (!Array.isArray(wallets) || wallets.length === 0) return '';
+    const tags = wallets
+        .map((w) => (typeof w === 'string' ? w : w?.name || w?.label || w?.wallet || ''))
+        .filter(Boolean);
+    if (!tags.length) return '';
+    return `<div class="e-wallet-game-type-card__wallets">
+        <p class="e-wallet-game-type-card__wallets-label">Supported wallets</p>
+        <ul class="e-wallet-wallet-tags" role="list">${tags.map((t) => renderEWalletWalletTag(t)).join('')}</ul>
+    </div>`;
+}
+
+function renderEWalletGameTypeCard(pick, index) {
+    const title = escapeHtml(pick.category || pick.title || pick.heading || '');
+    const bodyHtml = richTextToHtml(pick.body) || plainTextToParagraphsHtml(pick.description || '');
+    const bodyInner = bodyHtml
+        ? `<div class="rich-text-body e-wallet-game-type-card__body">${bodyHtml}</div>`
+        : '';
+    const icon = eWalletGameTypeIcon(pick.category || pick.title, index);
+    const tagsHtml = eWalletWalletTagsHtml(pick.recommendedEWallets);
+    return `<article class="e-wallet-game-type-card">
+        <div class="e-wallet-game-type-card__head">
+            <span class="e-wallet-game-type-card__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+            <h3>${title}</h3>
+        </div>
+        ${bodyInner}
+        ${tagsHtml}
+    </article>`;
+}
+
+function applyEWalletGameTypePicks(page) {
+    const container = document.getElementById('e-wallet-game-type-picks');
+    const picks = page?.gameTypePicks;
+    if (!container || !Array.isArray(picks) || picks.length === 0) return;
+    container.innerHTML = picks.map((pick, i) => renderEWalletGameTypeCard(pick, i)).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function renderEWalletComparisonRow(row, defaultCtaText) {
+    const name = String(row.name || '—').trim();
+    const highlights = escapeHtml(row.highlights || row.highlight || '—');
+    const pros = escapeHtml(row.pros || '—');
+    const cons = escapeHtml(row.cons || '—');
+    const logoUrl = eWalletPayLogoUrl(name);
+    const nameCell = logoUrl
+        ? `<span class="e-wallet-comparison-table__wallet e-wallet-comparison-table__wallet--has-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-label="${escapeHtml(name)}"><span class="e-wallet-comparison-table__wallet-label">${escapeHtml(name)}</span></span>`
+        : `<span class="live-casino-data-table__method">${escapeHtml(name)}</span>`;
+    const ctaHref = escapeHtml(row.ctaLink || row.ctaLinkOverride || '#e-wallet-operator-list');
+    const ctaText = escapeHtml(row.ctaText || defaultCtaText || 'Try it here');
+    return `<tr>
+        <td data-label="Casino e-wallet Malaysia">${nameCell}</td>
+        <td data-label="Highlights">${highlights}</td>
+        <td data-label="Pros"><span class="e-wallet-comparison-table__pro">${pros}</span></td>
+        <td data-label="Cons"><span class="e-wallet-comparison-table__con">${cons}</span></td>
+        <td data-label="Play here"><a href="${ctaHref}" class="e-wallet-comparison-table__cta" rel="nofollow noopener">${ctaText}</a></td>
+    </tr>`;
+}
+
+function applyEWalletComparisonTable(page) {
+    const tbody = document.querySelector('#e-wallet-comparison-table tbody');
+    const rows = page?.comparisonRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    const defaultCtaText = page?.comparisonCtaText || page?.conclusionCta?.ctaText || 'Try it here';
+    tbody.innerHTML = rows.map((row) => renderEWalletComparisonRow(row, defaultCtaText)).join('');
+}
+
+function renderEWalletDepositRow(row) {
+    const attr = row?.casino ? normalizeV5CasinoAttr(row.casino) : {};
+    const nameRaw = String(attr.Name || attr.name || row.casinoName || '—').trim();
+    const casinoName = escapeHtml(nameRaw);
+    const logoUrl = getLogoUrl(attr);
+    const casinoCell = logoUrl
+        ? `<span class="e-wallet-deposits-table__casino e-wallet-deposits-table__casino--has-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-label="${escapeHtml(nameRaw)}"><span class="e-wallet-deposits-table__casino-label">${casinoName}</span></span>`
+        : `<span class="live-casino-data-table__method">${casinoName}</span>`;
+    const fee = String(row.fee || '—').trim();
+    const feeCell =
+        /^free$/i.test(fee)
+            ? `<span class="e-wallet-deposits-table__fee e-wallet-deposits-table__fee--free">${escapeHtml(fee)}</span>`
+            : `<span class="live-casino-data-table__notes">${escapeHtml(fee)}</span>`;
+    return `<tr>
+        <td data-label="E-wallet casino">${casinoCell}</td>
+        <td data-label="Minimum deposit">${escapeHtml(row.minDeposit || '—')}</td>
+        <td data-label="Deposit time">${liveCasinoTimingCell(row.depositTime)}</td>
+        <td data-label="Minimum withdrawal">${escapeHtml(row.minWithdrawal || '—')}</td>
+        <td data-label="Withdrawal time">${liveCasinoTimingCell(row.withdrawalTime)}</td>
+        <td data-label="Fee">${feeCell}</td>
+    </tr>`;
+}
+
+function applyEWalletDepositTable(page) {
+    const tbody = document.querySelector('#e-wallet-deposits-table tbody');
+    const rows = page?.depositWithdrawalRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows.map((row) => renderEWalletDepositRow(row)).join('');
+}
+
+function eWalletHowToStepIcon(title, index) {
+    const t = String(title || '').toLowerCase();
+    if (/deposit|click/.test(t)) return 'credit-card';
+    if (/choose|select|wallet/.test(t)) return 'wallet';
+    if (/confirm|payment|pay/.test(t)) return 'check-circle';
+    return ['credit-card', 'wallet', 'check-circle'][index] || 'circle';
+}
+
+function renderEWalletHowToStep(step, index) {
+    const stepNum = step.stepNumber || step.step || index + 1;
+    const title = escapeHtml(String(step.title || step.heading || '').trim());
+    const bodyText =
+        richTextToPlainText(step.body) ||
+        richTextToPlainText(step.description) ||
+        richTextToPlainText(step.bodyText) ||
+        String(step.description || step.bodyText || '').trim();
+    const icon = eWalletHowToStepIcon(step.title || step.heading, index);
+    const bodyHtml = bodyText ? `<p class="e-wallet-how-to-step__body">${escapeHtml(bodyText)}</p>` : '';
+    return `<li class="e-wallet-how-to-step">
+        <div class="e-wallet-how-to-step__mark" aria-label="Step ${stepNum}">
+            <span class="e-wallet-how-to-step__label">Step</span>
+            <div class="e-wallet-how-to-step__num-wrap"><span class="e-wallet-how-to-step__num">${stepNum}</span></div>
+        </div>
+        <div class="e-wallet-how-to-step__content">
+            <h3 class="e-wallet-how-to-step__title">${title}</h3>
+            ${bodyHtml}
+        </div>
+        <span class="e-wallet-how-to-step__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+    </li>`;
+}
+
+function applyEWalletHowToSteps(page) {
+    const stepsEl = document.getElementById('e-wallet-how-to-steps');
+    const steps = page?.howToSteps;
+    if (!stepsEl || !Array.isArray(steps) || steps.length === 0) return;
+    stepsEl.innerHTML = steps.map((s, i) => renderEWalletHowToStep(s, i)).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: stepsEl });
+}
+
+function resolveEWalletConclusionBlock(page) {
+    const cta = page?.conclusionCta;
+    if (cta?.casino) return mergeEWalletConclusionCta(cta, cta);
+    const top = Array.isArray(page?.topCasinos)
+        ? page.topCasinos.find((item) => item?.casino && attrFromCasinoEntry(item.casino)?.name)
+        : null;
+    if (!top?.casino) return null;
+    return mergeEWalletConclusionCta(
+        {
+            casino: top.casino,
+            bonusOverride: top.bonusOverride,
+            ctaText: cta?.ctaText,
+            ctaLinkOverride: cta?.ctaLinkOverride,
+            ratingOverride: cta?.ratingOverride ?? cta?.bonusRatingOverride ?? top.bonusRatingOverride,
+            features: cta?.features,
+        },
+        cta || {}
+    );
+}
+
+function applyEWalletConclusion(page) {
+    applyMalaysiaConclusionCard('e-wallet-conclusion-card', resolveEWalletConclusionBlock(page), {
+        hideCerts: true,
+    });
+}
+
+function wireEWalletFaqAccordion(root) {
+    if (!root) return;
+    root.querySelectorAll('.accordion-header').forEach((header) => {
+        if (header.dataset.eWalletFaqWired) return;
+        header.dataset.eWalletFaqWired = '1';
+        header.addEventListener('click', () => {
+            const item = header.closest('.accordion-item');
+            const isActive = item && item.classList.contains('active');
+            root.querySelectorAll('.accordion-item').forEach((acc) => {
+                acc.classList.remove('active');
+                const h = acc.querySelector('.accordion-header');
+                if (h) h.setAttribute('aria-expanded', 'false');
+            });
+            if (!isActive && item) {
+                item.classList.add('active');
+                header.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+}
+
+function applyEWalletFaq(page) {
+    const accordion = document.getElementById('e-wallet-faq-accordion');
+    const faqItems = page?.faqItems;
+    if (!accordion || !Array.isArray(faqItems) || faqItems.length === 0) return;
+    accordion.innerHTML = faqItems
+        .map((f) => {
+            const question = escapeHtml(f.question || f.title || '');
+            const answerHtml =
+                richTextToHtml(f.answer || f.body) ||
+                (f.answerRich ? richTextToHtml(f.answerRich) : '') ||
+                plainTextToParagraphsHtml(f.description || '');
+            return `<div class="accordion-item">
+                <button type="button" class="accordion-header" aria-expanded="false">
+                    <span class="accordion-title">${question}</span>
+                    <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">${answerHtml ? `<div class="rich-text-body">${answerHtml}</div>` : ''}</div>
+                </div>
+            </div>`;
+        })
+        .join('');
+    wireEWalletFaqAccordion(accordion);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: accordion });
+}
+
+function applyEWalletSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['e-wallet-operators-h2', page.topCasinosHeading],
+        ['e-wallet-operators-intro', page.topCasinosIntro, 'rich'],
+        ['e-wallet-operators-outro', page.topCasinosOutro, 'rich'],
+        ['e-wallet-why-h2', page.whyHeading],
+        ['e-wallet-why-intro', page.whyIntro, 'rich'],
+        ['e-wallet-game-types-h2', page.gameTypesHeading],
+        ['e-wallet-game-types-intro', page.gameTypesIntro, 'rich'],
+        ['e-wallet-comparison-h2', page.comparisonHeading],
+        ['e-wallet-comparison-intro', page.comparisonIntro, 'rich'],
+        ['e-wallet-comparison-outro', page.comparisonOutro, 'rich'],
+        ['e-wallet-deposits-h2', page.depositsHeading],
+        ['e-wallet-deposits-intro', page.depositsIntro, 'rich'],
+        ['e-wallet-deposits-outro', page.depositsOutro, 'rich'],
+        ['e-wallet-how-to-h2', page.howToHeading],
+        ['e-wallet-how-to-intro', page.howToIntro, 'rich'],
+        ['e-wallet-how-to-outro', page.howToOutro, 'rich'],
+        ['e-wallet-conclusion-h2', page.conclusionHeading],
+        ['e-wallet-conclusion-body', page.conclusionBody, 'rich'],
+        ['e-wallet-faq-h2', page.faqHeading],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+}
+
+function buildEWalletJsonLd(page, operators) {
+    const itemListEl = document.getElementById('e-wallet-ld-itemlist');
+    if (itemListEl && Array.isArray(operators) && operators.length > 0) {
+        const items = operators.slice(0, 10).map((item, i) => {
+            const attr = liveCasinoTopCasinoToAttr(item);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best E-Wallet Casinos in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const faqItems = page?.faqItems;
+    const faqEl = document.getElementById('e-wallet-ld-faq');
+    if (faqEl && Array.isArray(faqItems) && faqItems.length > 0) {
+        faqEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqItems.map((f) => ({
+                '@type': 'Question',
+                name: f.question || f.title || '',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: f.answer || f.body || richTextToPlainText(f.answerRich || f.body) || '',
+                },
+            })),
+        });
+    }
+    const webEl = document.getElementById('e-wallet-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best E-Wallet Casinos Malaysia 2026',
+            url: 'https://888reviews.com/ewallet',
+            description:
+                page.metaDescription ||
+                'Compare the best e-wallet casinos in Malaysia for 2026: Touch \'n Go, DuitNow, GrabPay, and trusted payment methods.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initEWalletPage() {
+    const listEl = document.getElementById('e-wallet-operator-list');
+    if (!listEl) return;
+
+    const page = await fetchEWalletPage();
+    if (!page) return;
+
+    applyEWalletMeta(page);
+    applyEWalletHero(page);
+    applyEWalletSectionText(page);
+    applyEWalletListingMeta(page);
+    applyEWalletOperators(page);
+    applyEWalletWhyReasons(page);
+    applyEWalletGameTypePicks(page);
+    applyEWalletComparisonTable(page);
+    applyEWalletDepositTable(page);
+    applyEWalletHowToSteps(page);
+    applyEWalletConclusion(page);
+    applyEWalletFaq(page);
+    buildEWalletJsonLd(page, page.topCasinos);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 slot-page single type — nested component + relation populate. */
+const SLOT_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[editorsChoice][populate][casino][populate]=logo' +
+    '&populate[editorsChoice][populate][heroImage]=true' +
+    '&populate[topSlotRows][populate][slot][populate]=coverImage' +
+    '&populate[topSlotRows][populate][playAtCasino][populate]=logo' +
+    '&populate[featuredSlotBonus][populate][casino][populate]=logo' +
+    '&populate[featuredSlotBonus][populate][bonusOverride]=*' +
+    '&populate[featuredSlotBonus][populate][features]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionCta][populate][certificationLogos]=true' +
+    '&populate[conclusionGuides][populate]=*' +
+    '&populate[bestSlotsHeroImage]=true' +
+    '&populate[providerRows][populate][playAtCasino][populate]=logo' +
+    '&populate[editorsChoice][populate][specRows]=*' +
+    '&populate[editorsChoice][populate][pros]=*' +
+    '&populate[editorsChoice][populate][cons]=*';
+
+const SLOT_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+const SLOT_PAGE_HIGHLIGHT_LABEL = 'Online slots highlight';
+
+async function fetchSlotPage() {
+    try {
+        let res = await fetch(`${API_URL}/api/slot-page?${SLOT_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Slot page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/slot-page?${SLOT_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Slot page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Slot page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function getStrapiMediaDisplayUrl(field) {
+    for (const raw of normalizeStrapiMediaToUrls(field)) {
+        const r = resolveMediaUrl(raw);
+        if (r) return r;
+    }
+    return '';
+}
+
+function slotTopCasinoToAttr(item, slugMap) {
+    const casino = bonusHubEnrichedCasino(item?.casino, slugMap) || {};
+    const merged = { ...casino };
+    if (item?.highlight) {
+        merged.MalaysiaHighlight = item.highlight;
+        merged.malaysiaHighlight = item.highlight;
+    }
+    const override = item?.bonusOverride;
+    if (override) {
+        if (override.intro) merged.malaysiaBonusIntro = override.intro;
+        if (override.amount) merged.malaysiaBonusAmount = override.amount;
+        if (override.extra) merged.malaysiaBonusExtra = override.extra;
+        const line = [override.intro, override.amount, override.extra].filter(Boolean).join(' ');
+        if (line) {
+            merged.MalaysiaBonusLine = line;
+            merged.malaysiaBonusLine = line;
+        }
+    }
+    return applyTopCasinoItemRatingOverride(merged, item);
+}
+
+function slotPageFeaturedToAttr(block, slugMap) {
+    const casino = bonusHubEnrichedCasino(block?.casino, slugMap) || {};
+    const merged = { ...casino };
+    const override = block?.bonusOverride;
+    if (override) {
+        if (override.intro) merged.malaysiaBonusIntro = override.intro;
+        if (override.amount) merged.malaysiaBonusAmount = override.amount;
+        if (override.extra) merged.malaysiaBonusExtra = override.extra;
+    }
+    return merged;
+}
+
+function applySlotPageMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Slot Sites Malaysia 2026 | Top Online Slots | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best online slot sites in Malaysia for 2026: expert rankings, MYR bonuses, top slot games, and trusted payment methods. Independent reviews. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applySlotPageHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('slot-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('slot-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applySlotPageListingMeta(page) {
+    const bar = document.getElementById('slot-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('slot-listing-updated');
+    const disclosureEl = document.getElementById('slot-listing-disclosure');
+    const trustEl = document.getElementById('slot-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: bar });
+}
+
+function applySlotPageSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['slot-operators-h2', page.topCasinosHeading],
+        ['slot-operators-intro', page.topCasinosIntro, 'rich'],
+        ['slot-operators-outro', page.topCasinosOutro, 'rich'],
+        ['slot-editors-choice-h2', page.editorsChoiceHeading],
+        ['slot-best-slots-h2', page.bestSlotsHeading],
+        ['slot-best-slots-intro', page.bestSlotsIntro, 'rich'],
+        ['slot-bonus-h2', page.bonusesHeading],
+        ['slot-bonus-intro', page.bonusesIntro, 'rich'],
+        ['slot-providers-h2', page.providersHeading],
+        ['slot-providers-intro', page.providersIntro, 'rich'],
+        ['slot-conclusion-h2', page.conclusionHeading],
+        ['slot-conclusion-body', page.conclusionBody, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+}
+
+function applySlotPageOperators(page, slugMap) {
+    const listEl = document.getElementById('slot-page-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows
+        .map((item, i) => {
+            const enriched = {
+                ...item,
+                casino: bonusHubEnrichedCasino(item?.casino, slugMap) || item?.casino,
+            };
+            return renderLiveCasinoOperatorRow(enriched, item.rank || i + 1, {
+                highlightLabel: SLOT_PAGE_HIGHLIGHT_LABEL,
+            });
+        })
+        .join('');
+}
+
+function slotEditorsChoiceIconForLabel(label) {
+    const l = String(label || '').toLowerCase();
+    if (/license|gcb|curacao/.test(l)) return 'shield-check';
+    if (/editor|top slots casino|top blackjack casino/.test(l)) return 'layout-grid';
+    if (/highlight/.test(l)) return 'sparkles';
+    if (/feedback|player/.test(l)) return 'messages-square';
+    if (/slot type|featured slot|blackjack variant|featured blackjack/.test(l)) return 'gamepad-2';
+    if (/provider/.test(l)) return 'layers';
+    if (/payment/.test(l)) return 'credit-card';
+    if (/betting|limit/.test(l)) return 'coins';
+    if (/mobile|compat/.test(l)) return 'smartphone';
+    return 'circle-dot';
+}
+
+function slotEditorsChoiceSpecSortKey(label) {
+    const l = String(label || '').toLowerCase();
+    if (/license|gcb|curacao/.test(l)) return 8;
+    if (/top highlight/.test(l) || (l.includes('highlight') && !l.includes('casino'))) return 1;
+    if (/player feedback|feedback/.test(l)) return 2;
+    if (/featured slot|slot type/.test(l)) return 3;
+    if (/top provider|provider/.test(l)) return 4;
+    if (/payment/.test(l)) return 5;
+    if (/betting|limit/.test(l)) return 6;
+    if (/mobile|compat/.test(l)) return 7;
+    return 50;
+}
+
+function slotEditorsChoiceIsLicenseLabel(label) {
+    return /license|gcb|curacao/i.test(String(label || ''));
+}
+
+function renderSlotEditorsChoiceCard(label, valueHtml, options = {}) {
+    const icon = options.icon || slotEditorsChoiceIconForLabel(label);
+    const isLicense = options.isLicense || slotEditorsChoiceIsLicenseLabel(label);
+    const cardClass = [
+        'slot-editors-choice__card',
+        options.variant ? `slot-editors-choice__card--${options.variant}` : '',
+        isLicense ? 'slot-editors-choice__card--license' : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+    return `<div class="${cardClass}" role="listitem">
+        <div class="slot-editors-choice__card-head">
+            <span class="slot-editors-choice__card-icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+            <span class="slot-editors-choice__card-label">${escapeHtml(label)}</span>
+        </div>
+        <div class="slot-editors-choice__card-value">${valueHtml}</div>
+    </div>`;
+}
+
+function renderSlotEditorsChoice(block, slugMap, options = {}) {
+    if (!block) return '';
+    const topCasinoLabel = options.topCasinoLabel || "Editor's Top Slots Casino";
+    const uniformCards = options.uniformCards === true;
+    const heroAltSuffix = options.heroAltSuffix || 'online slots Malaysia';
+    const attr = bonusHubEnrichedCasino(block.casino, slugMap) || normalizeV5CasinoAttr(block.casino) || {};
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const heroUrl = getStrapiMediaDisplayUrl(block.heroImage);
+    const heroHtml = heroUrl
+        ? `<figure class="slot-editors-choice__hero"><img src="${escapeHtml(heroUrl)}" alt="${name} ${escapeHtml(heroAltSuffix)}" width="1000" height="429" loading="lazy" class="slot-editors-choice__hero-img"></figure>`
+        : '';
+    const introHtml = richTextToHtml(block.intro);
+    const introBlock = introHtml
+        ? `<div class="slot-editors-choice__intro">${introHtml}</div>`
+        : '';
+
+    const specRows = Array.isArray(block.specRows)
+        ? block.specRows
+              .slice()
+              .sort(
+                  (a, b) =>
+                      slotEditorsChoiceSpecSortKey(a.label) - slotEditorsChoiceSpecSortKey(b.label),
+              )
+        : [];
+
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="" class="slot-editors-choice__casino-logo" width="96" height="36" loading="lazy">`
+        : '';
+    const casinoPill = `<a href="${visitHref}" class="slot-editors-choice__casino-pill"${visitRel} aria-label="Visit ${name}">${logoHtml}<span class="slot-editors-choice__casino-name">${name}</span></a>`;
+    const casinoTextLink = `<a href="${visitHref}" class="slot-editors-choice__card-text slot-editors-choice__card-link"${visitRel}>${name}</a>`;
+    const gridCards = [];
+    if (block.casino) {
+        gridCards.push(
+            renderSlotEditorsChoiceCard(topCasinoLabel, uniformCards ? casinoTextLink : casinoPill, {
+                icon: 'layout-grid',
+                variant: uniformCards ? undefined : 'casino',
+            }),
+        );
+    }
+    for (const row of specRows) {
+        const label = row.label || '—';
+        const value = escapeHtml(String(row.value || '—').trim());
+        const isLicense = slotEditorsChoiceIsLicenseLabel(label);
+        const valueHtml = isLicense
+            ? `<span class="slot-editors-choice__license-badge">${value}</span>`
+            : `<span class="slot-editors-choice__card-text">${value}</span>`;
+        gridCards.push(renderSlotEditorsChoiceCard(label, valueHtml, { isLicense }));
+    }
+
+    const gridHtml =
+        gridCards.length > 0
+            ? `<div class="slot-editors-choice__grid" role="list">${gridCards.join('')}</div>`
+            : '';
+
+    const licenseNoteHtml = block.licenseNote
+        ? `<div class="slot-editors-choice__pro-tip">${richTextToHtml(block.licenseNote) || `<p>${escapeHtml(String(block.licenseNote))}</p>`}</div>`
+        : '';
+
+    const pros = Array.isArray(block.pros) ? block.pros : [];
+    const cons = Array.isArray(block.cons) ? block.cons : [];
+    const prosHtml =
+        pros.length > 0
+            ? `<div class="slot-editors-choice__pros">
+            <h3 class="slot-editors-choice__list-title">Pros:</h3>
+            <ul class="slot-editors-choice__list">${pros.map((p) => `<li>${escapeHtml(p.label || '')}</li>`).join('')}</ul>
+        </div>`
+            : '';
+    const consHtml =
+        cons.length > 0
+            ? `<div class="slot-editors-choice__cons">
+            <h3 class="slot-editors-choice__list-title">Cons:</h3>
+            <ul class="slot-editors-choice__list">${cons.map((c) => `<li>${escapeHtml(c.label || '')}</li>`).join('')}</ul>
+        </div>`
+            : '';
+    const prosConsHtml =
+        prosHtml || consHtml
+            ? `<div class="slot-editors-choice__pros-cons">${prosHtml}${consHtml}</div>`
+            : '';
+
+    return `<article class="slot-editors-choice">
+        ${introBlock}
+        ${heroHtml}
+        ${gridHtml}
+        ${licenseNoteHtml}
+        ${prosConsHtml}
+    </article>`;
+}
+
+function applySlotEditorsChoice(page, slugMap) {
+    const container = document.getElementById('slot-editors-choice');
+    const block = page?.editorsChoice;
+    if (!container) return;
+    if (!block) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = renderSlotEditorsChoice(block, slugMap);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function formatSlotRtpValue(rtp) {
+    if (rtp == null || rtp === '' || rtp === '—') return '—';
+    const s = String(rtp).trim();
+    return s.includes('%') ? s : `${s}%`;
+}
+
+function lookupCasinoByDisplayName(name, slugMap) {
+    if (!name || !slugMap?.size) return null;
+    const wanted = slugifyLabel(name);
+    if (slugMap.has(wanted)) return slugMap.get(wanted);
+    for (const [slug, attr] of slugMap) {
+        const displayName = attr.Name || attr.name || '';
+        if (slugifyLabel(displayName) === wanted) return attr;
+        if (slugifyLabel(slug) === wanted) return attr;
+    }
+    return null;
+}
+
+function resolveSlotPlayCasino(casino, slugMap) {
+    let attr = normalizeV5CasinoAttr(casino) || {};
+    const slug = firstNonEmptyAttr(attr, ['Slug', 'slug']).toLowerCase();
+    if (slug && slugMap?.get(slug)) {
+        attr = { ...attr, ...slugMap.get(slug) };
+    } else if (!getLogoUrl(attr)) {
+        const name = attr.Name || attr.name || '';
+        const found = lookupCasinoByDisplayName(name, slugMap);
+        if (found) attr = { ...attr, ...found };
+    }
+    return attr;
+}
+
+function renderSlotTopGamesPlayCell(casino, slugMap) {
+    const attr = resolveSlotPlayCasino(casino, slugMap);
+    const casinoName = attr.Name || attr.name || '—';
+    const nameEsc = escapeHtml(casinoName);
+    const visitHref = casinoVisitSiteHref(attr);
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<span class="slot-top-games__play-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-hidden="true">${nameEsc}</span>`
+        : `<span class="slot-top-games__play-text">${nameEsc}</span>`;
+    if (visitHref && visitHref !== '#') {
+        return `<a href="${escapeHtml(visitHref)}" class="slot-top-games__play-link"${visitRel} aria-label="Play at ${nameEsc}">${logoHtml}</a>`;
+    }
+    return logoHtml;
+}
+
+function renderSlotTopGameRow(row, index, slugMap) {
+    const slot = row?.slot;
+    const rank = row?.rank || index + 1;
+    const slotName = slot?.name || slot?.Name || '—';
+    const provider = slot?.providerName || '';
+    const rtp = formatSlotRtpValue(slot?.rtp);
+    const keyFeature = slot?.keyFeature || '—';
+    const whyLoved = slot?.whyLoved || '—';
+    const providerHtml = provider
+        ? `<span class="slot-top-games__provider">${escapeHtml(provider)}</span>`
+        : '';
+    const playCell = renderSlotTopGamesPlayCell(row?.playAtCasino || { Name: row?.casinoName }, slugMap);
+    return `<tr class="slot-top-games__row">
+        <td class="slot-top-games__cell slot-top-games__cell--game" data-label="Slot game">
+            <div class="slot-top-games__game">
+                <span class="slot-top-games__rank" aria-hidden="true">${rank}.</span>
+                <div class="slot-top-games__game-text">
+                    <strong class="slot-top-games__title">${escapeHtml(slotName)}</strong>
+                    ${providerHtml}
+                </div>
+            </div>
+        </td>
+        <td class="slot-top-games__cell slot-top-games__cell--rtp" data-label="RTP"><span class="slot-top-games__rtp">${escapeHtml(rtp)}</span></td>
+        <td class="slot-top-games__cell slot-top-games__cell--feature" data-label="Key feature"><span class="slot-top-games__feature">${escapeHtml(keyFeature)}</span></td>
+        <td class="slot-top-games__cell slot-top-games__cell--why" data-label="Why Malaysian players love it"><span class="slot-top-games__why">${escapeHtml(whyLoved)}</span></td>
+        <td class="slot-top-games__cell slot-top-games__cell--play" data-label="Where to play">${playCell}</td>
+    </tr>`;
+}
+
+function enhanceSlotTopGamesPlayCells(slugMap) {
+    const tbody = document.getElementById('slot-top-games-tbody');
+    if (!tbody || !slugMap?.size) return;
+    tbody.querySelectorAll('.slot-top-games__cell--play').forEach((cell) => {
+        if (cell.querySelector('.slot-top-games__play-logo')) return;
+        const textEl = cell.querySelector('.slot-top-games__play-text');
+        const name = textEl?.textContent?.trim();
+        if (!name) return;
+        const found = lookupCasinoByDisplayName(name, slugMap);
+        cell.innerHTML = renderSlotTopGamesPlayCell(found || { Name: name }, slugMap);
+    });
+}
+
+function applySlotTopGamesTable(page, slugMap) {
+    const heroEl = document.getElementById('slot-best-slots-hero-image');
+    const tbody = document.getElementById('slot-top-games-tbody');
+    const heroUrl = getStrapiMediaDisplayUrl(page?.bestSlotsHeroImage);
+    if (heroEl) {
+        if (heroUrl) {
+            heroEl.innerHTML = `<img src="${escapeHtml(heroUrl)}" alt="Best online slots casinos Malaysia" width="1000" height="335" loading="lazy" class="slot-best-slots-hero__img">`;
+            heroEl.removeAttribute('aria-hidden');
+        } else {
+            heroEl.innerHTML = '';
+            heroEl.setAttribute('aria-hidden', 'true');
+        }
+    }
+    const rows = page?.topSlotRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    const validRows = rows.filter((r) => r?.slot || r?.playAtCasino);
+    if (validRows.length === 0) return;
+    tbody.innerHTML = validRows
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .map((row, i) => renderSlotTopGameRow(row, i, slugMap))
+        .join('');
+}
+
+function renderSlotProviderRow(row, slugMap) {
+    const provider = escapeHtml(row.providerName || row.provider || row.name || '—');
+    const knownFor = escapeHtml(row.knownFor || row.known_for || '—');
+    const mustPlay = escapeHtml(row.mustPlaySlot || row.mustPlay || row.slotName || '—');
+    const playCell = renderSlotTopGamesPlayCell(row?.playAtCasino, slugMap);
+    return `<tr class="slot-providers__row">
+        <td class="slot-providers__cell slot-providers__cell--provider" data-label="Software provider"><span class="slot-providers__provider">${provider}</span></td>
+        <td class="slot-providers__cell slot-providers__cell--known" data-label="Known for"><span class="slot-providers__known">${knownFor}</span></td>
+        <td class="slot-providers__cell slot-providers__cell--slot" data-label="Must-play slot in Malaysia"><span class="slot-providers__slot">${mustPlay}</span></td>
+        <td class="slot-providers__cell slot-providers__cell--play" data-label="Where to play">${playCell}</td>
+    </tr>`;
+}
+
+function applySlotProvidersTable(page, slugMap) {
+    const tbody = document.getElementById('slot-providers-tbody');
+    const rows = page?.providerRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows.map((row) => renderSlotProviderRow(row, slugMap)).join('');
+}
+
+function applySlotBonusFeatured(page, slugMap) {
+    const container = document.getElementById('slot-bonus-featured');
+    const block = page?.featuredSlotBonus;
+    if (!container || !block?.casino) return;
+    const attr = slotPageFeaturedToAttr(block, slugMap);
+    container.innerHTML = renderHomepageFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Bonus rating',
+        defaultCta: block.ctaText || 'Claim Bonus!',
+        offerLabel: block.bonusOverride?.intro || 'Welcome bonus',
+    });
+}
+
+function renderSlotBottomTrio(page, slugMap) {
+    return renderBonusBottomTrio(page, slugMap, { featuredHeadStrong: 'Malaysian Casino' });
+}
+
+function applySlotConclusion(page, slugMap) {
+    const container = document.getElementById('slot-bottom-trio');
+    if (!container || !page?.conclusionCta?.casino) return;
+    container.innerHTML = renderSlotBottomTrio(page, slugMap);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function buildSlotPageJsonLd(page, topCasinos, slugMap) {
+    const itemListEl = document.getElementById('slot-ld-itemlist');
+    if (itemListEl && Array.isArray(topCasinos) && topCasinos.length > 0) {
+        const items = topCasinos.slice(0, 10).map((item, i) => {
+            const attr = slotTopCasinoToAttr(item, slugMap);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Online Slot Sites in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const webEl = document.getElementById('slot-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Slot Sites Malaysia 2026',
+            url: 'https://888reviews.com/slots',
+            description:
+                page.metaDescription ||
+                'Compare the best online slot sites in Malaysia for 2026: expert rankings, bonuses, and top games.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initSlotPage() {
+    const listEl = document.getElementById('slot-page-operator-list');
+    if (!listEl) return;
+
+    let page = null;
+    let casinoRows = null;
+    try {
+        [page, casinoRows] = await Promise.all([fetchSlotPage(), fetchBonusHubCasinos()]);
+    } catch (e) {
+        console.warn('Slot page CMS fetch failed:', e);
+    }
+
+    applySlotPageListingMeta(page);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    if (!page) return;
+
+    const slugMap = buildCasinoSlugMap(casinoRows);
+
+    applySlotPageMeta(page);
+    applySlotPageHero(page);
+    applySlotPageSectionText(page);
+    applySlotPageListingMeta(page);
+    applySlotPageOperators(page, slugMap);
+    applySlotEditorsChoice(page, slugMap);
+    applySlotTopGamesTable(page, slugMap);
+    enhanceSlotTopGamesPlayCells(slugMap);
+    applySlotBonusFeatured(page, slugMap);
+    applySlotProvidersTable(page, slugMap);
+    applySlotConclusion(page, slugMap);
+    buildSlotPageJsonLd(page, page.topCasinos, slugMap);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 blackjack-page single type — nested component + relation populate. */
+const BLACKJACK_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[editorsChoice][populate][casino][populate]=logo' +
+    '&populate[editorsChoice][populate][heroImage]=true' +
+    '&populate[editorsChoice][populate][specRows]=*' +
+    '&populate[editorsChoice][populate][pros]=*' +
+    '&populate[editorsChoice][populate][cons]=*' +
+    '&populate[categoryPicks][populate][casino][populate]=logo' +
+    '&populate[variantRows][populate][playAtCasino][populate]=logo' +
+    '&populate[featuredWelcomeBonus][populate][casino][populate]=logo' +
+    '&populate[featuredWelcomeBonus][populate][bonusOverride]=*' +
+    '&populate[featuredWelcomeBonus][populate][features]=*' +
+    '&populate[bettingLimitRows][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionGuides][populate]=*' +
+    '&populate[bonusCategories]=*';
+
+const BLACKJACK_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+const BLACKJACK_PAGE_HIGHLIGHT_LABEL = 'Blackjack highlight';
+
+async function fetchBlackjackPage() {
+    try {
+        let res = await fetch(`${API_URL}/api/blackjack-page?${BLACKJACK_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Blackjack page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/blackjack-page?${BLACKJACK_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Blackjack page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Blackjack page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function blackjackTopCasinoToAttr(item, slugMap) {
+    return slotTopCasinoToAttr(item, slugMap);
+}
+
+function applyBlackjackMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Online Blackjack Casinos Malaysia 2026 | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best online blackjack casinos in Malaysia for 2026: 3:2 payouts, live dealer tables, MYR bonuses, and trusted payment methods. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyBlackjackHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('blackjack-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('blackjack-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applyBlackjackListingMeta(page) {
+    const bar = document.getElementById('blackjack-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('blackjack-listing-updated');
+    const disclosureEl = document.getElementById('blackjack-listing-disclosure');
+    const trustEl = document.getElementById('blackjack-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: bar });
+}
+
+function applyBlackjackSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['blackjack-operators-h2', page.topCasinosHeading],
+        ['blackjack-operators-intro', page.topCasinosIntro, 'rich'],
+        ['blackjack-operators-outro', page.topCasinosOutro, 'rich'],
+        ['blackjack-editors-choice-h2', page.editorsChoiceHeading],
+        ['blackjack-category-h2', page.categoryHeading],
+        ['blackjack-category-intro', page.categoryIntro, 'rich'],
+        ['blackjack-variants-h2', page.variantsHeading],
+        ['blackjack-variants-intro', page.variantsIntro, 'rich'],
+        ['blackjack-bonus-h2', page.bonusesHeading],
+        ['blackjack-bonus-intro', page.bonusesIntro, 'rich'],
+        ['blackjack-betting-limits-h2', page.bettingLimitsHeading],
+        ['blackjack-betting-limits-intro', page.bettingLimitsIntro, 'rich'],
+        ['blackjack-low-stakes-h3', page.lowStakesHeading],
+        ['blackjack-low-stakes-body', page.lowStakesBody, 'rich'],
+        ['blackjack-mid-stakes-h3', page.midStakesHeading],
+        ['blackjack-mid-stakes-body', page.midStakesBody, 'rich'],
+        ['blackjack-high-stakes-h3', page.highStakesHeading],
+        ['blackjack-high-stakes-body', page.highStakesBody, 'rich'],
+        ['blackjack-conclusion-h2', page.conclusionHeading],
+        ['blackjack-conclusion-body', page.conclusionBody, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+}
+
+function applyBlackjackOperators(page, slugMap) {
+    const listEl = document.getElementById('blackjack-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows
+        .map((item, i) => {
+            const enriched = {
+                ...item,
+                casino: bonusHubEnrichedCasino(item?.casino, slugMap) || item?.casino,
+            };
+            return renderLiveCasinoOperatorRow(enriched, item.rank || i + 1, {
+                highlightLabel: BLACKJACK_PAGE_HIGHLIGHT_LABEL,
+            });
+        })
+        .join('');
+}
+
+function applyBlackjackEditorsChoice(page, slugMap) {
+    const container = document.getElementById('blackjack-editors-choice');
+    const block = page?.editorsChoice;
+    if (!container) return;
+    if (!block) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = renderSlotEditorsChoice(block, slugMap, {
+        topCasinoLabel: "Editor's Top Blackjack Casino",
+        heroAltSuffix: 'online blackjack Malaysia',
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function renderBlackjackCategoryPick(pick, slugMap) {
+    const attr = bonusHubEnrichedCasino(pick?.casino, slugMap) || normalizeV5CasinoAttr(pick?.casino) || {};
+    const casinoName = escapeHtml(attr.Name || attr.name || 'Casino');
+    const category = escapeHtml(pick.category || '');
+    const bodyHtml = richTextToHtml(pick.body) || '';
+    const keyFeature = escapeHtml(pick.keyFeature || '—');
+    const bonusDetails = escapeHtml(pick.bonusDetails || '—');
+    const ctaText = escapeHtml(pick.ctaText || `Play at ${casinoName}`);
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="" class="blackjack-category-pick__logo" width="120" height="48" loading="lazy">`
+        : `<span class="blackjack-category-pick__logo-fallback" aria-hidden="true">${escapeHtml((casinoName.charAt(0) || 'C').toUpperCase())}</span>`;
+    const bodyBlock = bodyHtml ? `<div class="blackjack-category-pick__body">${bodyHtml}</div>` : '';
+    return `<article class="blackjack-category-pick">
+        <header class="blackjack-category-pick__header">
+            <h3 class="blackjack-category-pick__category">${category}</h3>
+            <div class="blackjack-category-pick__brand">
+                <a href="${visitHref}" class="blackjack-category-pick__logo-link"${visitRel} aria-label="Visit ${casinoName}">
+                    <div class="blackjack-category-pick__logo-wrap">${logoHtml}</div>
+                </a>
+                <div class="blackjack-category-pick__brand-meta">
+                    <p class="blackjack-category-pick__casino">${casinoName}</p>
+                </div>
+            </div>
+        </header>
+        ${bodyBlock}
+        <dl class="blackjack-category-pick__specs">
+            <div class="blackjack-category-pick__spec">
+                <dt>Key feature</dt>
+                <dd>${keyFeature}</dd>
+            </div>
+            <div class="blackjack-category-pick__spec">
+                <dt>Bonus</dt>
+                <dd>${bonusDetails}</dd>
+            </div>
+        </dl>
+        <a href="${visitHref}" class="btn-play-here blackjack-category-pick__cta-btn"${visitRel}>${ctaText}</a>
+    </article>`;
+}
+
+function applyBlackjackCategoryPicks(page, slugMap) {
+    const container = document.getElementById('blackjack-category-picks');
+    const picks = page?.categoryPicks;
+    if (!container || !Array.isArray(picks) || picks.length === 0) return;
+    container.innerHTML = picks.map((pick) => renderBlackjackCategoryPick(pick, slugMap)).join('');
+}
+
+function formatBlackjackRtpValue(rtp) {
+    if (rtp == null || rtp === '' || rtp === '—') return '—';
+    const s = String(rtp).trim();
+    if (s.startsWith('~')) return s;
+    return s.includes('%') ? `~${s}` : `~${s}%`;
+}
+
+function renderBlackjackVariantPlayCell(casino, slugMap) {
+    const attr = resolveSlotPlayCasino(casino, slugMap);
+    const casinoName = attr.Name || attr.name || '—';
+    const nameEsc = escapeHtml(casinoName);
+    const visitHref = casinoVisitSiteHref(attr);
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<span class="slot-top-games__play-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-label="${nameEsc}">${nameEsc}</span>`
+        : `<span class="slot-top-games__play-text">${nameEsc}</span>`;
+    if (visitHref && visitHref !== '#') {
+        return `<a href="${escapeHtml(visitHref)}" class="slot-top-games__play-link"${visitRel} aria-label="Play at ${nameEsc}">${logoHtml}</a>`;
+    }
+    return logoHtml;
+}
+
+function renderBlackjackVariantRow(row, index, slugMap) {
+    const rank = index + 1;
+    const variantName = escapeHtml(row?.variantName || '—');
+    const provider = row?.provider ? escapeHtml(row.provider) : '';
+    const rtp = escapeHtml(formatBlackjackRtpValue(row?.rtp));
+    const description = escapeHtml(row?.description || '—');
+    const providerHtml = provider
+        ? `<span class="slot-top-games__provider">${provider}</span>`
+        : '';
+    const playCell = renderBlackjackVariantPlayCell(row?.playAtCasino, slugMap);
+    return `<tr class="slot-top-games__row">
+        <td class="slot-top-games__cell slot-top-games__cell--game" data-label="Blackjack variant">
+            <div class="slot-top-games__game">
+                <span class="slot-top-games__rank" aria-hidden="true">${rank}.</span>
+                <div class="slot-top-games__game-text">
+                    <strong class="slot-top-games__title">${variantName}</strong>
+                    ${providerHtml}
+                </div>
+            </div>
+        </td>
+        <td class="slot-top-games__cell slot-top-games__cell--rtp" data-label="Typical RTP"><span class="slot-top-games__rtp">${rtp}</span></td>
+        <td class="slot-top-games__cell slot-top-games__cell--why" data-label="Key feature"><span class="slot-top-games__why">${description}</span></td>
+        <td class="slot-top-games__cell slot-top-games__cell--play" data-label="Where to play">${playCell}</td>
+    </tr>`;
+}
+
+function applyBlackjackVariantsTable(page, slugMap) {
+    const tbody = document.getElementById('blackjack-variants-tbody');
+    const rows = page?.variantRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows.map((row, i) => renderBlackjackVariantRow(row, i, slugMap)).join('');
+}
+
+function renderBlackjackBettingLimitRow(row, slugMap) {
+    const attr = bonusHubEnrichedCasino(row?.casino, slugMap) || normalizeV5CasinoAttr(row?.casino) || {};
+    const name = escapeHtml(attr.Name || attr.name || '—');
+    const logoUrl = getLogoUrl(attr);
+    const casinoCell = logoUrl
+        ? `<span class="blackjack-limits__casino"><img src="${escapeHtml(logoUrl)}" alt="${name}" class="blackjack-limits__logo" width="80" height="40" loading="lazy"><span class="sr-only">${name}</span></span>`
+        : `<span class="blackjack-limits__casino-text">${name}</span>`;
+    const minBet = escapeHtml(row?.minBet || '—');
+    const maxBet = escapeHtml(row?.maxBet || '—');
+    const bestFor = escapeHtml(row?.bestFor || '—');
+    const ctaText = escapeHtml(row?.ctaText || 'Play Here');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    return `<tr>
+        <td data-label="Casino">${casinoCell}</td>
+        <td data-label="Min. bet">${minBet}</td>
+        <td data-label="Max. bet">${maxBet}</td>
+        <td data-label="Best for">${bestFor}</td>
+        <td data-label="Play now"><a href="${visitHref}" class="blackjack-limits__cta"${visitRel}>${ctaText} &raquo;</a></td>
+    </tr>`;
+}
+
+function applyBlackjackBettingLimitsTable(page, slugMap) {
+    const tbody = document.getElementById('blackjack-betting-limits-tbody');
+    const rows = page?.bettingLimitRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows.map((row) => renderBlackjackBettingLimitRow(row, slugMap)).join('');
+}
+
+function applyBlackjackBonusFeatured(page, slugMap) {
+    const container = document.getElementById('blackjack-bonus-featured');
+    const block = page?.featuredWelcomeBonus;
+    if (!container || !block?.casino) return;
+    const attr = slotPageFeaturedToAttr(block, slugMap);
+    container.innerHTML = renderHomepageFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Bonus rating',
+        defaultCta: block.ctaText || 'Claim Blackjack Bonus!',
+        offerLabel: block.bonusOverride?.intro || 'Welcome bonus',
+    });
+}
+
+function applyBlackjackBonusCategories(page) {
+    const container = document.getElementById('blackjack-bonus-categories');
+    const categories = page?.bonusCategories;
+    if (!container || !Array.isArray(categories) || categories.length === 0) return;
+    container.innerHTML = categories
+        .map((cat) => {
+            const heading = escapeHtml(cat.heading || cat.title || '');
+            const bodyHtml = richTextToHtml(cat.body) || '';
+            return `<div class="blackjack-bonus-category">
+                <h3 class="blackjack-bonus-category__heading">${heading}</h3>
+                ${bodyHtml ? `<div class="blackjack-bonus-category__body">${bodyHtml}</div>` : ''}
+            </div>`;
+        })
+        .join('');
+}
+
+function applyBlackjackConclusion(page, slugMap) {
+    const container = document.getElementById('blackjack-bottom-trio');
+    if (!container || !page?.conclusionCta?.casino) return;
+    container.innerHTML = renderBonusBottomTrio(page, slugMap, {
+        featuredHeadStrong: 'Malaysian Online Blackjack Casino',
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function buildBlackjackPageJsonLd(page, topCasinos, slugMap) {
+    const itemListEl = document.getElementById('blackjack-ld-itemlist');
+    if (itemListEl && Array.isArray(topCasinos) && topCasinos.length > 0) {
+        const items = topCasinos.slice(0, 10).map((item, i) => {
+            const attr = blackjackTopCasinoToAttr(item, slugMap);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Online Blackjack Casinos in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const webEl = document.getElementById('blackjack-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Online Blackjack Casinos Malaysia 2026',
+            url: 'https://888reviews.com/blackjack',
+            description:
+                page.metaDescription ||
+                'Compare the best online blackjack casinos in Malaysia for 2026: live tables, bonuses, and trusted operators.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initBlackjackPage() {
+    const listEl = document.getElementById('blackjack-operator-list');
+    if (!listEl) return;
+
+    let page = null;
+    let casinoRows = null;
+    try {
+        [page, casinoRows] = await Promise.all([fetchBlackjackPage(), fetchBonusHubCasinos()]);
+    } catch (e) {
+        console.warn('Blackjack page CMS fetch failed:', e);
+    }
+
+    applyBlackjackListingMeta(page);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    if (!page) return;
+
+    const slugMap = buildCasinoSlugMap(casinoRows);
+
+    applyBlackjackMeta(page);
+    applyBlackjackHero(page);
+    applyBlackjackSectionText(page);
+    applyBlackjackListingMeta(page);
+    applyBlackjackOperators(page, slugMap);
+    applyBlackjackEditorsChoice(page, slugMap);
+    applyBlackjackCategoryPicks(page, slugMap);
+    applyBlackjackVariantsTable(page, slugMap);
+    applyBlackjackBonusFeatured(page, slugMap);
+    applyBlackjackBonusCategories(page);
+    applyBlackjackBettingLimitsTable(page, slugMap);
+    applyBlackjackConclusion(page, slugMap);
+    buildBlackjackPageJsonLd(page, page.topCasinos, slugMap);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 baccarat-page single type — nested component + relation populate. */
+const BACCARAT_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[guidePromo][populate][casino][populate]=logo' +
+    '&populate[guidePromo][populate][bonusOverride]=*' +
+    '&populate[guidePromo][populate][features]=*' +
+    '&populate[sampleRoundPromo][populate][casino][populate]=logo' +
+    '&populate[sampleRoundPromo][populate][bonusOverride]=*' +
+    '&populate[sampleRoundPromo][populate][features]=*' +
+    '&populate[gettingStartedPromo][populate][casino][populate]=logo' +
+    '&populate[gettingStartedPromo][populate][bonusOverride]=*' +
+    '&populate[gettingStartedPromo][populate][features]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionCta][populate][certificationLogos]=true' +
+    '&populate[conclusionGuides][populate]=*' +
+    '&populate[conclusionExplore][populate]=*' +
+    '&populate[sampleRoundSteps]=*' +
+    '&populate[gettingStartedSteps]=*' +
+    '&populate[variantItems]=*' +
+    '&populate[faqItems]=*' +
+    '&populate[ratingCriteria]=*' +
+    '&populate[guideSections]=*';
+
+const BACCARAT_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+const BACCARAT_PAGE_HIGHLIGHT_LABEL = 'Baccarat highlight';
+
+const BACCARAT_CRITERIA_ICONS = ['shield-check', 'wallet', 'gift', 'layout-grid'];
+
+const BACCARAT_GUIDE_ICONS = ['target', 'hash', 'coins', 'list-ordered', 'book-open'];
+
+function baccaratGuideIconForHeading(heading, index) {
+    const h = String(heading || '').toLowerCase();
+    if (/goal|objective|simple|predict/.test(h)) return 'target';
+    if (/card|value/.test(h)) return 'hash';
+    if (/bet|payout|wager|commission/.test(h)) return 'coins';
+    if (/step|round|sample/.test(h)) return 'list-ordered';
+    return BACCARAT_GUIDE_ICONS[index % BACCARAT_GUIDE_ICONS.length];
+}
+
+function renderBaccaratGuideBlock(section, index) {
+    const heading = escapeHtml(section.heading || section.title || '');
+    const bodyHtml = richTextToHtml(section.body) || '';
+    const icon = baccaratGuideIconForHeading(section.heading || section.title, index);
+    const stepNum = String(index + 1).padStart(2, '0');
+    const bodyBlock = bodyHtml
+        ? `<div class="rich-text-body baccarat-guide-block__body">${bodyHtml}</div>`
+        : section.description
+          ? `<p class="baccarat-guide-block__body">${escapeHtml(section.description)}</p>`
+          : '';
+    return `<article class="baccarat-guide-block">
+        <span class="baccarat-guide-block__step" aria-hidden="true">${stepNum}</span>
+        <header class="baccarat-guide-block__head">
+            <span class="baccarat-guide-block__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+            <h3 class="baccarat-guide-block__title">${heading}</h3>
+        </header>
+        ${bodyBlock}
+    </article>`;
+}
+
+async function fetchBaccaratPage() {
+    try {
+        let res = await fetch(`${API_URL}/api/baccarat-page?${BACCARAT_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Baccarat page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/baccarat-page?${BACCARAT_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Baccarat page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Baccarat page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function baccaratTopCasinoToAttr(item, slugMap) {
+    return slotTopCasinoToAttr(item, slugMap);
+}
+
+function applyBaccaratMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Baccarat Casinos Malaysia 2026 | Online Baccarat Guide | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best online baccarat casinos in Malaysia for 2026: live dealer tables, RNG games, MYR bonuses, and trusted payment methods. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyBaccaratHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('baccarat-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('baccarat-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applyBaccaratListingMeta(page) {
+    const bar = document.getElementById('baccarat-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('baccarat-listing-updated');
+    const disclosureEl = document.getElementById('baccarat-listing-disclosure');
+    const trustEl = document.getElementById('baccarat-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: bar });
+}
+
+function applyBaccaratSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['baccarat-operators-h2', page.topCasinosHeading],
+        ['baccarat-operators-intro', page.topCasinosIntro, 'rich'],
+        ['baccarat-operators-outro', page.topCasinosOutro, 'rich'],
+        ['baccarat-rating-h2', page.ratingHeading],
+        ['baccarat-rating-intro', page.ratingIntro, 'rich'],
+        ['baccarat-rating-outro', page.ratingOutro, 'rich'],
+        ['baccarat-beginner-h2', page.guideHeading],
+        ['baccarat-beginner-intro', page.guideIntro, 'rich'],
+        ['baccarat-sample-round-h2', page.sampleRoundHeading],
+        ['baccarat-sample-round-intro', page.sampleRoundIntro, 'rich'],
+        ['baccarat-variations-h2', page.variantsHeading],
+        ['baccarat-variations-intro', page.variantsIntro, 'rich'],
+        ['baccarat-real-money-h2', page.gettingStartedHeading],
+        ['baccarat-real-money-intro', page.gettingStartedIntro, 'rich'],
+        ['baccarat-faq-h2', page.faqHeading],
+        ['baccarat-conclusion-h2', page.conclusionHeading],
+        ['baccarat-conclusion-body', page.conclusionBody, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+}
+
+function applyBaccaratOperators(page, slugMap) {
+    const listEl = document.getElementById('baccarat-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows
+        .map((item, i) => {
+            const enriched = {
+                ...item,
+                casino: bonusHubEnrichedCasino(item?.casino, slugMap) || item?.casino,
+            };
+            return renderLiveCasinoOperatorRow(enriched, item.rank || i + 1, {
+                highlightLabel: BACCARAT_PAGE_HIGHLIGHT_LABEL,
+            });
+        })
+        .join('');
+}
+
+function applyBaccaratRatingCriteria(page) {
+    const container = document.getElementById('baccarat-rating-criteria');
+    const criteria = page?.ratingCriteria;
+    if (!container || !Array.isArray(criteria) || criteria.length === 0) return;
+    container.innerHTML = criteria
+        .map((c, i) => {
+            const heading = escapeHtml(c.heading || c.title || '');
+            const bodyHtml = richTextToHtml(c.body) || escapeHtml(c.description || '');
+            const icon = BACCARAT_CRITERIA_ICONS[i % BACCARAT_CRITERIA_ICONS.length];
+            return `<article class="live-casino-criteria-card slot-criteria-card baccarat-criteria-card" role="listitem">
+                <div class="slot-criteria-card__head">
+                    <span class="slot-criteria-card__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+                    <h3 class="live-casino-criteria-card__title">${heading}</h3>
+                </div>
+                <div class="live-casino-criteria-card__body">${bodyHtml ? `<div class="rich-text-body">${bodyHtml}</div>` : ''}</div>
+            </article>`;
+        })
+        .join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function applyBaccaratGuideSections(page) {
+    const container = document.getElementById('baccarat-guide-sections');
+    const sections = page?.guideSections;
+    if (!container || !Array.isArray(sections) || sections.length === 0) return;
+    container.innerHTML = sections.map((s, i) => renderBaccaratGuideBlock(s, i)).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function applyBaccaratPromo(containerId, block, slugMap, options = {}) {
+    const container = document.getElementById(containerId);
+    if (!container || !block?.casino) {
+        if (container) container.innerHTML = '';
+        return;
+    }
+    const attr = slotPageFeaturedToAttr(block, slugMap);
+    container.innerHTML = renderRouletteFeaturedOperatorRow(block, attr, {
+        ratingLabel: options.ratingLabel || 'Casino rating',
+        highlightLabel: options.highlightLabel || 'Highlights',
+        defaultCta: block.ctaText || 'Play Here!',
+    });
+}
+
+function applyBaccaratPayoutTable(page) {
+    const container = document.getElementById('baccarat-payout-table-body');
+    if (!container || !page?.payoutTableBody) return;
+    setRichTextHtml(container, page.payoutTableBody);
+}
+
+function applyBaccaratSteps(containerId, steps) {
+    const container = document.getElementById(containerId);
+    if (!container || !Array.isArray(steps) || steps.length === 0) return;
+    container.innerHTML = steps
+        .map((s, i) => {
+            const num = s.step != null ? s.step : i + 1;
+            const title = escapeHtml(s.title || s.heading || '');
+            const body = escapeHtml(s.body || s.description || '');
+            return `<li class="roulette-checklist__step">
+                <span class="roulette-checklist__num" aria-hidden="true">${num}</span>
+                <div class="roulette-checklist__content">
+                    <strong class="roulette-checklist__title">${title}</strong>
+                    <p class="roulette-checklist__body">${body}</p>
+                </div>
+            </li>`;
+        })
+        .join('');
+}
+
+function applyBaccaratVariantItems(page) {
+    const container = document.getElementById('baccarat-variant-items');
+    const items = page?.variantItems;
+    if (!container || !Array.isArray(items) || items.length === 0) return;
+    container.innerHTML = items
+        .map((item) => {
+            const heading = escapeHtml(item.heading || item.title || '');
+            const bodyHtml = richTextToHtml(item.body) || '';
+            const fallback =
+                !bodyHtml && item.description
+                    ? `<p>${escapeHtml(item.description)}</p>`
+                    : '';
+            return `<article class="baccarat-variant-card">
+                <h3 class="baccarat-variant-card__title">${heading}</h3>
+                ${bodyHtml ? `<div class="rich-text-body baccarat-variant-card__body">${bodyHtml}</div>` : `<div class="baccarat-variant-card__body">${fallback}</div>`}
+            </article>`;
+        })
+        .join('');
+}
+
+function applyBaccaratWageringBody(page) {
+    const el = document.getElementById('baccarat-wagering-body');
+    if (!el || !page?.wageringBody) return;
+    setRichTextHtml(el, page.wageringBody);
+}
+
+function wireBaccaratFaqAccordion(root) {
+    if (!root) return;
+    root.querySelectorAll('.accordion-header').forEach((header) => {
+        if (header.dataset.baccaratFaqWired) return;
+        header.dataset.baccaratFaqWired = '1';
+        header.addEventListener('click', () => {
+            const item = header.closest('.accordion-item');
+            const isActive = item && item.classList.contains('active');
+            root.querySelectorAll('.accordion-item').forEach((acc) => {
+                acc.classList.remove('active');
+                const h = acc.querySelector('.accordion-header');
+                if (h) h.setAttribute('aria-expanded', 'false');
+            });
+            if (!isActive && item) {
+                item.classList.add('active');
+                header.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+}
+
+function applyBaccaratFaq(page) {
+    const accordion = document.getElementById('baccarat-faq-accordion');
+    const faqItems = page?.faqItems;
+    if (!accordion || !Array.isArray(faqItems) || faqItems.length === 0) return;
+    accordion.innerHTML = faqItems
+        .map((f) => {
+            const question = escapeHtml(f.question || f.title || '');
+            const answerHtml =
+                richTextToHtml(f.answer || f.body) ||
+                (f.answerRich ? richTextToHtml(f.answerRich) : '') ||
+                plainTextToParagraphsHtml(f.description || '');
+            return `<div class="accordion-item">
+                <button type="button" class="accordion-header" aria-expanded="false">
+                    <span class="accordion-title">${question}</span>
+                    <div class="accordion-icon-wrap"><i data-lucide="chevron-down" class="accordion-icon"></i></div>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">${answerHtml ? `<div class="rich-text-body">${answerHtml}</div>` : ''}</div>
+                </div>
+            </div>`;
+        })
+        .join('');
+    wireBaccaratFaqAccordion(accordion);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: accordion });
+}
+
+function applyBaccaratConclusion(page, slugMap) {
+    const container = document.getElementById('baccarat-bottom-trio');
+    if (!container || !page?.conclusionCta?.casino) return;
+    container.innerHTML = renderBonusBottomTrio(page, slugMap, {
+        featuredHeadStrong: 'Malaysian Baccarat Casino',
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function buildBaccaratPageJsonLd(page, topCasinos) {
+    const itemListEl = document.getElementById('baccarat-ld-itemlist');
+    if (itemListEl && Array.isArray(topCasinos) && topCasinos.length > 0) {
+        const items = topCasinos.slice(0, 10).map((item, i) => {
+            const attr = liveCasinoTopCasinoToAttr(item);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Baccarat Casinos in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const faqItems = page?.faqItems;
+    const faqEl = document.getElementById('baccarat-ld-faq');
+    if (faqEl && Array.isArray(faqItems) && faqItems.length > 0) {
+        faqEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqItems.map((f) => ({
+                '@type': 'Question',
+                name: f.question || f.title || '',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: f.answer || f.body || richTextToPlainText(f.answerRich || f.body) || '',
+                },
+            })),
+        });
+    }
+    const webEl = document.getElementById('baccarat-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Baccarat Casinos Malaysia 2026',
+            url: 'https://888reviews.com/baccarat',
+            description:
+                page.metaDescription ||
+                'Compare the best online baccarat casinos in Malaysia for 2026: live and RNG tables, bonuses, and trusted operators.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initBaccaratPage() {
+    const listEl = document.getElementById('baccarat-operator-list');
+    if (!listEl) return;
+
+    let page = null;
+    let casinoRows = null;
+    try {
+        [page, casinoRows] = await Promise.all([fetchBaccaratPage(), fetchBonusHubCasinos()]);
+    } catch (e) {
+        console.warn('Baccarat page CMS fetch failed:', e);
+    }
+
+    applyBaccaratListingMeta(page);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    if (!page) return;
+
+    const slugMap = buildCasinoSlugMap(casinoRows);
+
+    applyBaccaratMeta(page);
+    applyBaccaratHero(page);
+    applyBaccaratSectionText(page);
+    applyBaccaratListingMeta(page);
+    applyBaccaratOperators(page, slugMap);
+    applyBaccaratRatingCriteria(page);
+    applyBaccaratGuideSections(page);
+    applyBaccaratPromo('baccarat-guide-promo', page.guidePromo, slugMap);
+    applyBaccaratPayoutTable(page);
+    applyBaccaratSteps('baccarat-sample-round-steps', page.sampleRoundSteps);
+    applyBaccaratPromo('baccarat-sample-round-promo', page.sampleRoundPromo, slugMap, {
+        highlightLabel: 'Baccarat highlights',
+    });
+    applyBaccaratVariantItems(page);
+    applyBaccaratSteps('baccarat-getting-started-steps', page.gettingStartedSteps);
+    applyBaccaratPromo('baccarat-getting-started-promo', page.gettingStartedPromo, slugMap, {
+        highlightLabel: 'Welcome bonus highlights',
+    });
+    applyBaccaratWageringBody(page);
+    applyBaccaratFaq(page);
+    applyBaccaratConclusion(page, slugMap);
+    buildBaccaratPageJsonLd(page, page.topCasinos);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 roulette-page single type — nested component + relation populate. */
+const ROULETTE_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[rngGameRows][populate][playAtCasino][populate]=logo' +
+    '&populate[liveGameRows][populate][playAtCasino][populate]=logo' +
+    '&populate[featuredMobileCasinos][populate][casino][populate]=logo' +
+    '&populate[featuredMobileCasinos][populate][bonusOverride]=*' +
+    '&populate[featuredMobileCasinos][populate][features]=*' +
+    '&populate[featuredWelcomeBonus][populate][casino][populate]=logo' +
+    '&populate[featuredWelcomeBonus][populate][bonusOverride]=*' +
+    '&populate[featuredWelcomeBonus][populate][features]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionCta][populate][certificationLogos]=true' +
+    '&populate[bonusCategories]=*';
+
+const ROULETTE_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+const ROULETTE_PAGE_HIGHLIGHT_LABEL = 'Roulette highlight';
+
+async function fetchRoulettePage() {
+    try {
+        let res = await fetch(`${API_URL}/api/roulette-page?${ROULETTE_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Roulette page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/roulette-page?${ROULETTE_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Roulette page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Roulette page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function rouletteTopCasinoToAttr(item, slugMap) {
+    return slotTopCasinoToAttr(item, slugMap);
+}
+
+function applyRouletteMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Online Roulette Malaysia 2026 | Live & Real Money Casinos | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best online roulette casinos in Malaysia for 2026: European, American, and live dealer tables, MYR bonuses, and trusted operators. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyRouletteHero(page) {
+    if (!page) return;
+    setHomepageText(document.getElementById('roulette-hero-h1'), page.heroHeading);
+    setHomepageText(document.getElementById('roulette-hero-desc'), page.heroIntro, 'rich');
+}
+
+function applyRouletteListingMeta(page) {
+    const bar = document.getElementById('roulette-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('roulette-listing-updated');
+    const disclosureEl = document.getElementById('roulette-listing-disclosure');
+    const trustEl = document.getElementById('roulette-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: bar });
+}
+
+function applyRouletteSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['roulette-operators-h2', page.topCasinosHeading],
+        ['roulette-operators-intro', page.topCasinosIntro, 'rich'],
+        ['roulette-operators-outro', page.topCasinosOutro, 'rich'],
+        ['roulette-rating-intro', page.ratingIntro, 'rich'],
+        ['roulette-rating-outro', page.ratingOutro, 'rich'],
+        ['roulette-rng-h2', page.rngGamesHeading],
+        ['roulette-rng-intro', page.rngGamesIntro, 'rich'],
+        ['roulette-rng-outro', page.rngGamesOutro, 'rich'],
+        ['roulette-live-h2', page.liveGamesHeading],
+        ['roulette-live-intro', page.liveGamesIntro, 'rich'],
+        ['roulette-live-outro', page.liveGamesOutro, 'rich'],
+        ['roulette-mobile-h2', page.mobileHeading],
+        ['roulette-mobile-intro', page.mobileIntro, 'rich'],
+        ['roulette-mobile-outro', page.mobileOutro, 'rich'],
+        ['roulette-bonus-h2', page.bonusesHeading],
+        ['roulette-bonus-intro', page.bonusesIntro, 'rich'],
+        ['roulette-conclusion-h2', page.conclusionHeading],
+        ['roulette-conclusion-body', page.conclusionBody, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+}
+
+function applyRouletteOperators(page, slugMap) {
+    const listEl = document.getElementById('roulette-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows
+        .map((item, i) => {
+            const enriched = {
+                ...item,
+                casino: bonusHubEnrichedCasino(item?.casino, slugMap) || item?.casino,
+            };
+            return renderLiveCasinoOperatorRow(enriched, item.rank || i + 1, {
+                highlightLabel: ROULETTE_PAGE_HIGHLIGHT_LABEL,
+            });
+        })
+        .join('');
+}
+
+function renderRoulettePlayCell(casino, slugMap) {
+    const attr = resolveSlotPlayCasino(casino, slugMap);
+    const casinoName = attr.Name || attr.name || '—';
+    const nameEsc = escapeHtml(casinoName);
+    const visitHref = casinoVisitSiteHref(attr);
+    const visitRel = casinoVisitSiteIsExternal(attr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<span class="slot-top-games__play-logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-label="${nameEsc}"></span>`
+        : `<span class="slot-top-games__play-text">${nameEsc}</span>`;
+    if (visitHref && visitHref !== '#') {
+        return `<a href="${escapeHtml(visitHref)}" class="slot-top-games__play-link"${visitRel} aria-label="Play at ${nameEsc}">${logoHtml}</a>`;
+    }
+    return logoHtml;
+}
+
+function renderRouletteGameRow(row, index, slugMap) {
+    const rank = index + 1;
+    const gameName = escapeHtml(row?.gameName || '—');
+    const rouletteType = escapeHtml(row?.rouletteType || '—');
+    const software = escapeHtml(row?.software || '—');
+    const minBet = escapeHtml(row?.minBet || '—');
+    const maxBet = escapeHtml(row?.maxBet || '—');
+    const rtp = escapeHtml(row?.rtp || '—');
+    const playCell = renderRoulettePlayCell(row?.playAtCasino, slugMap);
+    return `<tr class="roulette-games__row">
+        <td class="roulette-games__cell roulette-games__cell--game" data-label="Roulette game">
+            <div class="slot-top-games__game">
+                <span class="slot-top-games__rank" aria-hidden="true">${rank}.</span>
+                <div class="slot-top-games__game-text">
+                    <strong class="slot-top-games__title">${gameName}</strong>
+                </div>
+            </div>
+        </td>
+        <td class="roulette-games__cell" data-label="Roulette type"><span class="roulette-games__type">${rouletteType}</span></td>
+        <td class="roulette-games__cell" data-label="Software"><span class="roulette-games__software">${software}</span></td>
+        <td class="roulette-games__cell" data-label="Min bet"><span class="roulette-games__bet">${minBet}</span></td>
+        <td class="roulette-games__cell" data-label="Max bet"><span class="roulette-games__bet">${maxBet}</span></td>
+        <td class="roulette-games__cell" data-label="RTP"><span class="slot-top-games__rtp">${rtp}</span></td>
+        <td class="roulette-games__cell roulette-games__cell--play" data-label="Play at">${playCell}</td>
+    </tr>`;
+}
+
+function applyRouletteRngTable(page, slugMap) {
+    const tbody = document.getElementById('roulette-rng-tbody');
+    const rows = page?.rngGameRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows.map((row, i) => renderRouletteGameRow(row, i, slugMap)).join('');
+}
+
+function applyRouletteLiveTable(page, slugMap) {
+    const tbody = document.getElementById('roulette-live-tbody');
+    const rows = page?.liveGameRows;
+    if (!tbody || !Array.isArray(rows) || rows.length === 0) return;
+    tbody.innerHTML = rows.map((row, i) => renderRouletteGameRow(row, i, slugMap)).join('');
+}
+
+function rouletteFeaturedBonusHtml(block) {
+    const override = block?.bonusOverride || {};
+    const intro = String(override.intro || '').trim();
+    const amount = String(override.amount || '').trim();
+    const extra = String(override.extra || '').trim();
+    const introHtml = intro
+        ? `<span class="malaysia-operator-row__field-label">${escapeHtml(intro)}</span>`
+        : '';
+    const amountHtml = amount
+        ? `<strong class="malaysia-operator-row__bonus-amount">${escapeHtml(amount)}</strong>`
+        : '';
+    const extraHtml = extra
+        ? `<span class="malaysia-operator-row__bonus-extra">${escapeHtml(extra)}</span>`
+        : '';
+    if (!introHtml && !amountHtml && !extraHtml) {
+        return '<strong class="malaysia-operator-row__bonus-amount">—</strong>';
+    }
+    return `${introHtml}${amountHtml}${extraHtml}`;
+}
+
+function renderRouletteFeaturedOperatorRow(block, attr, options = {}) {
+    const highlightLabel = options.highlightLabel || 'Highlights';
+    const ratingLabel = options.ratingLabel || 'Casino rating';
+    const defaultCta = options.defaultCta || 'Play Here!';
+
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+
+    const score =
+        block?.bonusRatingOverride != null ? Number(block.bonusRatingOverride) : ratingScoreFromAttr(attr);
+    const ratingText = Number.isFinite(score)
+        ? formatRatingSlashFive(score)
+        : '—';
+
+    const bonusHtml = rouletteFeaturedBonusHtml(block);
+    const features = Array.isArray(block?.features)
+        ? block.features.map((f) => f.label).filter(Boolean)
+        : [];
+    const highlightText = escapeHtml(features.length ? features.join(' · ') : '—');
+
+    const ctaText = escapeHtml(block?.ctaText || defaultCta);
+    const visitHref = escapeHtml(block?.ctaLinkOverride || casinoVisitSiteHref(attr));
+    const visitRel =
+        casinoVisitSiteIsExternal(attr) || block?.ctaLinkOverride
+            ? ' rel="nofollow noopener" target="_blank"'
+            : ' rel="nofollow noopener"';
+
+    return `<article class="malaysia-operator-row malaysia-operator-row--featured" role="listitem">
+        <div class="malaysia-operator-row__rank" aria-hidden="true">★</div>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">${escapeHtml(ratingLabel)}</span>
+                <span class="malaysia-operator-row__rating-score">${ratingText}</span>
+            </div>
+            <div class="malaysia-operator-row__bonus">${bonusHtml}</div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">${escapeHtml(highlightLabel)}</span>
+                <p><span class="malaysia-operator-row__highlight-tag">${highlightText}</span></p>
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>${ctaText}</a>
+        </div>
+    </article>`;
+}
+
+function applyRouletteMobileFeatured(page, slugMap, casinoRows) {
+    const container = document.getElementById('roulette-mobile-featured');
+    const raw = Array.isArray(page?.featuredMobileCasinos)
+        ? page.featuredMobileCasinos.find((item) => item?.casino)
+        : null;
+    const block = raw ? enrichHomepageFeaturedBlock(raw, casinoRows) : null;
+    if (!container || !block?.casino) return;
+    const attr = slotPageFeaturedToAttr(block, slugMap);
+    container.innerHTML = renderRouletteFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Casino rating',
+        highlightLabel: 'Mobile highlights',
+        defaultCta: block.ctaText || 'Play Here!',
+    });
+}
+
+function applyRouletteBonusFeatured(page, slugMap, casinoRows) {
+    const container = document.getElementById('roulette-bonus-featured');
+    const block = page?.featuredWelcomeBonus
+        ? enrichHomepageFeaturedBlock(page.featuredWelcomeBonus, casinoRows)
+        : null;
+    if (!container || !block?.casino) return;
+    const attr = slotPageFeaturedToAttr(block, slugMap);
+    container.innerHTML = renderRouletteFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Casino rating',
+        highlightLabel: 'Bonus highlights',
+        defaultCta: block.ctaText || 'Play Here!',
+    });
+}
+
+function applyRouletteBonusCategories(page) {
+    const container = document.getElementById('roulette-bonus-categories');
+    const categories = page?.bonusCategories;
+    if (!container || !Array.isArray(categories) || categories.length === 0) return;
+    container.innerHTML = categories
+        .map((cat) => {
+            const heading = escapeHtml(cat.heading || cat.title || '');
+            const bodyHtml = richTextToHtml(cat.body) || '';
+            return `<div class="roulette-bonus-category">
+                <h3 class="roulette-bonus-category__heading">${heading}</h3>
+                ${bodyHtml ? `<div class="roulette-bonus-category__body">${bodyHtml}</div>` : ''}
+            </div>`;
+        })
+        .join('');
+}
+
+function applyRouletteConclusion(page) {
+    const container = document.getElementById('roulette-conclusion-card');
+    const block = page?.conclusionCta;
+    if (!container || !block?.casino) return;
+    container.innerHTML = renderMalaysiaConclusionCard(block);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function buildRoulettePageJsonLd(page, topCasinos) {
+    const itemListEl = document.getElementById('roulette-ld-itemlist');
+    if (itemListEl && Array.isArray(topCasinos) && topCasinos.length > 0) {
+        const items = topCasinos.slice(0, 10).map((item, i) => {
+            const attr = rouletteTopCasinoToAttr(item);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Online Roulette Casinos in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const webEl = document.getElementById('roulette-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Online Roulette Malaysia 2026',
+            url: 'https://888reviews.com/roulette',
+            description:
+                page.metaDescription ||
+                'Compare the best online roulette casinos in Malaysia for 2026: live and RNG tables, bonuses, and trusted operators.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initRoulettePage() {
+    const listEl = document.getElementById('roulette-operator-list');
+    if (!listEl) return;
+
+    let page = null;
+    let casinoRows = null;
+    try {
+        [page, casinoRows] = await Promise.all([fetchRoulettePage(), fetchBonusHubCasinos()]);
+    } catch (e) {
+        console.warn('Roulette page CMS fetch failed:', e);
+    }
+
+    applyRouletteListingMeta(page);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    if (!page) return;
+
+    const slugMap = buildCasinoSlugMap(casinoRows);
+
+    applyRouletteMeta(page);
+    applyRouletteHero(page);
+    applyRouletteSectionText(page);
+    applyRouletteListingMeta(page);
+    applyRouletteOperators(page, slugMap);
+    applyRouletteRngTable(page, slugMap);
+    applyRouletteLiveTable(page, slugMap);
+    applyRouletteMobileFeatured(page, slugMap, casinoRows);
+    applyRouletteBonusFeatured(page, slugMap, casinoRows);
+    applyRouletteBonusCategories(page);
+    applyRouletteConclusion(page);
+    buildRoulettePageJsonLd(page, page.topCasinos);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 mobile-page single type — nested component + relation populate. */
+const MOBILE_PAGE_POPULATE =
+    'populate[topCasinos][populate][casino][populate]=logo' +
+    '&populate[topCasinos][populate][bonusOverride]=*' +
+    '&populate[featuredMobileBonus][populate][casino][populate]=logo' +
+    '&populate[featuredMobileBonus][populate][bonusOverride]=*' +
+    '&populate[featuredMobileBonus][populate][features]=*' +
+    '&populate[recommendedApps][populate][casino][populate]=logo' +
+    '&populate[recommendedApps][populate][providerLogo]=true' +
+    '&populate[bestAppFeatured][populate][casino][populate]=logo' +
+    '&populate[bestAppFeatured][populate][bonusOverride]=*' +
+    '&populate[bestAppFeatured][populate][features]=*' +
+    '&populate[bestAppGuides][populate][links]=*' +
+    '&populate[bestAppMoreGuides][populate]=*';
+
+const MOBILE_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+async function fetchMobilePage() {
+    try {
+        let res = await fetch(`${API_URL}/api/mobile-page?${MOBILE_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Mobile page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/mobile-page?${MOBILE_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Mobile page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Mobile page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+function mobileTopCasinoToAttr(item) {
+    return liveCasinoTopCasinoToAttr(item);
+}
+
+function renderMobileOperatorRow(item, listPos) {
+    const attr = mobileTopCasinoToAttr(item);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusAmount = escapeHtml(bonusParts.amount);
+    const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    const bonusExtraHtml = bonusExtra
+        ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
+        : '';
+    return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">Rating</span>
+                ${ratingHtml}
+            </div>
+            <div class="malaysia-operator-row__bonus">
+                <span class="malaysia-operator-row__field-label">${bonusIntro}</span>
+                <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
+            </div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">Mobile app highlight</span>
+                <p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${highlight}</span></span></p>
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
+        </div>
+    </article>`;
+}
+
+function applyMobileMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Casino Apps Malaysia 2026 | Top Mobile Gambling Sites | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best casino apps in Malaysia for 2026: iOS and Android mobile casinos, MYR bonuses, and trusted payment methods. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyMobileHero(page) {
+    if (!page) return;
+    /* mobile-page has no dedicated hero fields; section headings applied in applyMobileSectionText */
+}
+
+function applyMobileListingMeta(page) {
+    const bar = document.getElementById('mobile-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('mobile-listing-updated');
+    const disclosureEl = document.getElementById('mobile-listing-disclosure');
+    const trustEl = document.getElementById('mobile-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+}
+
+function applyMobileOperators(page) {
+    const listEl = document.getElementById('mobile-operator-list');
+    if (!listEl) return;
+    const topCasinos = page?.topCasinos;
+    if (!Array.isArray(topCasinos) || topCasinos.length === 0) return;
+    const rows = topCasinos
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows.map((item, i) => renderMobileOperatorRow(item, item.rank || i + 1)).join('');
+}
+
+function applyMobileBonusFeatured(page) {
+    const container = document.getElementById('mobile-bonus-featured');
+    const block = page?.featuredMobileBonus;
+    if (!container || !block?.casino) return;
+    const attr = normalizeV5CasinoAttr(block.casino);
+    container.innerHTML = renderHomepageFeaturedOperatorRow(block, attr, {
+        ratingLabel: 'Casino rating',
+        defaultCta: block.ctaText || 'Claim Bonus!',
+        offerLabel: block.bonusOverride?.intro || 'Welcome bonus',
+    });
+}
+
+function renderMobileRecommendedAppRow(row) {
+    const casinoAttr = normalizeV5CasinoAttr(row?.casino) || {};
+    const casinoName = escapeHtml(casinoAttr.Name || casinoAttr.name || 'Casino');
+    const provider = escapeHtml(row?.providerName || '—');
+    const game = escapeHtml(row?.gameName || '—');
+    const linkText = escapeHtml(row?.secureLinkText || `Visit ${casinoName}`);
+    const visitHref = escapeHtml(casinoVisitSiteHref(casinoAttr));
+    const visitRel = casinoVisitSiteIsExternal(casinoAttr)
+        ? ' rel="nofollow noopener" target="_blank"'
+        : ' rel="nofollow noopener"';
+    const providerLogoUrl = row?.providerLogo?.url ? sameOriginMediaProxyUrl(row.providerLogo.url) : '';
+    const casinoLogoUrl = getLogoUrl(casinoAttr);
+    const providerCell = providerLogoUrl
+        ? `<span class="mobile-recommended-apps-table__logo mobile-recommended-apps-table__logo--provider" style="background-image:url('${escapeHtml(providerLogoUrl)}')" role="img" aria-label="${provider}">${provider}</span>`
+        : `<span class="mobile-recommended-apps-table__provider-text">${provider}</span>`;
+    const casinoCell = casinoLogoUrl
+        ? `<span class="mobile-recommended-apps-table__logo mobile-recommended-apps-table__logo--casino" style="background-image:url('${escapeHtml(casinoLogoUrl)}')" role="img" aria-label="${casinoName}">${casinoName}</span>`
+        : `<span class="mobile-recommended-apps-table__casino-text">${casinoName}</span>`;
+    return `<tr>
+        <td data-label="Software provider">${providerCell}</td>
+        <td data-label="Must-play game"><span class="mobile-recommended-apps-table__game">${game}</span></td>
+        <td data-label="Play at">${casinoCell}</td>
+        <td data-label="Secure link"><a href="${visitHref}" class="mobile-recommended-apps-table__link"${visitRel}>${linkText}</a></td>
+    </tr>`;
+}
+
+function applyMobileRecommendedApps(page) {
+    const tbody = document.getElementById('mobile-recommended-apps-tbody');
+    const apps = page?.recommendedApps;
+    if (!tbody || !Array.isArray(apps) || apps.length === 0) return;
+    tbody.innerHTML = apps.map((row) => renderMobileRecommendedAppRow(row)).join('');
+}
+
+function mobileMoreGuideIconUrl(guide) {
+    const field = guide?.icon;
+    if (!field) return '';
+    const raw = field?.url || strapiMediaAbsoluteUrl(field);
+    return raw ? logoImgSrcForDisplay(raw) : '';
+}
+
+function renderMobileMoreGuideLink(guide) {
+    const iconUrl = mobileMoreGuideIconUrl(guide);
+    const iconHtml = iconUrl
+        ? `<img src="${escapeHtml(iconUrl)}" alt="" width="46" height="46" loading="eager" decoding="async">`
+        : `<i data-lucide="book-open" aria-hidden="true"></i>`;
+    const label = guide?.label || guide?.title || guide?.name || '';
+    const url = guide?.url || guide?.link || guide?.href || '#';
+    return `<a href="${escapeHtml(url)}" class="live-casino-bottom-trio__guide">
+                    <span class="live-casino-bottom-trio__guide-icon" aria-hidden="true">${iconHtml}</span>
+                    <span class="live-casino-bottom-trio__guide-label">${escapeHtml(label)}</span>
+                </a>`;
+}
+
+function renderMobileFeaturedHeadHtml(page, block) {
+    const sub = block?.subheading || page?.bestAppSubheading;
+    const main = block?.heading || page?.bestAppHeading;
+    if (sub && main) {
+        return `<p class="live-casino-bottom-trio__head"><span>${escapeHtml(sub)}</span><strong>${escapeHtml(main)}</strong></p>`;
+    }
+    if (main) {
+        const parts = String(main)
+            .split(/\s*\|\s*|\n/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        if (parts.length >= 2) {
+            return `<p class="live-casino-bottom-trio__head"><span>${escapeHtml(parts[0])}</span><strong>${escapeHtml(parts.slice(1).join(' '))}</strong></p>`;
+        }
+        return `<p class="live-casino-bottom-trio__head"><strong>${escapeHtml(main)}</strong></p>`;
+    }
+    return `<p class="live-casino-bottom-trio__head"><span>2026&rsquo;s Best</span><strong>Malaysian Mobile App</strong></p>`;
+}
+
+function renderMobileBottomTrio(page) {
+    const block = page?.bestAppFeatured;
+    const guides = page?.bestAppGuides;
+    const moreGuides = Array.isArray(page?.bestAppMoreGuides) ? page.bestAppMoreGuides : [];
+
+    let featuredHtml = '';
+    if (block?.casino) {
+        const attr = normalizeV5CasinoAttr(block.casino);
+        const name = escapeHtml(attr.Name || attr.name || 'Casino');
+        const logoUrl = getLogoUrl(attr);
+        const logoHtml = logoUrl
+            ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="live-casino-bottom-trio__logo" width="120" height="48" loading="lazy">`
+            : `<span class="live-casino-bottom-trio__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+
+        const score =
+            block.bonusRatingOverride != null ? Number(block.bonusRatingOverride) : ratingScoreFromAttr(attr);
+        const ratingText = Number.isFinite(score)
+            ? formatRatingSlashFive(score)
+            : formatRatingScoreLine(attr, '5/5').replace(' / ', '/');
+        const starsHtml = Number.isFinite(score) ? renderStars(score) : renderStars(attr);
+
+        const ctaText = escapeHtml(block.ctaText || 'Download App!');
+        const visitHref = escapeHtml(block.ctaLinkOverride || casinoVisitSiteHref(attr));
+        const visitRel =
+            casinoVisitSiteIsExternal(attr) || block.ctaLinkOverride
+                ? ' rel="nofollow noopener" target="_blank"'
+                : ' rel="nofollow noopener"';
+
+        featuredHtml = `<article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--featured">
+            ${renderMobileFeaturedHeadHtml(page, block)}
+            <div class="live-casino-bottom-trio__featured-row">
+                <div class="live-casino-bottom-trio__logo-box">${logoHtml}</div>
+                <div class="live-casino-bottom-trio__rating-box">
+                    <span class="live-casino-bottom-trio__rating-label">Casino Rating</span>
+                    <div class="live-casino-bottom-trio__stars">${starsHtml}</div>
+                    <span class="live-casino-bottom-trio__rating-score">${escapeHtml(ratingText)}</span>
+                </div>
+            </div>
+            <a href="${visitHref}" class="live-casino-bottom-trio__cta"${visitRel}>${ctaText}</a>
+        </article>`;
+    }
+
+    const cmsFeatures = Array.isArray(block?.features)
+        ? block.features.map((f) => f.label).filter(Boolean)
+        : [];
+    const defaultFeatures = [
+        'Top-rated mobile slots',
+        'Best mobile bonuses',
+        'In-depth app reviews',
+    ];
+    const bulletLabels =
+        cmsFeatures.length >= 3
+            ? cmsFeatures.slice(0, 3)
+            : cmsFeatures.length
+              ? [...cmsFeatures, ...defaultFeatures].slice(0, 3)
+              : defaultFeatures;
+    const bulletsHtml = bulletLabels.map((label) => `<li>${escapeHtml(label)}</li>`).join('');
+
+    const exploreHeading = guides?.heading
+        ? `<p class="live-casino-bottom-trio__head"><span>${escapeHtml(guides.subheading || 'Malaysia')}</span><strong>${escapeHtml(guides.heading)}</strong></p>`
+        : `<p class="live-casino-bottom-trio__head"><span>Malaysia</span><strong>Online Casino Guides</strong></p>`;
+    const exploreCta = guides?.ctaLink
+        ? `<a href="${escapeHtml(guides.ctaLink)}" class="live-casino-bottom-trio__outline-btn">${escapeHtml(guides.ctaText || 'See All Malaysian Online Casinos')}</a>`
+        : `<a href="/" class="live-casino-bottom-trio__outline-btn">See All Malaysian Online Casinos</a>`;
+
+    const exploreHtml = `<article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--explore">
+            ${exploreHeading}
+            <ul class="live-casino-bottom-trio__bullets" role="list">${bulletsHtml}</ul>
+            ${exploreCta}
+        </article>`;
+
+    let guidesCardHtml = '';
+    if (moreGuides.length > 0) {
+        const guidesHtml = moreGuides.map((g) => renderMobileMoreGuideLink(g)).join('');
+        guidesCardHtml = `<article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--guides">
+            <p class="live-casino-bottom-trio__head"><strong>${escapeHtml(page?.bestAppMoreGuidesHeading || 'More Guides')}</strong></p>
+            <div class="live-casino-bottom-trio__guides">${guidesHtml}</div>
+        </article>`;
+    }
+
+    const cards = [featuredHtml, exploreHtml, guidesCardHtml].filter(Boolean);
+    if (!cards.length) return '';
+    return `<div class="live-casino-bottom-trio__grid">${cards.join('')}</div>`;
+}
+
+function applyMobileConclusion(page) {
+    const container = document.getElementById('mobile-conclusion-trio');
+    if (!container) return;
+    const html = renderMobileBottomTrio(page);
+    if (!html) return;
+    container.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function applyMobileSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['mobile-operators-h2', page.topCasinosHeading],
+        ['mobile-operators-intro', page.topCasinosIntro, 'rich'],
+        ['mobile-bonus-h2', page.mobileBonusesHeading],
+        ['mobile-bonus-intro', page.mobileBonusesIntro, 'rich'],
+        ['mobile-recommended-apps-intro', page.recommendedAppsIntro, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+    if (page.recommendedAppsHeading) {
+        const spotlights = document.getElementById('mobile-provider-spotlights');
+        const h3 = spotlights?.querySelector('h3');
+        if (h3) setHomepageText(h3, page.recommendedAppsHeading);
+    }
+}
+
+function buildMobileJsonLd(page, operators) {
+    const itemListEl = document.getElementById('mobile-ld-itemlist');
+    if (itemListEl && Array.isArray(operators) && operators.length > 0) {
+        const items = operators.slice(0, 10).map((item, i) => {
+            const attr = mobileTopCasinoToAttr(item);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topCasinosHeading || 'Best Casino Apps in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const webEl = document.getElementById('mobile-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Casino Apps Malaysia 2026',
+            url: 'https://888reviews.com/mobile',
+            description:
+                page.metaDescription ||
+                'Compare the best casino apps in Malaysia for 2026: mobile bonuses, MYR payments, and trusted operators.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function initMobilePage() {
+    const listEl = document.getElementById('mobile-operator-list');
+    if (!listEl) return;
+
+    const page = await fetchMobilePage();
+    if (!page) return;
+
+    applyMobileMeta(page);
+    applyMobileHero(page);
+    applyMobileSectionText(page);
+    applyMobileListingMeta(page);
+    applyMobileOperators(page);
+    applyMobileBonusFeatured(page);
+    applyMobileRecommendedApps(page);
+    applyMobileConclusion(page);
+    buildMobileJsonLd(page, page.topCasinos);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+/** Strapi v5 bonus-page single type — nested component + relation populate. */
+const BONUS_PAGE_POPULATE =
+    'populate[topBonuses][populate][casino][populate]=logo' +
+    '&populate[topBonuses][populate][bonusOverride]=*' +
+    '&populate[playStylePicks][populate][casino][populate]=logo' +
+    '&populate[featuredWelcomeBonus][populate][casino][populate]=logo' +
+    '&populate[featuredWelcomeBonus][populate][bonusOverride]=*' +
+    '&populate[featuredWelcomeBonus][populate][features]=*' +
+    '&populate[featuredSpecializedBonus][populate][casino][populate]=logo' +
+    '&populate[featuredSpecializedBonus][populate][bonusOverride]=*' +
+    '&populate[featuredSpecializedBonus][populate][features]=*' +
+    '&populate[conclusionCta][populate][casino][populate]=logo' +
+    '&populate[conclusionCta][populate][bonusOverride]=*' +
+    '&populate[conclusionCta][populate][features]=*' +
+    '&populate[conclusionCta][populate][certificationLogos]=true' +
+    '&populate[conclusionGuides][populate]=*';
+
+const BONUS_PAGE_POPULATE_FALLBACK = 'populate=*';
+
+async function fetchBonusPage() {
+    try {
+        let res = await fetch(`${API_URL}/api/bonus-page?${BONUS_PAGE_POPULATE}`);
+        let json = await res.json();
+        if (!res.ok || !json?.data) {
+            if (res.status === 400 || res.status === 500) {
+                console.warn('Bonus page CMS populate failed, retrying shallow:', json?.error?.message || res.status);
+                res = await fetch(`${API_URL}/api/bonus-page?${BONUS_PAGE_POPULATE_FALLBACK}`);
+                json = await res.json();
+            }
+        }
+        if (!res.ok || !json?.data) {
+            console.warn('Bonus page CMS:', json?.error?.message || res.status);
+            return null;
+        }
+        return json.data;
+    } catch (e) {
+        console.warn('Bonus page CMS fetch failed:', e);
+        return null;
+    }
+}
+
+/** Merge bonus-page nested casino with full /api/casinos row; never let null affiliateLink wipe a real URL. */
+function mergeBonusHubCasinoAttr(partialCasino, enriched) {
+    const base = normalizeV5CasinoAttr(partialCasino) || {};
+    if (!enriched) return base;
+    const merged = { ...enriched, ...base };
+    const affiliate = casinoAffiliateUrl(base) || casinoAffiliateUrl(enriched);
+    if (affiliate) {
+        merged.AffiliateLink = affiliate;
+        merged.affiliateLink = affiliate;
+    }
+    return merged;
+}
+
+function bonusHubEnrichedCasino(casino, slugMap) {
+    if (!casino) return null;
+    const slug = firstNonEmptyAttr(casino, ['slug', 'Slug']).toLowerCase();
+    const enriched = slug && slugMap?.size ? slugMap.get(slug) : null;
+    return mergeBonusHubCasinoAttr(casino, enriched);
+}
+
+function bonusTopBonusToAttr(item, slugMap) {
+    const casino = bonusHubEnrichedCasino(item?.casino, slugMap) || {};
+    const merged = { ...casino };
+    if (item?.highlight) {
+        merged.MalaysiaHighlight = item.highlight;
+        merged.malaysiaHighlight = item.highlight;
+    }
+    const override = item?.bonusOverride;
+    if (override) {
+        if (override.intro) merged.malaysiaBonusIntro = override.intro;
+        if (override.amount) merged.malaysiaBonusAmount = override.amount;
+        if (override.extra) merged.malaysiaBonusExtra = override.extra;
+        const line = [override.intro, override.amount, override.extra].filter(Boolean).join(' ');
+        if (line) {
+            merged.MalaysiaBonusLine = line;
+            merged.malaysiaBonusLine = line;
+        }
+    }
+    return applyTopCasinoItemRatingOverride(merged, item);
+}
+
+function renderBonusOperatorRow(item, listPos, slugMap) {
+    const attr = bonusTopBonusToAttr(item, slugMap);
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="malaysia-operator-row__logo" width="192" height="104" loading="lazy">`
+        : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
+    const bonusParts = malaysiaBonusPartsDisplay(attr);
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusAmount = escapeHtml(bonusParts.amount);
+    const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    const bonusExtraHtml = bonusExtra
+        ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
+        : '';
+    return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Claim bonus at ${name}"><span class="sr-only">Claim bonus at ${name}</span></a>
+        <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
+        <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
+        <div class="malaysia-operator-row__stats">
+            <div class="malaysia-operator-row__rating">
+                <span class="malaysia-operator-row__field-label">Rating</span>
+                ${ratingHtml}
+            </div>
+            <div class="malaysia-operator-row__bonus">
+                <span class="malaysia-operator-row__field-label">${bonusIntro}</span>
+                <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
+            </div>
+            <div class="malaysia-operator-row__highlight">
+                <span class="malaysia-operator-row__field-label">Bonus highlight</span>
+                <p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${highlight}</span></span></p>
+            </div>
+        </div>
+        <div class="malaysia-operator-row__cta">
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Claim Bonus!</a>
+            <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
+        </div>
+    </article>`;
+}
+
+function renderBonusPlayStyleRow(pick, slugMap, rowIndex = 0) {
+    const attr = bonusHubEnrichedCasino(pick?.casino, slugMap) || {};
+    const name = escapeHtml(attr.Name || attr.name || '—');
+    const logoUrl = getLogoUrl(attr);
+    const pickHtml = logoUrl
+        ? `<span class="bonus-playstyle__logo" style="background-image:url('${escapeHtml(logoUrl)}')" role="img" aria-label="${name}">${name}</span>`
+        : `<span class="bonus-playstyle__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+    const categoryIcon = pick?.categoryIcon
+        ? `<span class="bonus-playstyle__icon" aria-hidden="true">${escapeHtml(pick.categoryIcon)}</span>`
+        : '';
+    const category = escapeHtml(pick?.category || '—');
+    const why = escapeHtml(pick?.whyItWins || '—');
+    const details = escapeHtml(pick?.bonusDetails || '—');
+    const ctaText = escapeHtml(pick?.ctaText || 'Claim Bonus');
+    const visitHref = escapeHtml(casinoVisitSiteHref(attr));
+    const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
+    const rowClass = rowIndex === 0 ? ' bonus-playstyle__row--top' : '';
+    const iconWrap = categoryIcon
+        ? `<span class="bonus-playstyle__icon-wrap">${categoryIcon}</span>`
+        : '';
+    return `<tr class="bonus-playstyle__row${rowClass}">
+        <td data-label="Category">
+            <span class="bonus-playstyle__category">${iconWrap}<span class="bonus-playstyle__category-label">${category}</span></span>
+        </td>
+        <td data-label="Our top pick">
+            <span class="bonus-playstyle__pick">${pickHtml}</span>
+        </td>
+        <td data-label="Why it wins"><p class="bonus-playstyle__why">${why}</p></td>
+        <td data-label="Bonus details"><span class="bonus-playstyle__details">${details}</span></td>
+        <td data-label="Claim offer" class="bonus-playstyle__cta-cell">
+            <a href="${visitHref}" class="bonus-playstyle__cta"${visitRel}>${ctaText}</a>
+        </td>
+    </tr>`;
+}
+
+function applyBonusHubMeta(page) {
+    if (!page) return;
+    const title =
+        page.metaTitle || 'Best Casino Bonuses in Malaysia 2026 | Top Welcome Deals & Promos | 888reviews';
+    const desc =
+        page.metaDescription ||
+        'Compare the best casino bonuses in Malaysia for 2026: welcome offers, free spins, and fair terms from licensed operators. Independent rankings. 18+ only.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+    if (twTitle) twTitle.setAttribute('content', title);
+    if (twDesc) twDesc.setAttribute('content', desc);
+}
+
+function applyBonusHubListingMeta(page) {
+    const bar = document.getElementById('bonus-listing-meta');
+    if (!bar) return;
+    const updatedEl = document.getElementById('bonus-listing-updated');
+    const disclosureEl = document.getElementById('bonus-listing-disclosure');
+    const trustEl = document.getElementById('bonus-listing-trust');
+    const updatedRaw = page?.lastUpdated || page?.updatedAt || page?.publishedAt || '';
+    if (updatedEl) {
+        const formatted = formatListingUpdatedDate(updatedRaw);
+        if (formatted) {
+            updatedEl.textContent = formatted;
+            updatedEl.dateTime = String(updatedRaw).slice(0, 10);
+        }
+    }
+    const disclosureText = page?.advertiserDisclosure || page?.disclosureText;
+    if (disclosureEl && disclosureText) {
+        const linkMatch = String(disclosureText).match(/\|\s*Advertiser Disclosure/i);
+        if (linkMatch) {
+            const body = String(disclosureText).replace(/\|\s*Advertiser Disclosure/i, '').trim();
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(body)}</span><span class="malaysia-listing-meta__disclosure-sep" aria-hidden="true"> | </span><a href="/about" class="malaysia-listing-meta__disclosure-link">Advertiser Disclosure</a>`;
+        } else {
+            disclosureEl.innerHTML = `<span class="malaysia-listing-meta__disclosure-text">${escapeHtml(String(disclosureText))}</span>`;
+        }
+    }
+    if (trustEl) {
+        const apiBadges = page?.listingTrustBadges || page?.trustBadges;
+        trustEl.innerHTML = renderMalaysiaListingTrustBadges(apiBadges);
+    }
+}
+
+function applyBonusHubSectionText(page) {
+    if (!page) return;
+    const textMap = [
+        ['bonus-operators-h2', page.topBonusesHeading],
+        ['bonus-operators-intro', page.topBonusesIntro, 'rich'],
+        ['bonus-operators-outro', page.topBonusesOutro, 'rich'],
+        ['bonus-playstyle-h2', page.playStyleHeading],
+        ['bonus-playstyle-intro', page.playStyleIntro, 'rich'],
+        ['bonus-types-h2', page.typesHeading],
+        ['bonus-types-intro', page.typesIntro, 'rich'],
+        ['bonus-specialized-h2', page.specializedHeading],
+        ['bonus-specialized-intro', page.specializedIntro, 'rich'],
+        ['bonus-conclusion-h2', page.conclusionHeading],
+        ['bonus-conclusion-body', page.conclusionBody, 'rich'],
+    ];
+    for (const [id, value, mode] of textMap) {
+        if (value == null || value === '') continue;
+        setHomepageText(document.getElementById(id), value, mode || 'text');
+    }
+}
+
+function applyBonusHubOperators(page, slugMap) {
+    const listEl = document.getElementById('bonus-page-operator-list');
+    if (!listEl) return;
+    const topBonuses = page?.topBonuses;
+    if (!Array.isArray(topBonuses) || topBonuses.length === 0) return;
+    const rows = topBonuses
+        .slice()
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .slice(0, 10);
+    listEl.innerHTML = rows
+        .map((item, i) => renderBonusOperatorRow(item, item.rank || i + 1, slugMap))
+        .join('');
+}
+
+function applyBonusHubPlayStyle(page, slugMap) {
+    const tbody = document.getElementById('bonus-playstyle-tbody');
+    const picks = page?.playStylePicks;
+    if (!tbody || !Array.isArray(picks) || picks.length === 0) return;
+    tbody.innerHTML = picks.map((pick, i) => renderBonusPlayStyleRow(pick, slugMap, i)).join('');
+}
+
+function applyBonusHubFeaturedBlocks(page, casinoRows) {
+    const slugMap = buildCasinoSlugMap(casinoRows);
+    const welcomeEl = document.getElementById('bonus-featured-welcome');
+    const welcomeBlock = enrichHomepageFeaturedBlock(page?.featuredWelcomeBonus, casinoRows);
+    if (welcomeEl && welcomeBlock?.casino) {
+        const attr = bonusHubEnrichedCasino(welcomeBlock.casino, slugMap);
+        welcomeEl.innerHTML = renderHomepageFeaturedOperatorRow(welcomeBlock, attr, {
+            ratingLabel: 'Casino rating',
+            defaultCta: welcomeBlock.ctaText || 'Claim bonus',
+            offerLabel: welcomeBlock.bonusOverride?.intro || 'Welcome bonus',
+        });
+    }
+    const specializedEl = document.getElementById('bonus-featured-specialized');
+    const specializedBlock = enrichHomepageFeaturedBlock(page?.featuredSpecializedBonus, casinoRows);
+    if (specializedEl && specializedBlock?.casino) {
+        const attr = bonusHubEnrichedCasino(specializedBlock.casino, slugMap);
+        specializedEl.innerHTML = renderHomepageFeaturedOperatorRow(specializedBlock, attr, {
+            ratingLabel: 'Casino rating',
+            defaultCta: specializedBlock.ctaText || 'Claim bonus',
+            offerLabel: specializedBlock.bonusOverride?.intro || 'Specialized bonus',
+        });
+    }
+}
+
+function renderBonusBottomTrio(page, slugMap, options = {}) {
+    const block = page?.conclusionCta;
+    if (!block?.casino) return '';
+    const featuredHeadStrong = options.featuredHeadStrong || 'Malaysian Casino Bonus';
+    const attr = bonusHubEnrichedCasino(block.casino, slugMap) || {};
+    const name = escapeHtml(attr.Name || attr.name || 'Casino');
+    const logoUrl = getLogoUrl(attr);
+    const logoHtml = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${name}" class="live-casino-bottom-trio__logo" width="120" height="48" loading="lazy">`
+        : `<span class="live-casino-bottom-trio__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
+
+    const score =
+        block.ratingOverride != null ? Number(block.ratingOverride) : ratingScoreFromAttr(attr);
+    const ratingText = Number.isFinite(score)
+        ? formatRatingSlashFive(score)
+        : formatRatingScoreLine(attr, '5/5').replace(' / ', '/');
+    const starsHtml = Number.isFinite(score) ? renderStars(score) : renderStars(attr);
+
+    const ctaText = escapeHtml(block.ctaText || 'Visit Site!');
+    const visitHref = escapeHtml(block.ctaLinkOverride || casinoVisitSiteHref(attr));
+    const visitRel =
+        casinoVisitSiteIsExternal(attr) || block.ctaLinkOverride
+            ? ' rel="nofollow noopener" target="_blank"'
+            : ' rel="nofollow noopener"';
+
+    const cmsFeatures = Array.isArray(block.features)
+        ? block.features.map((f) => f.label).filter(Boolean)
+        : [];
+    const defaultFeatures = [
+        'Top-rated slot sites',
+        'Exclusive welcome bonuses',
+        'Complete operator reviews',
+    ];
+    const bulletLabels =
+        cmsFeatures.length >= 3
+            ? cmsFeatures.slice(0, 3)
+            : cmsFeatures.length
+              ? [...cmsFeatures, ...defaultFeatures].slice(0, 3)
+              : defaultFeatures;
+    const bulletsHtml = bulletLabels.map((label) => `<li>${escapeHtml(label)}</li>`).join('');
+
+    const exploreHeading = page?.conclusionExplore?.heading || page?.conclusionExplore?.title;
+    const exploreSub = page?.conclusionExplore?.subheading || page?.conclusionExplore?.subtitle;
+    const exploreHeadHtml = exploreHeading
+        ? `<p class="live-casino-bottom-trio__head"><span>${escapeHtml(exploreSub || 'Malaysia')}</span><strong>${escapeHtml(exploreHeading)}</strong></p>`
+        : `<p class="live-casino-bottom-trio__head"><span>Malaysia</span><strong>Explore All Casino Types</strong></p>`;
+    const exploreLink = page?.conclusionExplore?.linkUrl || page?.conclusionExplore?.url || '/';
+    const exploreCta = page?.conclusionExplore?.ctaText || 'See All Malaysian Online Casinos';
+
+    const guidesHeading = page?.conclusionGuidesHeading || 'More Guides';
+    const guides = Array.isArray(page?.conclusionGuides) ? page.conclusionGuides : [];
+    const guidesHtml = guides.length
+        ? guides
+              .map((g) => {
+                  const iconUrl = g.icon?.url ? logoImgSrcForDisplay(g.icon.url) : '';
+                  const iconInner = iconUrl
+                      ? `<img src="${escapeHtml(iconUrl)}" alt="" width="46" height="46" loading="lazy">`
+                      : `<i data-lucide="book-open" aria-hidden="true"></i>`;
+                  return `<a href="${escapeHtml(g.url || '#')}" class="live-casino-bottom-trio__guide">
+                    <span class="live-casino-bottom-trio__guide-icon" aria-hidden="true">${iconInner}</span>
+                    <span class="live-casino-bottom-trio__guide-label">${escapeHtml(g.label || '')}</span>
+                </a>`;
+              })
+              .join('')
+        : `<a href="/roulette" class="live-casino-bottom-trio__guide">
+                    <span class="live-casino-bottom-trio__guide-icon" aria-hidden="true">
+                        <img src="/assets/img/icon/roulette-wheel-icon.webp" alt="" width="46" height="46" loading="lazy">
+                    </span>
+                    <span class="live-casino-bottom-trio__guide-label">Online Roulette</span>
+                </a>
+                <a href="/baccarat" class="live-casino-bottom-trio__guide">
+                    <span class="live-casino-bottom-trio__guide-icon" aria-hidden="true">
+                        <img src="/assets/img/icon/cards-icon.webp" alt="" width="46" height="46" loading="lazy">
+                    </span>
+                    <span class="live-casino-bottom-trio__guide-label">Online Baccarat</span>
+                </a>`;
+
+    return `<div class="live-casino-bottom-trio__grid">
+        <article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--featured">
+            <p class="live-casino-bottom-trio__head"><span>2026&rsquo;s Best</span><strong>${escapeHtml(featuredHeadStrong)}</strong></p>
+            <div class="live-casino-bottom-trio__featured-row">
+                <div class="live-casino-bottom-trio__logo-box">${logoHtml}</div>
+                <div class="live-casino-bottom-trio__rating-box">
+                    <span class="live-casino-bottom-trio__rating-label">Casino Rating</span>
+                    <div class="live-casino-bottom-trio__stars">${starsHtml}</div>
+                    <span class="live-casino-bottom-trio__rating-score">${escapeHtml(ratingText)}</span>
+                </div>
+            </div>
+            <a href="${visitHref}" class="live-casino-bottom-trio__cta"${visitRel}>${ctaText}</a>
+        </article>
+        <article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--explore">
+            ${exploreHeadHtml}
+            <ul class="live-casino-bottom-trio__bullets" role="list">${bulletsHtml}</ul>
+            <a href="${escapeHtml(exploreLink)}" class="live-casino-bottom-trio__outline-btn">${escapeHtml(exploreCta)}</a>
+        </article>
+        <article class="live-casino-bottom-trio__card live-casino-bottom-trio__card--guides">
+            <p class="live-casino-bottom-trio__head"><strong>${escapeHtml(guidesHeading)}</strong></p>
+            <div class="live-casino-bottom-trio__guides">${guidesHtml}</div>
+        </article>
+    </div>`;
+}
+
+function applyBonusHubConclusion(page, slugMap) {
+    const container = document.getElementById('bonus-bottom-trio');
+    if (!container || !page?.conclusionCta?.casino) return;
+    container.innerHTML = renderBonusBottomTrio(page, slugMap);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+}
+
+function buildBonusHubJsonLd(page, operators, slugMap) {
+    const itemListEl = document.getElementById('bonus-hub-ld-itemlist');
+    if (itemListEl && Array.isArray(operators) && operators.length > 0) {
+        const items = operators.slice(0, 10).map((item, i) => {
+            const attr = bonusTopBonusToAttr(item, slugMap);
+            return {
+                '@type': 'ListItem',
+                position: item.rank || i + 1,
+                name: attr.Name || attr.name || 'Casino',
+            };
+        });
+        itemListEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: page?.topBonusesHeading || 'Best Casino Bonuses in Malaysia 2026',
+            itemListElement: items,
+        });
+    }
+    const faqEl = document.getElementById('bonus-hub-ld-faq');
+    const accordion = document.getElementById('bonus-faq-accordion');
+    if (faqEl && accordion) {
+        const questions = accordion.querySelectorAll('.accordion-item');
+        const mainEntity = [...questions].map((item) => {
+            const q = item.querySelector('.accordion-title')?.textContent?.trim() || '';
+            const a = item.querySelector('.accordion-inner p')?.textContent?.trim() || '';
+            return {
+                '@type': 'Question',
+                name: q,
+                acceptedAnswer: { '@type': 'Answer', text: a },
+            };
+        }).filter((f) => f.name);
+        if (mainEntity.length) {
+            faqEl.textContent = JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                mainEntity,
+            });
+        }
+    }
+    const webEl = document.getElementById('bonus-hub-ld-webpage');
+    if (webEl && page) {
+        webEl.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.metaTitle || 'Best Casino Bonuses in Malaysia 2026',
+            url: 'https://888reviews.com/bonus',
+            description:
+                page.metaDescription ||
+                'Compare the best casino bonuses in Malaysia for 2026: welcome offers, free spins, and fair terms from licensed operators.',
+            inLanguage: 'en-US',
+            isPartOf: { '@type': 'WebSite', name: '888reviews', url: 'https://888reviews.com/' },
+        });
+    }
+}
+
+async function fetchBonusHubCasinos() {
     const attempts = [
-        'populate=*&sort=MalaysiaRank:asc&pagination[limit]=11&filters[Markets][$containsi]=malaysia',
-        'populate=*&sort=Rank:asc&pagination[limit]=11&filters[Markets][$containsi]=malaysia',
+        'populate=*&sort=rank:asc&pagination[limit]=100',
+        'populate=*&sort=Rank:asc&pagination[limit]=100',
+        'populate=*&pagination[limit]=100',
     ];
     for (const qs of attempts) {
         try {
@@ -5904,28 +11025,170 @@ async function fetchMalaysiaHubCasinos() {
                 return json.data;
             }
         } catch (e) {
-            console.warn('Malaysia hub fetch attempt failed:', e);
+            console.warn('Bonus hub casino fetch attempt failed:', e);
         }
     }
     return null;
 }
 
+async function initBonusHubPage() {
+    const listEl = document.getElementById('bonus-page-operator-list');
+    if (!listEl) return;
+
+    const [page, casinoRows] = await Promise.all([fetchBonusPage(), fetchBonusHubCasinos()]);
+    if (!page) return;
+
+    const slugMap = buildCasinoSlugMap(casinoRows);
+
+    applyBonusHubMeta(page);
+    applyBonusHubSectionText(page);
+    applyBonusHubListingMeta(page);
+    applyBonusHubOperators(page, slugMap);
+    applyBonusHubPlayStyle(page, slugMap);
+    applyBonusHubFeaturedBlocks(page, casinoRows);
+    applyBonusHubConclusion(page, slugMap);
+    buildBonusHubJsonLd(page, page.topBonuses, slugMap);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function fetchMalaysiaHubCasinos() {
+    const qs =
+        typeof window !== 'undefined' && window.__MALAYSIA_CASINOS_QS__
+            ? window.__MALAYSIA_CASINOS_QS__
+            : 'populate=*&sort=rank:asc&pagination[limit]=11';
+    try {
+        const res = await fetchCasinosWithBonusPopulate(qs);
+        const json = await res.json();
+        if (res.ok && Array.isArray(json.data) && json.data.length > 0) {
+            return json.data;
+        }
+        if (qs.includes('rank:asc')) {
+            const fallback = 'populate=*&sort=Rank:asc&pagination[limit]=11';
+            const res2 = await fetchCasinosWithBonusPopulate(fallback);
+            const json2 = await res2.json();
+            if (res2.ok && Array.isArray(json2.data) && json2.data.length > 0) {
+                return json2.data;
+            }
+        }
+    } catch (e) {
+        console.warn('Malaysia hub casino fetch failed:', e);
+    }
+    return null;
+}
+
+function patchMalaysiaOperatorListRows(listEl, rows) {
+    if (!listEl || !rows?.length) return false;
+    const existing = listEl.querySelectorAll('.malaysia-operator-row');
+    if (existing.length !== rows.length) return false;
+    let patched = 0;
+    existing.forEach((rowEl, i) => {
+        const attr = attrFromCasinoEntry(rows[i]);
+        if (!attr) return;
+        const name = attr.Name || attr.name || '';
+        const nameEl = rowEl.querySelector('.malaysia-operator-row__name');
+        if (nameEl && nameEl.textContent.trim() === String(name).trim()) {
+            const logoUrl = getLogoUrl(attr);
+            const fallback = rowEl.querySelector('.malaysia-operator-row__logo-fallback');
+            if (logoUrl && fallback && !rowEl.querySelector('.malaysia-operator-row__logo')) {
+                const img = document.createElement('img');
+                img.src = logoImgSrcForDisplay(logoUrl);
+                img.alt = '';
+                img.className = 'malaysia-operator-row__logo';
+                img.width = 48;
+                img.height = 48;
+                img.loading = 'lazy';
+                fallback.replaceWith(img);
+            }
+            const visit = rowEl.querySelector('.malaysia-operator-row__cta a, .btn-play-here');
+            if (visit) {
+                visit.href = casinoVisitSiteHref(attr);
+                if (casinoVisitSiteIsExternal(attr)) {
+                    visit.rel = 'nofollow noopener';
+                    visit.target = '_blank';
+                }
+            }
+            patched++;
+        }
+    });
+    return patched === rows.length;
+}
+
 async function initMalaysiaHubPage() {
     const listEl = document.getElementById('malaysia-operator-list');
     const tbody = document.getElementById('malaysia-casino-table-body');
-    if (!listEl && !tbody) return;
+    const hasBonusSection = document.getElementById('malaysia-bonus-featured');
+    const hasLiveSection = document.getElementById('malaysia-live-featured');
+    const hasFeaturedSlots = document.getElementById('malaysia-featured-slots');
+    if (!listEl && !tbody && !hasBonusSection && !hasLiveSection && !hasFeaturedSlots) return;
 
-    const rows = await fetchMalaysiaHubCasinos();
+    const [, , homepage, casinoRows] = await Promise.all([
+        ensureStrapiPublicUrl(),
+        ensureCasinoBonusSlugMap().catch((e) => {
+            console.warn('Malaysia hub bonus map:', e);
+            return null;
+        }),
+        fetchHomepage(),
+        fetchMalaysiaHubCasinos(),
+    ]);
+
+    const applyBelowFold = () => {
+        if (!homepage) return;
+        applyHomepageFeaturedSlots(homepage, casinoRows);
+        applyHomepageBonus(homepage, casinoRows);
+        applyHomepageLiveDealer(homepage, casinoRows);
+        if (homepage.conclusionCta) {
+            applyHomepageConclusionCta(
+                enrichHomepageFeaturedBlock(homepage.conclusionCta, casinoRows),
+            );
+        }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
+
+    if (homepage) {
+        applyHomepageFromCms(homepage);
+        applyHomepageOfficialList(homepage, casinoRows);
+    }
+    applyHomepageListingMetaBar(homepage);
+
+    const homepageRows = homepage ? buildHomepageOperatorRows(homepage, casinoRows) : null;
+    const rows = homepageRows || casinoRows;
     if (!rows || rows.length === 0) return;
 
-    if (listEl) {
+    const canPatch = listEl && patchMalaysiaOperatorListRows(listEl, rows);
+    if (listEl && !canPatch) {
         listEl.innerHTML = rows.map((c, i) => renderMalaysiaOperatorCard(c, i + 1)).join('');
-    } else {
+    } else if (tbody) {
         tbody.innerHTML = rows.map((c, i) => renderMalaysiaTableRow(c, i + 1)).join('');
     }
-    updateMalaysiaConclusionFromAttr(findMalaysiaEditorsPick(rows));
-    updateMalaysiaSummaryTable(rows);
-    updateMalaysiaFeaturedTables(rows);
+
+    const summaryRows = casinoRows || rows;
+    if (!homepage?.conclusionCta) {
+        updateMalaysiaConclusionFromAttr(findMalaysiaEditorsPick(summaryRows));
+    }
+    updateMalaysiaSummaryTable(summaryRows);
+    if (!homepage?.homepageBonus && !homepage?.liveDealerFeatured) {
+        updateMalaysiaFeaturedTables(summaryRows);
+    }
+
+    const belowFold = document.getElementById('malaysia-bonus-featured') ||
+        document.getElementById('malaysia-live-featured') ||
+        document.getElementById('malaysia-featured-slots');
+    if (belowFold && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((e) => e.isIntersecting)) {
+                    io.disconnect();
+                    applyBelowFold();
+                }
+            },
+            { rootMargin: '200px' },
+        );
+        io.observe(belowFold);
+    } else {
+        applyBelowFold();
+    }
+
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -6199,15 +11462,7 @@ function normalizeCasinoRepeatable(field) {
     return [];
 }
 
-function casinoProsConsLine(item) {
-    if (item == null) return '';
-    if (typeof item === 'string') return item.trim();
-    const o = item.attributes != null ? item.attributes : item;
-    return String(o.Text ?? o.text ?? '').trim();
-}
-
-/** Converts the /5 player rating average and total into the hero "Player Rating" chip.
-    Bound once per page; idempotent if renderCasinoReviewPage fires more than once. */
+/** Converts the /5 player rating average and total into the hero "Player Rating" chip. */
 function bindPlayerRatingHeroListener() {
     if (bindPlayerRatingHeroListener._bound) return;
     bindPlayerRatingHeroListener._bound = true;
@@ -6218,7 +11473,7 @@ function bindPlayerRatingHeroListener() {
         const scoreEl = document.getElementById('cr-player-score');
         const linkEl = document.getElementById('cr-player-reviews-link');
         if (scoreEl) {
-            scoreEl.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+            scoreEl.textContent = total > 0 && Number.isFinite(avg) ? formatRatingNumber(avg) : '-';
         }
         if (linkEl) {
             linkEl.textContent = `${total} review${total === 1 ? '' : 's'}`;
@@ -6226,7 +11481,7 @@ function bindPlayerRatingHeroListener() {
         const pvScoreEl = document.getElementById('pv-hero-player-score');
         const pvLinkEl = document.getElementById('pv-hero-player-reviews-link');
         if (pvScoreEl) {
-            pvScoreEl.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+            pvScoreEl.textContent = total > 0 && Number.isFinite(avg) ? formatRatingNumber(avg) : '-';
         }
         if (pvLinkEl) {
             pvLinkEl.textContent = `${total} review${total === 1 ? '' : 's'}`;
@@ -6234,7 +11489,7 @@ function bindPlayerRatingHeroListener() {
         const svScoreEl = document.getElementById('sv-hero-player-score');
         const svLinkEl = document.getElementById('sv-hero-player-reviews-link');
         if (svScoreEl) {
-            svScoreEl.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+            svScoreEl.textContent = total > 0 && Number.isFinite(avg) ? formatRatingNumber(avg) : '-';
         }
         if (svLinkEl) {
             svLinkEl.textContent = `${total} review${total === 1 ? '' : 's'}`;
@@ -6242,7 +11497,7 @@ function bindPlayerRatingHeroListener() {
         const pvSumPlayerNum = document.getElementById('pv-summary-player-num');
         const pvSumPlayerLink = document.getElementById('pv-summary-player-link');
         if (pvSumPlayerNum) {
-            pvSumPlayerNum.textContent = total > 0 && Number.isFinite(avg) ? avg.toFixed(1) : '-';
+            pvSumPlayerNum.textContent = total > 0 && Number.isFinite(avg) ? formatRatingNumber(avg) : '-';
         }
         if (pvSumPlayerLink) {
             pvSumPlayerLink.textContent = `${total} review${total === 1 ? '' : 's'}`;
@@ -6250,342 +11505,7 @@ function bindPlayerRatingHeroListener() {
     });
 }
 
-/** Render single casino review (`review.html` /cr-page). All visible copy from Strapi entry `attr`. */
-function renderCasinoReviewPage(attr) {
-    const name = attr.Name || 'Casino';
-    document.title = `${name} Review | 888reviews`;
-    setReviewMetaDescription(attr);
-
-    const crumbName = document.getElementById('cr-crumb-name');
-    if (crumbName) crumbName.textContent = name;
-
-    /* Hero: body */
-    const nameEl = document.getElementById('cr-name');
-    if (nameEl) nameEl.textContent = name;
-
-    const sloganEl = document.getElementById('cr-slogan');
-    if (sloganEl) {
-        const s = attr.HeroSlogan != null ? String(attr.HeroSlogan).trim() : '';
-        sloganEl.textContent = s;
-    }
-
-    const excerptEl = document.getElementById('cr-excerpt');
-    if (excerptEl) {
-        excerptEl.textContent =
-            richTextToPlainText(attr.ReviewExcerpt ?? attr.reviewExcerpt) || '';
-    }
-
-    const badgeTextEl = document.getElementById('cr-badge-text');
-    if (badgeTextEl) {
-        badgeTextEl.textContent = attr.IsTierOne ? "Editor's Choice" : 'Review';
-    }
-
-    /* Hero v2: full-width banner + overlapping circular logo (20bet-style). */
-    const CASINO_BANNER_FALLBACK = CASINO_REVIEW_PLACEHOLDER_IMAGES[0];
-
-    const heroBannerImg = document.getElementById('cr-hero-banner-img');
-    if (heroBannerImg) {
-        const bannerUrls = [
-            ...normalizeStrapiMediaToUrls(attr.HeroImage),
-            ...normalizeStrapiMediaToUrls(attr.CoverImage),
-            ...normalizeStrapiMediaToUrls(attr.Banner),
-            ...collectCasinoGalleryUrls(attr),
-        ];
-        const bannerRaw = bannerUrls[0];
-        const bannerResolved = bannerRaw ? resolveMediaUrl(bannerRaw) : '';
-        heroBannerImg.alt = `${name} website screenshot`;
-        heroBannerImg.dataset.fallback = CASINO_BANNER_FALLBACK;
-        heroBannerImg.src = bannerResolved || CASINO_BANNER_FALLBACK;
-        heroBannerImg.onerror = function () {
-            if (this.src !== this.dataset.fallback) {
-                this.onerror = null;
-                this.src = this.dataset.fallback;
-            }
-        };
-    }
-
-    const heroLogoImg = document.getElementById('cr-hero-logo-v2');
-    const heroLogoWrap = document.getElementById('cr-hero-logo-wrap-v2');
-    if (heroLogoImg) {
-        const logoUrls = normalizeStrapiMediaToUrls(attr.Logo);
-        const logoRaw = logoUrls[0] || '';
-        const logoResolved = logoRaw ? logoImgSrcForDisplay(resolveMediaUrl(logoRaw)) : '';
-        heroLogoImg.alt = name ? `${name} logo` : 'Casino logo';
-        if (logoResolved) {
-            heroLogoImg.src = logoResolved;
-            if (heroLogoWrap) heroLogoWrap.classList.add('cr-hero-logo-v2--contain');
-            heroLogoImg.onerror = function () {
-                this.onerror = null;
-                this.removeAttribute('src');
-                if (heroLogoWrap) heroLogoWrap.classList.remove('cr-hero-logo-v2--contain');
-            };
-        } else {
-            heroLogoImg.removeAttribute('src');
-            if (heroLogoWrap) heroLogoWrap.classList.remove('cr-hero-logo-v2--contain');
-        }
-    }
-
-    /* Curator score: just the number; visual ring has been replaced by a red-star rating chip. */
-    const score5 = getCuratorScoreOutOfFive(attr);
-    const scoreEl = document.getElementById('cr-score');
-    if (scoreEl) {
-        scoreEl.textContent = score5 != null ? score5.toFixed(1) : '-';
-    }
-
-    /* Player Rating chip: filled by the `player-reviews:summary` event that
-       PlayerReviews.render() dispatches on `document` right after it aggregates. */
-    bindPlayerRatingHeroListener();
-
-    /* Bonus copy for verdict sidebar (hero bonus card removed) */
-    const bonusAmt = casinoBonusAmountDisplay(attr);
-    const bonusTag =
-        firstNonEmptyAttr(attr, ['BonusHeading', 'WelcomePackageLabel', 'bonusHeading']) ||
-        casinoBonusLabelDisplay(attr);
-    const bonusDesc =
-        (attr.BonusLabel != null ? String(attr.BonusLabel).trim() : '') ||
-        firstNonEmptyAttr(collectBonusLikeObjects(attr)[0] || {}, ['Description', 'Subtitle', 'ShortDescription']) ||
-        '';
-
-    applyVerdictBonusSidebar(attr, bonusTag, bonusAmt, bonusDesc);
-
-    /* Info panel (quick facts) */
-    populateInfoItem('cr-info-license', 'cr-val-license', firstNonEmptyAttr(attr, [
-        'License', 'LicenseInfo', 'GamblingLicense', 'license',
-    ]));
-    populateInfoItem('cr-info-founded', 'cr-val-founded', firstNonEmptyAttr(attr, [
-        'Founded', 'YearFounded', 'EstablishedYear', 'founded',
-    ]));
-    populateInfoItem('cr-info-owner', 'cr-val-owner', firstNonEmptyAttr(attr, [
-        'Owner', 'Operator', 'OperatorName', 'CompanyName', 'owner',
-    ]));
-    populateInfoItem('cr-info-games', 'cr-val-games', casinoGameCountDisplay(attr));
-    populateInfoItem('cr-info-payout', 'cr-val-payout', casinoPayoutSpeedDisplay(attr));
-    populateInfoItem('cr-info-mindeposit', 'cr-val-mindeposit', firstNonEmptyAttr(attr, [
-        'MinDeposit', 'MinimumDeposit', 'minDeposit',
-    ]));
-    populateInfoItem('cr-info-languages', 'cr-val-languages', casinoLanguagesDisplay(attr));
-
-    const payValEl = document.getElementById('cr-val-payments');
-    const payWrap = document.getElementById('cr-info-payments');
-    if (payValEl && payWrap) {
-        const chipsHtml = renderCasinoPaymentChipsHtml(attr);
-        if (chipsHtml) {
-            payValEl.innerHTML = chipsHtml;
-            payWrap.hidden = false;
-        }
-    }
-
-    /* Analysis */
-    const analysisSection = document.getElementById('cr-analysis-section');
-    const rawCards = normalizeCasinoRepeatable(attr.AnalysisCards);
-    if (analysisSection && rawCards.length > 0) {
-        analysisSection.hidden = false;
-        showNavTab('cr-nav-analysis');
-        const tEl = document.getElementById('cr-analysis-title');
-        const dEl = document.getElementById('cr-analysis-dek');
-        if (tEl) tEl.textContent = firstNonEmptyAttr(attr, ['AnalysisSectionTitle', 'analysisSectionTitle']) || 'Analysis';
-        if (dEl) dEl.textContent = firstNonEmptyAttr(attr, ['AnalysisSectionDek', 'AnalysisSectionSubtitle', 'analysisSectionDek']) || '';
-        const grid = document.getElementById('cr-analysis-grid');
-        if (grid) {
-            grid.innerHTML = rawCards.map((raw) => {
-                const c = raw.attributes != null ? raw.attributes : raw;
-                const icon = safeLucideIcon(c.Icon ?? c.icon);
-                const score = escapeHtml(c.Score != null ? String(c.Score) : '');
-                const title = escapeHtml(c.Title != null ? String(c.Title) : '');
-                const desc = escapeHtml(c.Desc != null ? String(c.Desc) : c.Description != null ? String(c.Description) : '');
-                return `<div class="cr-ac-card">
-                    <div class="cr-ac-top">
-                        <div class="cr-ac-icon"><i data-lucide="${icon}"></i></div>
-                        <div class="cr-ac-score">${score}</div>
-                    </div>
-                    <h3 class="cr-ac-title">${title}</h3>
-                    <p class="cr-ac-desc">${desc}</p>
-                </div>`;
-            }).join('');
-        }
-    } else if (analysisSection) {
-        analysisSection.hidden = true;
-    }
-
-    /* Gallery */
-    const galSection = document.getElementById('cr-gallery-section');
-    const galleryUrls = collectCasinoGalleryUrls(attr).slice(0, REVIEW_GALLERY_MAX_IMAGES);
-    if (galSection && galleryUrls.length > 0) {
-        galSection.hidden = false;
-        showNavTab('cr-nav-gallery');
-        const gh = document.getElementById('cr-gallery-title');
-        const gd = document.getElementById('cr-gallery-dek');
-        if (gh) gh.textContent = firstNonEmptyAttr(attr, ['GallerySectionTitle', 'gallerySectionTitle']) || 'Gallery';
-        if (gd) gd.textContent = firstNonEmptyAttr(attr, ['GallerySectionDek', 'GallerySectionSubtitle', 'gallerySectionDek']) || '';
-        const galleryGrid = document.getElementById('cr-gallery-grid');
-        if (galleryGrid) {
-            const safeName = escapeHtml(name);
-            galleryGrid.innerHTML = galleryUrls.map((src, i) => {
-                const safeSrc = escapeHtml(src);
-                return `<figure class="cr-gallery-item"><img src="${safeSrc}" alt="${safeName} - ${i + 1}" class="cr-gallery-img" loading="lazy" decoding="async"></figure>`;
-            }).join('');
-            wireReviewGalleryImages(galleryGrid);
-        }
-    } else if (galSection) {
-        galSection.hidden = true;
-    }
-
-    /* Verdict / article body */
-    const verdictEl = document.getElementById('cr-verdict-title');
-    if (verdictEl) {
-        verdictEl.textContent =
-            firstNonEmptyAttr(attr, ['VerdictTitle', 'ReviewVerdictTitle', 'verdictTitle']) || 'Our Verdict';
-    }
-    const reviewMain = attr.ReviewBody ?? attr.reviewBody ?? firstNonEmptyAttr(attr, ['ReviewBodyCopy', 'reviewBodyCopy']);
-    setRichTextHtml(document.getElementById('cr-body-top'), reviewMain ?? '');
-    const bottomRaw = attr.ReviewBodyBottom ?? attr.VerdictBottom ?? attr.SecondaryReviewBody ?? attr.reviewBodyBottom ?? '';
-    const bottomHost = document.getElementById('cr-body-bottom');
-    const bottomPanel = document.getElementById('cr-panel-bottom');
-    setRichTextHtml(bottomHost, bottomRaw);
-    const secondaryWrap = document.getElementById('cr-verdict-secondary-wrap');
-    if (bottomPanel) {
-        const hasBottom = !!(bottomHost && bottomHost.innerHTML.trim());
-        bottomPanel.hidden = !hasBottom;
-        if (secondaryWrap) secondaryWrap.hidden = !hasBottom;
-    }
-
-    /* Pros / Cons */
-    const prosLines = normalizeCasinoRepeatable(attr.Pros).map(casinoProsConsLine).filter(Boolean);
-    const consLines = normalizeCasinoRepeatable(attr.Cons).map(casinoProsConsLine).filter(Boolean);
-    const pcWrap = document.getElementById('cr-pros-cons');
-    const colPros = document.getElementById('cr-col-pros');
-    const colCons = document.getElementById('cr-col-cons');
-    const prosList = document.getElementById('cr-pros-list');
-    const consList = document.getElementById('cr-cons-list');
-    if (pcWrap && prosList && consList && colPros && colCons) {
-        if (prosLines.length === 0 && consLines.length === 0) {
-            pcWrap.hidden = true;
-        } else {
-            pcWrap.hidden = false;
-            showNavTab('cr-nav-proscons');
-            colPros.hidden = prosLines.length === 0;
-            colCons.hidden = consLines.length === 0;
-            prosList.innerHTML = prosLines
-                .map((t) => `<li><i data-lucide="check-circle-2"></i> ${escapeHtml(t)}</li>`)
-                .join('');
-            consList.innerHTML = consLines
-                .map((t) => `<li><i data-lucide="x-circle"></i> ${escapeHtml(t)}</li>`)
-                .join('');
-        }
-    }
-
-    /* Trust badges */
-    const trustSection = document.getElementById('cr-trust-section');
-    const trustInner = document.getElementById('cr-trust-badges');
-    const badgeRows = normalizeCasinoRepeatable(attr.TrustBadges);
-    if (trustSection && trustInner) {
-        if (badgeRows.length > 0) {
-            trustSection.hidden = false;
-            trustInner.innerHTML = badgeRows
-                .map((raw) => {
-                    const b = raw.attributes != null ? raw.attributes : raw;
-                    const icon = safeLucideIcon(b.Icon ?? b.icon);
-                    const label = escapeHtml(b.Label != null ? String(b.Label) : '');
-                    return `<div class="cr-trust-item"><i data-lucide="${icon}"></i><span>${label}</span></div>`;
-                })
-                .join('');
-        } else {
-            trustSection.hidden = true;
-            trustInner.innerHTML = '';
-        }
-    }
-
-    setReviewCanonicalAndSocial(name);
-
-    /* Section nav scroll-spy is started from initReviewPage() after player reviews (so #pr-section is visible). */
-}
-
-function populateInfoItem(wrapId, valId, value) {
-    const wrap = document.getElementById(wrapId);
-    const valEl = document.getElementById(valId);
-    if (!wrap || !valEl) return;
-    if (value) {
-        valEl.textContent = value;
-        wrap.hidden = false;
-    }
-}
-
-function showNavTab(id) {
-    const li = document.getElementById(id);
-    if (li) li.hidden = false;
-}
-
-/** Document Y of element top (for scroll-spy). Hidden elements skipped: layout not reliable. */
-function sectionDocumentTop(el) {
-    if (!el || el.hidden) return null;
-    const r = el.getBoundingClientRect();
-    return r.top + window.scrollY;
-}
-
-function initSectionNavScrollSpy() {
-    const nav = document.getElementById('cr-section-nav');
-    if (!nav) return;
-    const links = Array.from(nav.querySelectorAll('.cr-nav-links a')).filter((a) => {
-        const li = a.closest('li');
-        return !li || !li.hidden;
-    });
-    if (links.length === 0) return;
-
-    const sectionIds = links.map((a) => a.getAttribute('href').replace('#', '')).filter(Boolean);
-    const headerOffset = () => {
-        const h = document.getElementById('main-header');
-        return (h ? h.offsetHeight : 64) + nav.offsetHeight + 8;
-    };
-
-    links.forEach((a) => {
-        a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const id = a.getAttribute('href').replace('#', '');
-            const target = document.getElementById(id);
-            links.forEach((x) => x.classList.toggle('active', x === a));
-            if (target) {
-                const top = sectionDocumentTop(target);
-                const y =
-                    top != null
-                        ? top - headerOffset() + 4
-                        : target.getBoundingClientRect().top + window.scrollY - headerOffset() + 4;
-                window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-            }
-        });
-    });
-
-    let ticking = false;
-    const onScroll = () => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(() => {
-            const scrollY = window.scrollY + headerOffset();
-            /** Sections in visual order (top → bottom). Nav order can differ from DOM (#pr-section is below #cr-verdict-section). */
-            const tops = sectionIds
-                .map((id) => {
-                    const el = document.getElementById(id);
-                    const top = sectionDocumentTop(el);
-                    return top == null ? null : { id, top };
-                })
-                .filter(Boolean)
-                .sort((x, y) => x.top - y.top);
-
-            let current = tops.length ? tops[0].id : sectionIds[0];
-            for (const { id, top } of tops) {
-                if (top <= scrollY) current = id;
-            }
-
-            links.forEach((link) => {
-                link.classList.toggle('active', link.getAttribute('href') === '#' + current);
-            });
-            ticking = false;
-        });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-}
-
-/** Try several filter shapes (slug vs Slug, $eq vs $eqi) so /casino/w88 matches stored slug casing, etc. */
+/** Try several filter shapes (slug vs Slug, $eq vs $eqi) for homepage featured casino lookup. */
 async function fetchCasinoBySlug(slug) {
     const pop = 'populate=*&pagination[limit]=10';
     const qsVariants = [
@@ -6623,61 +11543,6 @@ function casinoAttrFromFetchResult(result) {
         return null;
     }
     return attrFromCasinoEntry(result.json.data[0]);
-}
-
-/**
- * Match URL slug to a Strapi casino row when filters[Slug] fails (schema/version quirks).
- */
-function casinoRowMatchesSlug(entry, wantedRaw) {
-    const wanted = decodeURIComponent(String(wantedRaw))
-        .trim()
-        .toLowerCase();
-    if (!wanted) return false;
-    const attr = attrFromCasinoEntry(entry);
-    if (!attr) return false;
-    const slugVal = firstNonEmptyAttr(attr, ['Slug', 'slug', 'URLSlug', 'urlSlug'])
-        .trim()
-        .toLowerCase();
-    if (slugVal === wanted) return true;
-    if (slugVal.startsWith(`${wanted}-`) || slugVal.startsWith(`${wanted}_`)) return true;
-    const name = String(attr.Name || attr.name || '').trim();
-    if (name && slugifyLabel(name) === wanted) return true;
-    const esc = wanted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`\\b${esc}\\b`, 'i').test(name);
-}
-
-/**
- * Filter by slug, then scan ranked casino pages (same idea as fetchProviderBySlug).
- */
-async function fetchCasinoBySlugWithListFallback(slug) {
-    const first = await fetchCasinoBySlug(slug);
-    if (casinoAttrFromFetchResult(first)) {
-        return first;
-    }
-
-    try {
-        let page = 1;
-        const pageSize = 50;
-        let pageCount = 1;
-        do {
-            const qs = `populate=*&sort=Rank:asc&pagination[page]=${page}&pagination[pageSize]=${pageSize}`;
-            const res = await fetchCasinosWithBonusPopulate(qs);
-            const json = await res.json();
-            if (!res.ok || !json.data?.length) {
-                return first;
-            }
-            const found = json.data.find((e) => casinoRowMatchesSlug(e, slug));
-            if (found) {
-                return { res, json: { data: [found], meta: json.meta } };
-            }
-            const meta = json.meta?.pagination;
-            pageCount = meta?.pageCount ?? 1;
-            page += 1;
-        } while (page <= pageCount && page <= 100);
-    } catch (e) {
-        console.warn('fetchCasinoBySlug list fallback failed', e);
-    }
-    return first;
 }
 
 function casinoSlugNormalized(attr) {
@@ -6794,91 +11659,6 @@ async function fetchProviderBySlug(slug) {
         console.warn('fetchProviderBySlug list fallback failed', e);
     }
     return last;
-}
-
-/** Sets --cr-header-height on :root so .cr-hero-section min-height matches the sticky header. */
-function syncReviewHeroLayout() {
-    const header = document.getElementById('main-header');
-    const h = header && header.offsetHeight > 0 ? header.offsetHeight : 80;
-    document.documentElement.style.setProperty('--cr-header-height', `${h}px`);
-}
-
-async function initReviewPage() {
-    const reviewWrap = document.getElementById('cr-page');
-    if (!reviewWrap || !document.getElementById('cr-name')) {
-        return;
-    }
-
-    syncReviewHeroLayout();
-    if (!window.__reviewHeroLayoutBound) {
-        window.__reviewHeroLayoutBound = true;
-        window.addEventListener('resize', syncReviewHeroLayout, { passive: true });
-        window.addEventListener('load', syncReviewHeroLayout, { passive: true });
-    }
-
-    const slugFromPath = window.location.pathname.match(/^\/casino\/([^/]+)\/?$/);
-    const slug = slugFromPath
-        ? decodeURIComponent(slugFromPath[1])
-        : new URLSearchParams(window.location.search).get('slug');
-
-    if (!slug) {
-        showReviewError();
-        return;
-    }
-
-    if (reviewWrap) {
-        reviewWrap.dataset.casinoSlug = slug;
-    }
-
-    setDetailPageLoading(reviewWrap);
-    try {
-        const [, fetchResult] = await Promise.all([
-            ensureCasinoBonusSlugMap().catch((e) => {
-                console.warn('Bonus / casino map:', e);
-            }),
-            fetchCasinoBySlugWithListFallback(slug),
-        ]);
-        const { res, json } = fetchResult;
-        if (!res || !res.ok) {
-            console.error(res ? apiErrorMessage(res.status, json) : 'No response');
-            showReviewError();
-            return;
-        }
-        const { data } = json;
-
-        if (!data || data.length === 0) {
-            showReviewError();
-            return;
-        }
-
-        const entry = data[0];
-        const attr = attrFromCasinoEntry(entry);
-        renderCasinoReviewPage(attr);
-
-        if (typeof window.PlayerReviews !== 'undefined' && window.PlayerReviews.render) {
-            try {
-                await window.PlayerReviews.render({
-                    parentKey: 'casino',
-                    slug,
-                    documentId: entry.documentId || attr.documentId,
-                    parentNumericId: entry.id != null ? entry.id : attr.id,
-                    parentAttr: attr,
-                });
-            } catch (e) {
-                console.warn('Player reviews failed to render:', e);
-            }
-        }
-
-        initSectionNavScrollSpy();
-
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        syncReviewHeroLayout();
-    } catch (e) {
-        console.error('Failed to load review:', e);
-        showReviewError();
-    } finally {
-        clearDetailPageLoading(reviewWrap);
-    }
 }
 
 async function initProviderDetailPage() {
@@ -7032,8 +11812,8 @@ function populateProviderDetailPage(attr) {
 
     // Numeric / string values used by hero, facts strip, and summary aside
     const scoreFive = getCuratorScoreOutOfFive(attr);
-    const scoreDisplay = scoreFive != null ? scoreFive.toFixed(1) : DASH;
-    const scoreLine = scoreFive != null ? `${scoreFive.toFixed(1)} / 5` : DASH;
+    const scoreDisplay = scoreFive != null ? formatRatingNumber(scoreFive) : DASH;
+    const scoreLine = scoreFive != null ? `${formatRatingNumber(scoreFive)} / 5` : DASH;
 
     const rankRaw = attr.Rank;
     const rankDisplay =
@@ -7215,21 +11995,11 @@ function populateProviderDetailPage(attr) {
     if (pvOgDesc && descOgPv) pvOgDesc.setAttribute('content', descOgPv.slice(0, 320));
     let shareImgPv = logoUrl && String(logoUrl).trim() ? String(logoUrl).trim() : '';
     if (shareImgPv && shareImgPv.startsWith('/')) shareImgPv = `${pubOriginPv}${shareImgPv}`;
-    if (!shareImgPv) shareImgPv = `${pubOriginPv}/assets/img/888review-siteicon.png`;
+    if (!shareImgPv) shareImgPv = `${pubOriginPv}/assets/img/888review-siteicon.webp`;
     if (pvOgImg) pvOgImg.setAttribute('content', shareImgPv);
     if (pvTwImg) pvTwImg.setAttribute('content', shareImgPv);
     if (pvTwTitle) pvTwTitle.setAttribute('content', pageTitlePv);
     if (pvTwDesc && descOgPv) pvTwDesc.setAttribute('content', descOgPv.slice(0, 320));
-}
-
-function showReviewError() {
-    const main = document.getElementById('cr-page');
-    const err = document.getElementById('cr-error');
-    if (main) main.style.display = 'none';
-    if (err) {
-        err.style.display = 'block';
-        if (typeof lucide !== 'undefined') lucide.createIcons({ nameAttr: 'data-lucide' });
-    }
 }
 
 function showProviderError() {
@@ -7303,7 +12073,7 @@ function populateSlotDetailPage(attr) {
 
     const score5 = getCuratorScoreOutOfFive(attr);
     const edScoreEl = document.getElementById('sv-hero-editorial-score');
-    if (edScoreEl) edScoreEl.textContent = score5 != null ? score5.toFixed(1) : '-';
+    if (edScoreEl) edScoreEl.textContent = score5 != null ? formatRatingNumber(score5) : '-';
 
     const excerptEl = document.getElementById('sv-excerpt');
     const excerpt = firstNonEmptyAttr(attr, ['Excerpt', 'excerpt']);
@@ -7435,7 +12205,7 @@ function populateSlotDetailPage(attr) {
     const shareLogo = document.getElementById('sv-hero-logo-v2');
     if (!shareImgSv && shareLogo && shareLogo.getAttribute('src')) shareImgSv = shareLogo.getAttribute('src');
     if (shareImgSv && shareImgSv.startsWith('/')) shareImgSv = `${pubOriginSv}${shareImgSv}`;
-    if (!shareImgSv) shareImgSv = `${pubOriginSv}/assets/img/888review-siteicon.png`;
+    if (!shareImgSv) shareImgSv = `${pubOriginSv}/assets/img/888review-siteicon.webp`;
     if (svOgImg) svOgImg.setAttribute('content', shareImgSv);
     if (svTwImg) svTwImg.setAttribute('content', shareImgSv);
     if (svTwTitle) svTwTitle.setAttribute('content', pageTitleSv);

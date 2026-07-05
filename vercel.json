@@ -1,15 +1,636 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "buildCommand": "npm run build:all",
   "functions": {
     "api/index.js": {
-      "includeFiles": "{*.html,server-seo.js}",
+      "includeFiles": "{public/**,server-seo.js,server-http-config.js,server-vercel-url.js}",
       "maxDuration": 60
     }
   },
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/casino-gaming-provider",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/casino-gaming-provider/",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/casino-slots-game",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/casino-slots-game/",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/casino/:slug",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/review.html",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games/blackjack",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/games/blackjack/",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/games/roulette",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/games/roulette/",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/games/baccarat",
+      "destination": "/baccarat",
+      "permanent": true
+    },
+    {
+      "source": "/games/baccarat/",
+      "destination": "/baccarat",
+      "permanent": true
+    },
+    {
+      "source": "/how-we-rate",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/how-we-rate/",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/providers",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/providers/",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/live-casino",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/live-casino/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/mobile/ios",
+      "destination": "/mobile",
+      "permanent": true
+    },
+    {
+      "source": "/mobile/ios/",
+      "destination": "/mobile",
+      "permanent": true
+    },
+    {
+      "source": "/mobile/android",
+      "destination": "/mobile",
+      "permanent": true
+    },
+    {
+      "source": "/mobile/android/",
+      "destination": "/mobile",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/welcome",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/welcome/",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/free-spins",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/free-spins/",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/no-deposit",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses/no-deposit/",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/bonuses.html",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/live",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/live/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-casino",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-casino/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/games/",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-baccarat",
+      "destination": "/baccarat",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-baccarat/",
+      "destination": "/baccarat",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-blackjack",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-blackjack/",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-roulette",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/games/live-roulette/",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/games/poker",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games/poker/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games/bingo",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/games/bingo/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/real-money",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/slots",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/slots/",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/blackjack",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/blackjack/",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/roulette",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/roulette/",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/poker",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/poker/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/bingo",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/real-money/bingo/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/payments",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/skrill",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/skrill/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/neteller",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/neteller/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/touch-n-go",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/touch-n-go/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/bank-transfer",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/bank-transfer/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/visa",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/visa/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/crypto",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/payments/crypto/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/touch-n-go",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/touch-n-go/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/malaysia",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/malaysia/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/malaysia/ewallet",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/malaysia/ewallet/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/malaysia/touch-n-go",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/malaysia/touch-n-go/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/malaysia",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/malaysia/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/malaysia/ewallet",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/malaysia/ewallet/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/malaysia/touch-n-go",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/malaysia/touch-n-go/",
+      "destination": "/ewallet",
+      "permanent": true
+    },
+    {
+      "source": "/casinos",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/casinos/",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/mobile/",
+      "destination": "/mobile",
+      "permanent": true
+    },
+    {
+      "source": "/blackjack/",
+      "destination": "/blackjack",
+      "permanent": true
+    },
+    {
+      "source": "/roulette/",
+      "destination": "/roulette",
+      "permanent": true
+    },
+    {
+      "source": "/baccarat/",
+      "destination": "/baccarat",
+      "permanent": true
+    },
+    {
+      "source": "/bonus/",
+      "destination": "/bonus",
+      "permanent": true
+    },
+    {
+      "source": "/reviews.html",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/slots.html",
+      "destination": "/slots",
+      "permanent": true
+    },
+    {
+      "source": "/guides.html",
+      "destination": "/guides",
+      "permanent": true
+    },
+    {
+      "source": "/news.html",
+      "destination": "/news",
+      "permanent": true
+    },
+    {
+      "source": "/about.html",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/privacy.html",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/terms.html",
+      "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/contact.html",
+      "destination": "/contact",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
-      "source": "/((?!assets/|components/).*)",
+      "source": "/api/:path*",
       "destination": "/api"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "/api"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api"
+    },
+    {
+      "source": "/bonus/:slug",
+      "destination": "/api"
+    },
+    {
+      "source": "/slot/:slug",
+      "destination": "/api"
+    },
+    {
+      "source": "/provider/:slug",
+      "destination": "/api"
+    },
+    {
+      "source": "/guide/:slug",
+      "destination": "/api"
+    },
+    {
+      "source": "/news/:slug",
+      "destination": "/api"
+    },
+    {
+      "source": "/bonus.html",
+      "destination": "/api"
+    },
+    {
+      "source": "/provider.html",
+      "destination": "/api"
+    },
+    {
+      "source": "/slot.html",
+      "destination": "/api"
+    },
+    {
+      "source": "/post.html",
+      "destination": "/api"
+    },
+    {
+      "source": "/bonus",
+      "destination": "/bonus-hub.html"
+    },
+    {
+      "source": "/ewallet",
+      "destination": "/malaysia-ewallet.html"
+    },
+    {
+      "source": "/blackjack",
+      "destination": "/games-blackjack.html"
+    },
+    {
+      "source": "/roulette",
+      "destination": "/games-roulette.html"
+    },
+    {
+      "source": "/baccarat",
+      "destination": "/games-baccarat.html"
+    },
+    {
+      "source": "/mobile",
+      "destination": "/mobile.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/components/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/((?!api/|uploads/).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"
+        }
+      ]
     }
   ]
 }

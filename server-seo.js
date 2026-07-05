@@ -32,14 +32,6 @@ function humanizeSlug(raw) {
 }
 
 const PAGE_CONFIG = {
-    casino: {
-        file: 'review.html',
-        pathSeg: 'casino',
-        idPrefix: 'cr',
-        titleTpl: (h) => `${h} | Casino review | 888reviews`,
-        descTpl: (h) =>
-            `Independent casino review on 888reviews: ratings, games, bonuses, payments, and trust signals for ${h}. 18+ only. Play responsibly.`,
-    },
     provider: {
         file: 'provider.html',
         pathSeg: 'provider',
@@ -233,19 +225,20 @@ async function fetchAllSlugsForEndpoint(endpoint) {
 
 const HUB_PATHS = [
     '/',
-    '/casinos',
-    '/bonuses',
+    '/reviews',
+    '/bonus',
     '/slots',
-    '/providers',
+    '/blackjack',
+    '/roulette',
+    '/baccarat',
+    '/mobile',
+    '/ewallet',
     '/guides',
     '/news',
     '/about',
-    '/how-we-rate',
     '/privacy',
     '/terms',
     '/contact',
-    '/ewallet',
-    '/touch-n-go',
 ];
 
 /**
@@ -271,7 +264,6 @@ async function collectSitemapUrlLines(req, escapeXml, sitePublicOrigin) {
     }
 
     const detailDefs = [
-        ['casinos', '/casino/'],
         ['providers', '/provider/'],
         ['slots', '/slot/'],
         ['bonuses', '/bonus/'],

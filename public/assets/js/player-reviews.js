@@ -165,10 +165,19 @@
         return Math.max(0, Math.min(5, n));
     }
 
+    /** Whole numbers without decimals (5 not 5.0); uses script.js helper when available. */
+    function formatRatingDisplay(value) {
+        if (typeof formatRatingNumber === 'function') return formatRatingNumber(value);
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '';
+        const rounded = Math.round(n * 10) / 10;
+        return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    }
+
     /** Same star meter markup as script.js renderStars (0–5). */
     function renderStarsMeter(score5) {
         const s = Number.isFinite(score5) ? Math.max(0, Math.min(5, score5)) : 0;
-        const aria = `${s.toFixed(1)} out of 5 stars`;
+        const aria = `${formatRatingDisplay(s)} out of 5 stars`;
         let units = '';
         for (let i = 1; i <= 5; i++) {
             const fillPct = Math.min(100, Math.max(0, (s - (i - 1)) * 100));
@@ -447,7 +456,7 @@
             name,
             aggregateRating: {
                 '@type': 'AggregateRating',
-                ratingValue: summary.avg.toFixed(1),
+                ratingValue: formatRatingDisplay(summary.avg),
                 bestRating: '5',
                 ratingCount: String(summary.total),
             },
@@ -467,7 +476,7 @@
             if (score != null) {
                 rev.reviewRating = {
                     '@type': 'Rating',
-                    ratingValue: score.toFixed(1),
+                    ratingValue: formatRatingDisplay(score),
                     bestRating: '5',
                 };
             }
@@ -501,7 +510,7 @@
         summaryWrap.hidden = false;
         summaryWrap.removeAttribute('hidden');
         summaryWrap.classList.add('pr-summary--has-data');
-        avgEl.textContent = summary.avg.toFixed(1);
+        avgEl.textContent = formatRatingDisplay(summary.avg);
         starsEl.innerHTML = renderStarsMeter(summary.avg);
         totalEl.textContent = `Based on ${summary.total} player rating${summary.total === 1 ? '' : 's'}`;
 
@@ -540,7 +549,7 @@
 
         const scoreHtml =
             score != null
-                ? `<span class="pr-score"><i data-lucide="star"></i>${score.toFixed(1)}/5</span>`
+                ? `<span class="pr-score"><i data-lucide="star"></i>${formatRatingDisplay(score)}/5</span>`
                 : '';
 
         const verifiedHtml = verified

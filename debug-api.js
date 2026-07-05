@@ -1,6 +1,7 @@
 
 const axios = require('axios');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
 
 async function testProxy() {
     try {

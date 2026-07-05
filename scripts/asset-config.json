@@ -1,0 +1,53 @@
+{
+  "bundles": {
+    "base": [[1, 6157], [16369, 18151]],
+    "detail": [[6158, 15931]],
+    "legal": [[15940, 16367]],
+    "hub": [[18153, 28161]]
+  },
+  "pages": {
+    "base": ["*"],
+    "detail": [
+      "bonus.html",
+      "slot.html",
+      "provider.html",
+      "post.html",
+      "review.html",
+      "bonus-hub.html"
+    ],
+    "legal": [
+      "about.html",
+      "privacy.html",
+      "terms.html",
+      "contact.html",
+      "how-we-rate.html"
+    ],
+    "hub": [
+      "index.html",
+      "reviews.html",
+      "slots.html",
+      "games-blackjack.html",
+      "games-roulette.html",
+      "games-baccarat.html",
+      "mobile.html",
+      "malaysia-ewallet.html",
+      "bonus-hub.html",
+      "casinos.html",
+      "providers.html",
+      "guides.html",
+      "news.html",
+      "live-casino.html",
+      "malaysia.html"
+    ]
+  },
+  "jsPages": {
+    "static": [
+      "about.html",
+      "privacy.html",
+      "terms.html",
+      "contact.html",
+      "how-we-rate.html"
+    ],
+    "full": ["*"]
+  }
+}

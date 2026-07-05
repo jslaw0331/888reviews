@@ -3,15 +3,18 @@
 
 <head>
     <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-TS95HFR5');</script>
+    <script>
+(function(){
+  function loadGtm(){(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-TS95HFR5');}
+  if('requestIdleCallback' in window){requestIdleCallback(loadGtm,{timeout:3000});}
+  else{window.addEventListener('load',loadGtm,{once:true});}
+})();
+</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="public-base-url" content="https://888reviews.com">
+    <meta name="strapi-public-url" content="https://api.888reviews.com">
     <title>About 888reviews | Independent Online Casino Reviews &amp; Editorial Mission</title>
     <meta name="description"
         content="Who is 888reviews? Independent casino reviews, bonus analysis, guides, and news—our mission and editorial standards for comparing licensed operators. 18+ only.">
@@ -24,12 +27,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <meta property="og:description"
         content="Discover our editorial mission: independent online casino intelligence, clear benchmarks for bonuses and operators, and safer-gambling guidance.">
     <meta property="og:url" content="https://888reviews.com/about">
-    <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta property="og:image" content="https://888reviews.com/assets/img/888review-siteicon.webp">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="About 888reviews | Who We Are">
     <meta name="twitter:description"
         content="Independent reviews, bonus analysis, guides, and news: how 888reviews works and what we stand for.">
-    <meta name="twitter:image" content="https://888reviews.com/assets/img/888review-siteicon.png">
+    <meta name="twitter:image" content="https://888reviews.com/assets/img/888review-siteicon.webp">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -49,7 +52,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             "url": "https://888reviews.com/",
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://888reviews.com/assets/img/888review-siteicon.png"
+                "url": "https://888reviews.com/assets/img/888review-siteicon.webp"
             }
         },
         "mainEntity": {
@@ -58,7 +61,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             "url": "https://888reviews.com/",
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://888reviews.com/assets/img/888review-siteicon.png"
+                "url": "https://888reviews.com/assets/img/888review-siteicon.webp"
             },
             "description": "888reviews is an editorial publication focused on online casino intelligence: operator reviews, bonus comparisons, game and provider coverage, guides, and industry news.",
             "knowsAbout": [
@@ -166,19 +169,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
     </script>
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- Styles -->
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-    <link rel="preload" href="/components/header.html" as="fetch" crossorigin>
-    <link rel="preload" href="/components/footer.html" as="fetch" crossorigin>
-    <link rel="preload" href="/components/sidebar.html" as="fetch" crossorigin>
-    <link rel="stylesheet" href="/assets/css/styles.css">
-    <link rel="icon" href="/assets/img/888review-siteicon.png" type="image/png">
-    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.png">
+        <!-- build:css -->
+    <link rel="stylesheet" href="/assets/css/dist/base.24f3b900.css">
+    <link rel="stylesheet" href="/assets/css/dist/legal.cc2638b0.css">
+    <link rel="stylesheet" href="/assets/css/fonts.css">
+    <!-- endbuild:css -->
+<link rel="icon" href="/assets/img/888review-siteicon.webp" type="image/webp">
+    <link rel="apple-touch-icon" href="/assets/img/888review-siteicon.webp">
 </head>
 
 <body class="page-about">
@@ -187,7 +189,56 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <site-header></site-header>
+    <div class="site-header-inlined" data-inlined="true">
+<header class="header" id="main-header">
+    <div class="container header-inner">
+        <div class="logo">
+            <a href="/">
+                <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="site-logo site-logo--header"
+                    width="270" height="270" decoding="async" fetchpriority="high">
+            </a>
+        </div>
+        <nav class="main-nav" id="main-nav" aria-label="Primary">
+            <div class="mobile-nav-panel__top">
+                <a href="/" class="mobile-nav-panel__brand">
+                    <img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS" class="mobile-nav-panel__logo"
+                        width="270" height="270" decoding="async">
+                </a>
+                <button type="button" class="mobile-nav-close icon-btn" id="mobile-menu-close" aria-label="Close menu">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <ul class="main-nav__list">
+                <li><a href="/">Casinos</a></li>
+                <li><a href="/bonus">Bonus</a></li>
+                <li class="main-nav__item main-nav__item--dropdown">
+                    <button type="button" class="main-nav__dropdown-trigger" aria-expanded="false"
+                        aria-haspopup="true" aria-controls="main-nav-games-menu">Games</button>
+                    <ul class="main-nav__dropdown" id="main-nav-games-menu" role="menu">
+                        <li role="none"><a href="/slots" role="menuitem">Slots</a></li>
+                        <li role="none"><a href="/blackjack" role="menuitem">Blackjack</a></li>
+                        <li role="none"><a href="/roulette" role="menuitem">Roulette</a></li>
+                        <li role="none"><a href="/baccarat" role="menuitem">Baccarat</a></li>
+                    </ul>
+                </li>
+                <li><a href="/mobile">Mobile</a></li>
+                <li><a href="/ewallet">e-Wallet</a></li>
+                <li><a href="/reviews">Reviews</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+            <div class="mobile-nav-panel__foot">
+                <a href="/bonus" class="btn btn-primary btn-block mobile-nav-cta">Browse bonuses</a>
+            </div>
+        </nav>
+        <div class="header-actions">
+            <button type="button" class="mobile-menu-btn icon-btn" id="mobile-menu-btn" aria-expanded="false"
+                aria-controls="main-nav" aria-label="Open menu">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </div>
+</header>
+</div>
 
     <main class="about-page" id="main-content">
         <nav class="bonuses-breadcrumb container" aria-label="Breadcrumb">
@@ -219,47 +270,51 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <h2 id="about-mission-heading">Our mission</h2>
                 <p>Online gambling moves fast: new brands, shifting rules, and bonus headlines that rarely tell the full
                     story. 888reviews exists to slow that down just enough, so you get structured benchmarks, plain-language
-                    explainers, and sources you can double-check. We focus on <a href="/casinos">casino reviews</a>,
-                    <a href="/bonuses">bonus comparisons</a>, <a href="/slots">slots</a> and <a
-                        href="/providers">providers</a>, <a href="/guides">how-to guides</a>, and <a
+                    explainers, and sources you can double-check. We focus on <a href="/reviews">casino reviews</a>,
+                    <a href="/bonus">bonus comparisons</a>, <a href="/slots">slots</a>, <a href="/guides">how-to guides</a>, and <a
                         href="/news">industry news</a> that helps you understand the market, not chase it.</p>
             </header>
 
-            <section class="about-section" aria-labelledby="about-editorial-heading">
-                <h2 id="about-editorial-heading">Editorial standards</h2>
-                <p>Every review and guide is written for readers first. We cite licensing and public compliance signals
-                    where we can, explain wagering and game eligibility in bonus offers, and call out trade-offs: speed
-                    versus limits, breadth versus depth, headline value versus realisable value. When we are uncertain or
-                    data is incomplete, we say so. For the full scoring framework, see <a href="/how-we-rate">How we
-                        rate</a>. <strong>Offers, terms, and eligibility change</strong>; always confirm on the
-                    operator’s site and with regulators in your region.</p>
-            </section>
+            <div class="about-article__grid">
+                <section class="about-section about-section--card" aria-labelledby="about-editorial-heading">
+                    <h2 id="about-editorial-heading"><i data-lucide="clipboard-check" aria-hidden="true"></i> Editorial
+                        standards</h2>
+                    <p>Every review and guide is written for readers first. We cite licensing and public compliance
+                        signals where we can, explain wagering and game eligibility in bonus offers, and call out
+                        trade-offs: speed versus limits, breadth versus depth, headline value versus realisable value.
+                        When we are uncertain or data is incomplete, we say so. For the full scoring framework, see <a
+                            href="/reviews">How we rate</a>. <strong>Offers, terms, and eligibility change</strong>;
+                        always confirm on the operator’s site and with regulators in your region.</p>
+                </section>
 
-            <section class="about-section" aria-labelledby="about-independence-heading">
-                <h2 id="about-independence-heading">Independence &amp; transparency</h2>
-                <p>888reviews is an editorial publication. We may earn commissions when you use links to third-party
-                    operators; where required, we disclose commercial relationships. Compensation does not buy a positive
-                    review or a fixed score. Our pages are built to explain <em>why</em> we recommend or caution against a
-                    product. If you believe we have missed something important, we want the facts to be right: use
-                    official regulator registers and each operator’s terms as the final word.</p>
-            </section>
+                <section class="about-section about-section--card" aria-labelledby="about-independence-heading">
+                    <h2 id="about-independence-heading"><i data-lucide="scale" aria-hidden="true"></i> Independence
+                        &amp; transparency</h2>
+                    <p>888reviews is an editorial publication. We may earn commissions when you use links to third-party
+                        operators; where required, we disclose commercial relationships. Compensation does not buy a
+                        positive review or a fixed score. Our pages are built to explain <em>why</em> we recommend or
+                        caution against a product. If you believe we have missed something important, we want the facts
+                        to be right: use official regulator registers and each operator’s terms as the final word.</p>
+                </section>
 
-            <section class="about-section" aria-labelledby="about-audience-heading">
-                <h2 id="about-audience-heading">Who we serve</h2>
-                <p>Our readers are adults <strong>18+</strong> who can legally gamble online where they live. Territory
-                    rules differ; we do not guarantee that any operator accepts players from your location. Nothing
-                    here is legal, tax, or investment advice. If you are unsure about legality, stop and seek qualified
-                    advice or use official government and regulator resources.</p>
-            </section>
+                <section class="about-section about-section--card" aria-labelledby="about-audience-heading">
+                    <h2 id="about-audience-heading"><i data-lucide="users" aria-hidden="true"></i> Who we serve</h2>
+                    <p>Our readers are adults <strong>18+</strong> who can legally gamble online where they live.
+                        Territory rules differ; we do not guarantee that any operator accepts players from your location.
+                        Nothing here is legal, tax, or investment advice. If you are unsure about legality, stop and seek
+                        qualified advice or use official government and regulator resources.</p>
+                </section>
 
-            <section class="about-section" aria-labelledby="about-responsible-heading">
-                <h2 id="about-responsible-heading">Responsible gambling</h2>
-                <p>Gambling is entertainment with a risk of loss. We encourage limits, breaks, and self-exclusion tools
-                    where operators offer them. If gambling stops being fun, seek help: national helplines and
-                    organisations such as <a href="https://www.begambleaware.org" rel="noopener noreferrer"
-                        target="_blank">BeGambleAware</a> (UK) or local equivalents can support you. <strong>Play
-                        responsibly.</strong></p>
-            </section>
+                <section class="about-section about-section--card" aria-labelledby="about-responsible-heading">
+                    <h2 id="about-responsible-heading"><i data-lucide="heart-handshake" aria-hidden="true"></i>
+                        Responsible gambling</h2>
+                    <p>Gambling is entertainment with a risk of loss. We encourage limits, breaks, and self-exclusion
+                        tools where operators offer them. If gambling stops being fun, seek help: national helplines and
+                        organisations such as <a href="https://www.begambleaware.org" rel="noopener noreferrer"
+                            target="_blank">BeGambleAware</a> (UK) or local equivalents can support you. <strong>Play
+                            responsibly.</strong></p>
+                </section>
+            </div>
         </article>
         </div>
 
@@ -267,9 +322,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="gi-card">
                 <div class="gi-content">
                     <h3>Explore the site</h3>
-                    <p>Jump to <a href="/casinos"><strong>casino reviews</strong></a>, browse <a
-                            href="/bonuses">current bonuses</a>, or read our <a href="/guides">guides and
-                            strategies</a>. For editorial methodology, see <a href="/how-we-rate">How we rate</a>. For
+                    <p>Jump to <a href="/reviews"><strong>casino reviews</strong></a>, browse <a
+                            href="/bonus">current bonuses</a>, or read our <a href="/guides">guides and
+                            strategies</a>. For editorial methodology, see <a href="/reviews">How we rate</a>. For
                         headlines and regulation, see <a href="/news">news</a>.</p>
                 </div>
                 <div class="gi-action">
@@ -389,11 +444,67 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </section>
     </main>
 
-    <site-footer></site-footer>
+    <div class="site-footer-inlined" data-inlined="true">
+<!-- Footer -->
+<footer class="footer footer-light">
+    <div class="container">
+        <div class="footer-grid-4">
+            <div class="footer-brand-light">
+                <div class="fbl-title"><img src="/assets/img/888review-siteicon.webp" alt="888 REVIEWS"
+                        class="site-logo site-logo--footer" width="270" height="270" decoding="async"
+                        style="height:48px; width:auto; margin-bottom: 12px;"></div>
+                <p>A premier editorial destination for the discerning player. We curate the best in luxury digital
+                    gaming.</p>
+                <div class="fbl-icons">
+                    <i data-lucide="globe"></i>
+                    <i data-lucide="shield-check"></i>
+                    <i data-lucide="file-text"></i>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>RESOURCES</h4>
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>COMMUNITY</h4>
+                <ul>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/guides">Guides</a></li>
+                    <li><a href="/news">News</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>SUPPORT</h4>
+                <ul>
+                    <li><a href="https://www.begambleaware.org" class="text-blue" rel="noopener noreferrer"
+                            target="_blank">Responsible Gaming</a></li>
+                </ul>
+                <div class="fbl-copyright">
+                    &copy; ${year} 888reviews<br>Responsible Gaming<br>Play with your head, not over it.
+                </div>
+            </div>
+        </div>
+        <div class="footer-disclosure">
+            <p>18+ only. Gambling can be addictive. Play responsibly. Content is for informational purposes. We
+                may earn commissions via outbound links — this does not influence editorial scores. Always verify
+                eligibility, terms, and local legality before depositing.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Scroll to Top Button -->
+<button id="scrollToTopBtn" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
+    <i data-lucide="chevron-up"></i>
+</button>
+</div>
     <!-- SEO/perf: deferred scripts — Lucide UMD → layout components → page bundle(s). -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/assets/js/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/script.js" defer></script>
+    <script src="/assets/js/dist/static.fc23c566.js" defer></script>
 </body>
 
 </html>

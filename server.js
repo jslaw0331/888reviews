@@ -1,5 +1,6 @@
-require('dotenv').config();
 const path = require('path');
+/** override: true — stale shell/IDE STRAPI_* vars must not block .env (fixes local 401 proxy). */
+require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -80,19 +81,20 @@ app.get('/sitemap.xml', async (req, res) => {
         const base = sitePublicOrigin(req);
         const hubPaths = [
             '/',
-            '/casinos',
-            '/bonuses',
+            '/reviews',
+            '/bonus',
             '/slots',
-            '/providers',
+            '/blackjack',
+            '/roulette',
+            '/baccarat',
+            '/mobile',
+            '/ewallet',
             '/guides',
             '/news',
             '/about',
-            '/how-we-rate',
             '/privacy',
             '/terms',
             '/contact',
-            '/ewallet',
-            '/touch-n-go',
         ];
         const lines = hubPaths.map((p) => {
             const loc = `${base}${p === '/' ? '/' : p}`;
@@ -109,18 +111,15 @@ app.get('/sitemap.xml', async (req, res) => {
 
 /**
  * Root HTML pages (only these are served; avoids exposing .env, package.json, etc.).
- * Public URLs omit `.html` (e.g. `/bonuses`); `/bonuses.html` 301s to `/bonuses`.
+ * Public URLs omit `.html` (e.g. `/bonus`); `/bonus.html` with slug → `/bonus/:slug`.
  */
 const ROOT_HTML = [
     'index.html',
-    'bonuses.html',
+    'reviews.html',
     'slots.html',
-    'casinos.html',
-    'providers.html',
     'guides.html',
     'news.html',
     'about.html',
-    'how-we-rate.html',
     'privacy.html',
     'terms.html',
     'contact.html',
@@ -174,7 +173,7 @@ app.use(express.json());
 
 /**
  * Legacy `/bonus.html?slug=` → 301 to `/bonus/:slug`.
- * Bare `/bonus.html` → redirect to bonuses directory (pretty URLs use `/bonus/:slug` only).
+ * Bare `/bonus.html` → redirect to bonus hub (pretty URLs use `/bonus/:slug` for detail pages).
  */
 app.use((req, res, next) => {
     if (req.method !== 'GET' || req.path !== '/bonus.html') {
@@ -186,15 +185,15 @@ app.use((req, res, next) => {
         res.redirect(301, `/bonus/${encodeURIComponent(String(slug).trim())}`);
         return;
     }
-    res.redirect(302, '/bonuses');
+    res.redirect(302, '/bonus');
 });
 
-/** Legacy WordPress-style provider hub → pretty URL (preserves inbound links and SEO). */
+/** Legacy WordPress-style provider hub → slots directory. */
 app.get('/casino-gaming-provider', (req, res) => {
-    res.redirect(301, '/providers');
+    res.redirect(301, '/slots');
 });
 app.get('/casino-gaming-provider/', (req, res) => {
-    res.redirect(301, '/providers');
+    res.redirect(301, '/slots');
 });
 
 /** Legacy WordPress slot hub (`/casino-slots-game/`) → pretty URL. */
@@ -400,22 +399,18 @@ app.use(
     }),
 );
 
+/** Legacy casino review URLs → reviews directory. */
 app.get('/casino/:slug', (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'casino', raw, sitePublicOrigin(req));
+    res.redirect(301, '/reviews');
 });
 
 app.get('/review.html', (req, res) => {
-    const slug = req.query.slug;
-    if (slug) {
-        res.redirect(301, `/casino/${encodeURIComponent(String(slug))}`);
-        return;
-    }
-    res.sendFile(path.join(PUBLIC_DIR, 'review.html'));
+    res.redirect(301, '/reviews');
 });
 
 app.get('/provider/:slug', (req, res) => {
@@ -501,25 +496,11 @@ app.get('/index.html', (req, res) => {
 
 /** Malaysia hub sub-pages and legacy canonical paths used in site navigation. */
 const MALAYSIA_NAV_ROUTES = {
-    '/live': 'games-live-casino.html',
     '/mobile': 'mobile.html',
     '/blackjack': 'games-blackjack.html',
     '/roulette': 'games-roulette.html',
-    '/bonus': 'bonuses.html',
-    '/games/live-casino': 'games-live-casino.html',
-    '/games/blackjack': 'games-blackjack.html',
-    '/games/roulette': 'games-roulette.html',
-    '/games/baccarat': 'games-baccarat.html',
-    '/games/live-baccarat': 'games-live-baccarat.html',
-    '/games/live-blackjack': 'games-live-blackjack.html',
-    '/games/live-roulette': 'games-live-roulette.html',
-    '/games/poker': 'games-poker.html',
-    '/games/bingo': 'games-bingo.html',
-    '/real-money': 'real-money.html',
-    '/real-money/slots': 'real-money-slots.html',
-    '/real-money/blackjack': 'real-money-blackjack.html',
-    '/real-money/roulette': 'real-money-roulette.html',
-    '/payments': 'payments.html',
+    '/baccarat': 'games-baccarat.html',
+    '/bonus': 'bonus-hub.html',
 };
 
 Object.entries(MALAYSIA_NAV_ROUTES).forEach(([route, file]) => {
@@ -531,12 +512,236 @@ Object.entries(MALAYSIA_NAV_ROUTES).forEach(([route, file]) => {
     });
 });
 
+/** Canonical blackjack hub — legacy /games/blackjack → /blackjack */
+app.get('/games/blackjack', (req, res) => {
+    res.redirect(301, '/blackjack');
+});
+app.get('/games/blackjack/', (req, res) => {
+    res.redirect(301, '/blackjack');
+});
+
+/** Canonical roulette hub — legacy /games/roulette → /roulette */
+app.get('/games/roulette', (req, res) => {
+    res.redirect(301, '/roulette');
+});
+app.get('/games/roulette/', (req, res) => {
+    res.redirect(301, '/roulette');
+});
+
+/** Canonical baccarat hub — legacy /games/baccarat → /baccarat */
+app.get('/games/baccarat', (req, res) => {
+    res.redirect(301, '/baccarat');
+});
+app.get('/games/baccarat/', (req, res) => {
+    res.redirect(301, '/baccarat');
+});
+
+app.get('/how-we-rate', (req, res) => {
+    res.redirect(301, '/about');
+});
+app.get('/how-we-rate/', (req, res) => {
+    res.redirect(301, '/about');
+});
+
+app.get('/providers', (req, res) => {
+    res.redirect(301, '/slots');
+});
+app.get('/providers/', (req, res) => {
+    res.redirect(301, '/slots');
+});
+
+app.get('/live-casino', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/live-casino/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+
+/** Legacy mobile sub-hubs → single Malaysia mobile guide. */
+app.get('/mobile/ios', (req, res) => {
+    res.redirect(301, '/mobile');
+});
+app.get('/mobile/ios/', (req, res) => {
+    res.redirect(301, '/mobile');
+});
+app.get('/mobile/android', (req, res) => {
+    res.redirect(301, '/mobile');
+});
+app.get('/mobile/android/', (req, res) => {
+    res.redirect(301, '/mobile');
+});
+
+/** Legacy bonuses directory → Malaysia bonus hub. */
+app.get('/bonuses', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/welcome', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/welcome/', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/free-spins', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/free-spins/', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/no-deposit', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses/no-deposit/', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+app.get('/bonuses.html', (req, res) => {
+    res.redirect(301, '/bonus');
+});
+
+app.get('/live', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/live/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/games/live-casino', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/games/live-casino/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+
+/** Legacy games hub and sub-pages → current nav routes. */
+app.get('/games', (req, res) => {
+    res.redirect(301, '/slots');
+});
+app.get('/games/', (req, res) => {
+    res.redirect(301, '/slots');
+});
+app.get('/games/live-baccarat', (req, res) => {
+    res.redirect(301, '/baccarat');
+});
+app.get('/games/live-baccarat/', (req, res) => {
+    res.redirect(301, '/baccarat');
+});
+app.get('/games/live-blackjack', (req, res) => {
+    res.redirect(301, '/blackjack');
+});
+app.get('/games/live-blackjack/', (req, res) => {
+    res.redirect(301, '/blackjack');
+});
+app.get('/games/live-roulette', (req, res) => {
+    res.redirect(301, '/roulette');
+});
+app.get('/games/live-roulette/', (req, res) => {
+    res.redirect(301, '/roulette');
+});
+app.get('/games/poker', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/games/poker/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/games/bingo', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/games/bingo/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+
+/** Legacy real-money hubs → game guides or reviews directory. */
+app.get('/real-money', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/real-money/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/real-money/slots', (req, res) => {
+    res.redirect(301, '/slots');
+});
+app.get('/real-money/slots/', (req, res) => {
+    res.redirect(301, '/slots');
+});
+app.get('/real-money/blackjack', (req, res) => {
+    res.redirect(301, '/blackjack');
+});
+app.get('/real-money/blackjack/', (req, res) => {
+    res.redirect(301, '/blackjack');
+});
+app.get('/real-money/roulette', (req, res) => {
+    res.redirect(301, '/roulette');
+});
+app.get('/real-money/roulette/', (req, res) => {
+    res.redirect(301, '/roulette');
+});
+app.get('/real-money/poker', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/real-money/poker/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/real-money/bingo', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+app.get('/real-money/bingo/', (req, res) => {
+    res.redirect(301, '/reviews');
+});
+
+/** Legacy payments hubs → e-wallet guide (header nav). */
+app.get('/payments', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/skrill', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/skrill/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/neteller', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/neteller/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/touch-n-go', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/touch-n-go/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/bank-transfer', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/bank-transfer/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/visa', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/visa/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/crypto', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+app.get('/payments/crypto/', (req, res) => {
+    res.redirect(301, '/ewallet');
+});
+
 /** Malaysia market hub lives at `/`; legacy `/malaysia` URLs redirect. */
 app.get('/ewallet', (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'malaysia-ewallet.html'));
 });
 app.get('/touch-n-go', (req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, 'malaysia-touch-n-go.html'));
+    res.redirect(301, '/ewallet');
+});
+app.get('/touch-n-go/', (req, res) => {
+    res.redirect(301, '/ewallet');
 });
 app.get('/malaysia', (req, res) => {
     res.redirect(301, '/');
@@ -551,10 +756,10 @@ app.get('/malaysia/ewallet/', (req, res) => {
     res.redirect(301, '/ewallet');
 });
 app.get('/malaysia/touch-n-go', (req, res) => {
-    res.redirect(301, '/touch-n-go');
+    res.redirect(301, '/ewallet');
 });
 app.get('/malaysia/touch-n-go/', (req, res) => {
-    res.redirect(301, '/touch-n-go');
+    res.redirect(301, '/ewallet');
 });
 
 /** Legacy Malaysia hub URLs → current routes. */
@@ -571,11 +776,16 @@ app.get('/casinos/malaysia/ewallet/', (req, res) => {
     res.redirect(301, '/ewallet');
 });
 app.get('/casinos/malaysia/touch-n-go', (req, res) => {
-    res.redirect(301, '/touch-n-go');
+    res.redirect(301, '/ewallet');
 });
 app.get('/casinos/malaysia/touch-n-go/', (req, res) => {
-    res.redirect(301, '/touch-n-go');
+    res.redirect(301, '/ewallet');
 });
+
+app.get(['/casinos', '/casinos/'], (req, res) => {
+    res.redirect(301, '/reviews');
+});
+
 ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
     const pretty = `/${name.replace(/\.html$/, '')}`;
     app.get(pretty, (req, res) => {
@@ -591,6 +801,12 @@ if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`🛡️ Site + API proxy: http://localhost:${PORT}`);
         console.log(`🔗 Strapi backend: ${process.env.STRAPI_API_URL || '(set STRAPI_API_URL in .env)'}`);
+        const tokenLen = (process.env.STRAPI_API_TOKEN || '').length;
+        if (!tokenLen) {
+            console.warn('⚠️ STRAPI_API_TOKEN missing — /api/* proxy will return 503/401');
+        } else {
+            console.log(`🔑 Strapi API token loaded (${tokenLen} chars)`);
+        }
         console.log(
             `🗺️ SEO: /robots.txt + /sitemap.xml (set SITE_PUBLIC_URL in production for canonical domain in sitemap)`,
         );

@@ -1,0 +1,35 @@
+{
+  "css": {
+    "base": {
+      "name": "base",
+      "file": "dist/base.24f3b900.css",
+      "hash": "24f3b900",
+      "bytes": 117748
+    },
+    "detail": {
+      "name": "detail",
+      "file": "dist/detail.09d1d323.css",
+      "hash": "09d1d323",
+      "bytes": 144675
+    },
+    "legal": {
+      "name": "legal",
+      "file": "dist/legal.cc2638b0.css",
+      "hash": "cc2638b0",
+      "bytes": 7683
+    },
+    "hub": {
+      "name": "hub",
+      "file": "dist/hub.138662a9.css",
+      "hash": "138662a9",
+      "bytes": 199140
+    },
+    "full": {
+      "name": "full",
+      "file": "dist/styles.e6477476.css",
+      "hash": "e6477476",
+      "bytes": 469310
+    }
+  },
+  "builtAt": "2026-07-05T15:07:27.531Z"
+}
