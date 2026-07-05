@@ -2,34 +2,34 @@
   "css": {
     "base": {
       "name": "base",
-      "file": "dist/base.24f3b900.css",
-      "hash": "24f3b900",
-      "bytes": 117748
+      "file": "dist/base.fc76a2ee.css",
+      "hash": "fc76a2ee",
+      "bytes": 121270
     },
     "detail": {
       "name": "detail",
-      "file": "dist/detail.09d1d323.css",
-      "hash": "09d1d323",
-      "bytes": 144675
+      "file": "dist/detail.582ec206.css",
+      "hash": "582ec206",
+      "bytes": 145171
     },
     "legal": {
       "name": "legal",
-      "file": "dist/legal.cc2638b0.css",
-      "hash": "cc2638b0",
-      "bytes": 7683
+      "file": "dist/legal.66ab2d8c.css",
+      "hash": "66ab2d8c",
+      "bytes": 7747
     },
     "hub": {
       "name": "hub",
-      "file": "dist/hub.138662a9.css",
-      "hash": "138662a9",
-      "bytes": 199140
+      "file": "dist/hub.d1369724.css",
+      "hash": "d1369724",
+      "bytes": 202849
     },
     "full": {
       "name": "full",
-      "file": "dist/styles.e6477476.css",
-      "hash": "e6477476",
-      "bytes": 469310
+      "file": "dist/styles.a0ba7a6a.css",
+      "hash": "a0ba7a6a",
+      "bytes": 474053
     }
   },
-  "builtAt": "2026-07-05T15:07:27.531Z"
+  "builtAt": "2026-07-05T15:47:16.639Z"
 }

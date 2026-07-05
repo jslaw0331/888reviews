@@ -1144,12 +1144,6 @@ async function ensureStrapiPublicUrl() {
     if (typeof window === 'undefined') return;
     if (window.__STRAPI_PUBLIC_URL__ !== undefined) return;
     window.__STRAPI_PUBLIC_URL__ = '';
-    const meta = document.querySelector('meta[name="strapi-public-url"]');
-    const fromMeta = meta?.getAttribute('content')?.trim();
-    if (fromMeta) {
-        window.__STRAPI_PUBLIC_URL__ = fromMeta.replace(/\/$/, '');
-        return;
-    }
     try {
         const r = await fetch(`${API_URL}/api/config`);
         if (!r.ok) return;
@@ -4801,70 +4795,67 @@ async function initBonusDetailPage() {
 }
 
 async function bootApp() {
+    try {
+        await ensureStrapiPublicUrl();
+    } catch (e) {
+        console.warn('Content API public URL:', e);
+    }
+
     const pageType = detectBootPageType();
 
     switch (pageType) {
         case 'guide-post':
-            await ensureStrapiPublicUrl();
             await initGuidePostPage();
             return;
         case 'bonus-detail':
-            await ensureStrapiPublicUrl();
             await initBonusDetailPage();
             return;
         case 'provider-detail':
-            await ensureStrapiPublicUrl();
             await initProviderDetailPage();
             return;
         case 'slot-detail':
-            await ensureStrapiPublicUrl();
             await initSlotDetailPage();
             return;
         case 'home':
-            await ensureStrapiPublicUrl();
             await Promise.all([loadHomeFeaturedCasino(), loadCasinos(), loadProviders()]);
             return;
-        case 'malaysia-hub':
+        case 'malaysia-hub': {
+            try {
+                await ensureCasinoBonusSlugMap();
+            } catch (e) {
+                console.warn('Malaysia hub bonus map:', e);
+            }
             await initMalaysiaHubPage();
             return;
+        }
         case 'live-casino-hub':
-            await ensureStrapiPublicUrl();
             await initLiveCasinoPage();
             return;
         case 'reviews-hub':
-            await ensureStrapiPublicUrl();
             await initReviewsHubPage();
             return;
         case 'e-wallet-hub':
-            await ensureStrapiPublicUrl();
             await initEWalletPage();
             return;
         case 'slot-page-hub':
-            await ensureStrapiPublicUrl();
             await initSlotPage();
             return;
         case 'roulette-hub':
-            await ensureStrapiPublicUrl();
             await initRoulettePage();
             return;
         case 'blackjack-hub':
-            await ensureStrapiPublicUrl();
             await initBlackjackPage();
             return;
         case 'baccarat-hub':
-            await ensureStrapiPublicUrl();
             await initBaccaratPage();
             return;
         case 'mobile-hub':
-            await ensureStrapiPublicUrl();
             await initMobilePage();
             return;
         case 'bonus-hub':
-            await ensureStrapiPublicUrl();
             await initBonusHubPage();
             return;
         case 'casinos-listing': {
-            await ensureStrapiPublicUrl();
             const casinosEl = document.getElementById('casinos-listing-container');
             if (casinosEl) casinosEl.innerHTML = skeletonGridHtml('listing-card', 5);
             try {
@@ -4876,14 +4867,12 @@ async function bootApp() {
             return;
         }
         case 'slots-listing': {
-            await ensureStrapiPublicUrl();
             const slotsEl = document.getElementById('slots-listing-grid');
             if (slotsEl) slotsEl.innerHTML = skeletonGridHtml('slot-card', 6);
             initSlotsListingPage();
             return;
         }
         case 'providers-listing': {
-            await ensureStrapiPublicUrl();
             const providersEl = document.getElementById('providers-listing-grid');
             if (providersEl) providersEl.innerHTML = skeletonGridHtml('provider-card', 6);
             initProvidersListingPage();
@@ -4892,7 +4881,6 @@ async function bootApp() {
         case 'bonuses-listing':
             return;
         case 'guides-listing': {
-            await ensureStrapiPublicUrl();
             const guidesEl = document.getElementById('guides-grid');
             const guidesStatus = document.getElementById('guides-status');
             if (guidesEl) guidesEl.innerHTML = skeletonGridHtml('guide-card', 6);
@@ -4901,7 +4889,6 @@ async function bootApp() {
             return;
         }
         case 'news-listing': {
-            await ensureStrapiPublicUrl();
             const newsEl = document.getElementById('news-grid');
             const newsStatus = document.getElementById('news-status');
             if (newsEl) newsEl.innerHTML = skeletonGridHtml('guide-card', 6);
@@ -4914,14 +4901,15 @@ async function bootApp() {
     }
 }
 
-function runBootApp() {
-    bootApp().catch((e) => console.error(e));
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runBootApp);
-} else {
-    runBootApp();
+function scheduleBootApp() {
+    const run = () => bootApp().catch((e) => console.error(e));
+    // Defer when the document is already past "loading" so const populate strings
+    // defined later in this file are initialized before any CMS fetch runs.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run);
+    } else {
+        queueMicrotask(run);
+    }
 }
 
 /**
@@ -5945,15 +5933,6 @@ function findMalaysiaEditorsPick(rows) {
     return rows[0] ? attrFromCasinoEntry(rows[0]) : null;
 }
 
-/** Lighter homepage populate for first paint (operator list, logos, bonus lines). */
-const HOMEPAGE_POPULATE_LITE =
-    'populate[topCasinos][populate][casino][populate]=logo' +
-    '&populate[topCasinos][populate][bonusOverride]=*' +
-    '&populate[homepageBonus][populate][casino][populate]=logo' +
-    '&populate[homepageBonus][populate][bonusOverride]=*' +
-    '&populate[conclusionCta][populate][casino][populate]=logo' +
-    '&populate[conclusionCta][populate][bonusOverride]=*';
-
 /** Strapi v5 homepage single type — nested component + relation populate. */
 const HOMEPAGE_POPULATE =
     'populate[topCasinos][populate][casino][populate]=logo' +
@@ -5976,16 +5955,8 @@ const HOMEPAGE_POPULATE_FALLBACK = 'populate=*';
 
 async function fetchHomepage() {
     try {
-        let res = await fetch(`${API_URL}/api/homepage?${HOMEPAGE_POPULATE_LITE}`);
+        let res = await fetch(`${API_URL}/api/homepage?${HOMEPAGE_POPULATE}`);
         let json = await res.json();
-        if (!res.ok || !json?.data) {
-            const detail = json?.error?.message || res.status;
-            if (res.status === 400 || res.status === 500) {
-                console.warn('Homepage CMS lite populate failed, retrying full:', detail);
-                res = await fetch(`${API_URL}/api/homepage?${HOMEPAGE_POPULATE}`);
-                json = await res.json();
-            }
-        }
         if (!res.ok || !json?.data) {
             const detail = json?.error?.message || res.status;
             if (res.status === 400 || res.status === 500) {
@@ -11053,65 +11024,25 @@ async function initBonusHubPage() {
 }
 
 async function fetchMalaysiaHubCasinos() {
-    const qs =
-        typeof window !== 'undefined' && window.__MALAYSIA_CASINOS_QS__
-            ? window.__MALAYSIA_CASINOS_QS__
-            : 'populate=*&sort=rank:asc&pagination[limit]=11';
-    try {
-        const res = await fetchCasinosWithBonusPopulate(qs);
-        const json = await res.json();
-        if (res.ok && Array.isArray(json.data) && json.data.length > 0) {
-            return json.data;
-        }
-        if (qs.includes('rank:asc')) {
-            const fallback = 'populate=*&sort=Rank:asc&pagination[limit]=11';
-            const res2 = await fetchCasinosWithBonusPopulate(fallback);
-            const json2 = await res2.json();
-            if (res2.ok && Array.isArray(json2.data) && json2.data.length > 0) {
-                return json2.data;
+    /** v5 schema uses `rank`; legacy Malaysia fields (Markets, MalaysiaRank) may 400 if absent. */
+    const attempts = [
+        'populate=*&sort=rank:asc&pagination[limit]=11',
+        'populate=*&sort=Rank:asc&pagination[limit]=11',
+        'populate=*&sort=MalaysiaRank:asc&pagination[limit]=11&filters[Markets][$containsi]=malaysia',
+        'populate=*&sort=Rank:asc&pagination[limit]=11&filters[Markets][$containsi]=malaysia',
+    ];
+    for (const qs of attempts) {
+        try {
+            const res = await fetchCasinosWithBonusPopulate(qs);
+            const json = await res.json();
+            if (res.ok && Array.isArray(json.data) && json.data.length > 0) {
+                return json.data;
             }
+        } catch (e) {
+            console.warn('Malaysia hub fetch attempt failed:', e);
         }
-    } catch (e) {
-        console.warn('Malaysia hub casino fetch failed:', e);
     }
     return null;
-}
-
-function patchMalaysiaOperatorListRows(listEl, rows) {
-    if (!listEl || !rows?.length) return false;
-    const existing = listEl.querySelectorAll('.malaysia-operator-row');
-    if (existing.length !== rows.length) return false;
-    let patched = 0;
-    existing.forEach((rowEl, i) => {
-        const attr = attrFromCasinoEntry(rows[i]);
-        if (!attr) return;
-        const name = attr.Name || attr.name || '';
-        const nameEl = rowEl.querySelector('.malaysia-operator-row__name');
-        if (nameEl && nameEl.textContent.trim() === String(name).trim()) {
-            const logoUrl = getLogoUrl(attr);
-            const fallback = rowEl.querySelector('.malaysia-operator-row__logo-fallback');
-            if (logoUrl && fallback && !rowEl.querySelector('.malaysia-operator-row__logo')) {
-                const img = document.createElement('img');
-                img.src = logoImgSrcForDisplay(logoUrl);
-                img.alt = '';
-                img.className = 'malaysia-operator-row__logo';
-                img.width = 48;
-                img.height = 48;
-                img.loading = 'lazy';
-                fallback.replaceWith(img);
-            }
-            const visit = rowEl.querySelector('.malaysia-operator-row__cta a, .btn-play-here');
-            if (visit) {
-                visit.href = casinoVisitSiteHref(attr);
-                if (casinoVisitSiteIsExternal(attr)) {
-                    visit.rel = 'nofollow noopener';
-                    visit.target = '_blank';
-                }
-            }
-            patched++;
-        }
-    });
-    return patched === rows.length;
 }
 
 async function initMalaysiaHubPage() {
@@ -11122,32 +11053,19 @@ async function initMalaysiaHubPage() {
     const hasFeaturedSlots = document.getElementById('malaysia-featured-slots');
     if (!listEl && !tbody && !hasBonusSection && !hasLiveSection && !hasFeaturedSlots) return;
 
-    const [, , homepage, casinoRows] = await Promise.all([
-        ensureStrapiPublicUrl(),
-        ensureCasinoBonusSlugMap().catch((e) => {
-            console.warn('Malaysia hub bonus map:', e);
-            return null;
-        }),
-        fetchHomepage(),
-        fetchMalaysiaHubCasinos(),
-    ]);
+    const [homepage, casinoRows] = await Promise.all([fetchHomepage(), fetchMalaysiaHubCasinos()]);
 
-    const applyBelowFold = () => {
-        if (!homepage) return;
+    if (homepage) {
+        applyHomepageFromCms(homepage);
         applyHomepageFeaturedSlots(homepage, casinoRows);
         applyHomepageBonus(homepage, casinoRows);
         applyHomepageLiveDealer(homepage, casinoRows);
+        applyHomepageOfficialList(homepage, casinoRows);
         if (homepage.conclusionCta) {
             applyHomepageConclusionCta(
                 enrichHomepageFeaturedBlock(homepage.conclusionCta, casinoRows),
             );
         }
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    };
-
-    if (homepage) {
-        applyHomepageFromCms(homepage);
-        applyHomepageOfficialList(homepage, casinoRows);
     }
     applyHomepageListingMetaBar(homepage);
 
@@ -11155,10 +11073,9 @@ async function initMalaysiaHubPage() {
     const rows = homepageRows || casinoRows;
     if (!rows || rows.length === 0) return;
 
-    const canPatch = listEl && patchMalaysiaOperatorListRows(listEl, rows);
-    if (listEl && !canPatch) {
+    if (listEl) {
         listEl.innerHTML = rows.map((c, i) => renderMalaysiaOperatorCard(c, i + 1)).join('');
-    } else if (tbody) {
+    } else {
         tbody.innerHTML = rows.map((c, i) => renderMalaysiaTableRow(c, i + 1)).join('');
     }
 
@@ -11170,25 +11087,6 @@ async function initMalaysiaHubPage() {
     if (!homepage?.homepageBonus && !homepage?.liveDealerFeatured) {
         updateMalaysiaFeaturedTables(summaryRows);
     }
-
-    const belowFold = document.getElementById('malaysia-bonus-featured') ||
-        document.getElementById('malaysia-live-featured') ||
-        document.getElementById('malaysia-featured-slots');
-    if (belowFold && 'IntersectionObserver' in window) {
-        const io = new IntersectionObserver(
-            (entries) => {
-                if (entries.some((e) => e.isIntersecting)) {
-                    io.disconnect();
-                    applyBelowFold();
-                }
-            },
-            { rootMargin: '200px' },
-        );
-        io.observe(belowFold);
-    } else {
-        applyBelowFold();
-    }
-
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -12294,3 +12192,4 @@ async function initSlotDetailPage() {
     }
 }
 
+scheduleBootApp();

@@ -5332,6 +5332,186 @@ p.bonus-terms.bonus-terms--expanded {
   font-weight: 700;
 }
 
+/* Light footer (hub + legal pages) — kept in base bundle for all pages */
+.footer.footer-light {
+  background: #f8fafc;
+  color: #020617;
+  padding: clamp(40px, 5vw, 56px) 0 max(clamp(24px, 3vw, 32px), env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-light);
+}
+
+.footer-grid-4 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: 48px;
+}
+
+.footer-brand-light .fbl-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+}
+
+.footer-brand-light p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 250px;
+  margin-bottom: 24px;
+}
+
+.fbl-icons {
+  display: flex;
+  gap: 16px;
+  color: var(--text-light);
+}
+
+.fbl-icons i {
+  width: 18px;
+  height: 18px;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.fbl-icons i:hover {
+  color: var(--primary);
+}
+
+.footer-col h4 {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.footer-col ul {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.footer-col a {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.footer-col a:hover {
+  color: var(--text-main);
+}
+
+.footer-col a.text-blue {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.footer.footer-light .footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: clamp(32px, 4vw, 48px);
+  padding-top: clamp(20px, 2.5vw, 28px);
+  border-top: 1px solid var(--border-light);
+}
+
+.footer.footer-light .footer-bottom__tagline {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.footer.footer-light .footer-bottom__copy {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.footer-disclosure {
+  margin-top: clamp(28px, 3vw, 36px);
+  padding-top: clamp(16px, 2vw, 20px);
+  border-top: 1px solid var(--border);
+}
+
+.footer-disclosure p {
+  margin: 0 auto;
+  max-width: var(--container-max-width);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 1024px) and (min-width: 641px) {
+  .footer-grid-4 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 36px 28px;
+  }
+
+  .footer-brand-light {
+    grid-column: 1 / -1;
+  }
+
+  .footer-brand-light p {
+    max-width: 40rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer-grid-4 {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .footer-brand-light {
+    grid-column: auto;
+  }
+}
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.scroll-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-to-top:hover {
+  background: var(--primary-hover);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+}
+
 /* Section hooks: content visible immediately (no scroll-triggered hide/show). */
 .reveal,
 .reveal.active {
@@ -12862,6 +13042,9 @@ p.bonus-terms.bonus-terms--expanded {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .footer-col a {
@@ -12880,11 +13063,34 @@ p.bonus-terms.bonus-terms--expanded {
   font-weight: 600;
 }
 
-.fbl-copyright {
-  margin-top: 40px;
-  font-size: 0.65rem;
+.footer.footer-light .footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: clamp(32px, 4vw, 48px);
+  padding-top: clamp(20px, 2.5vw, 28px);
+  border-top: 1px solid var(--border-light);
+  border-top-color: var(--border-light);
+  padding-top: clamp(20px, 2.5vw, 28px);
+  font-size: inherit;
+  color: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+}
+
+.footer.footer-light .footer-bottom__tagline {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.footer.footer-light .footer-bottom__copy {
+  margin: 0;
+  font-size: 0.75rem;
   color: #94a3b8;
-  line-height: 1.6;
 }
 
 .footer-disclosure {
@@ -18222,7 +18428,7 @@ body.page-guide-post {
 .blackjack-mobile-tips,
 .slot-editors-choice__list,
 .slot-editors-choice__intro ul,
-.page-malaysia :is(.malaysia-section, .casinos-seo, .malaysia-conclusion-cta, .malaysia-faq, .baccarat-guide-block__body) ul:not(.malaysia-quicknavi__list):not(.malaysia-listing-meta__trust):not(.malaysia-checklist):not(.malaysia-game-list):not(.malaysia-game-list--inline):not(.malaysia-jackpot-list):not(.malaysia-payout-list):not(.malaysia-official-list):not(.malaysia-conclusion-card__features):not(.e-wallet-wallet-tags) {
+.page-malaysia :is(.malaysia-section, .casinos-seo, .malaysia-conclusion-cta, .malaysia-faq, .baccarat-guide-block__body) ul:not(.malaysia-quicknavi__list):not(.malaysia-listing-meta__trust):not(.malaysia-checklist):not(.malaysia-game-list):not(.malaysia-game-list--inline):not(.malaysia-jackpot-list):not(.malaysia-payout-list):not(.malaysia-official-list):not(.malaysia-conclusion-card__features):not(.e-wallet-wallet-tags):not(.malaysia-payments-benefits):not(.malaysia-payments-logos) {
   list-style: disc;
   list-style-position: outside;
 }
@@ -18238,7 +18444,7 @@ body.page-guide-post {
 .blackjack-mobile-tips li::marker,
 .slot-editors-choice__list li::marker,
 .slot-editors-choice__intro :is(ul, ol) li::marker,
-.page-malaysia :is(.malaysia-section, .casinos-seo, .baccarat-guide-block__body) :is(ul, ol):not(.malaysia-quicknavi__list):not(.malaysia-listing-meta__trust):not(.malaysia-checklist):not(.malaysia-game-list):not(.malaysia-game-list--inline):not(.malaysia-jackpot-list):not(.malaysia-payout-list):not(.malaysia-official-list):not(.malaysia-conclusion-card__features):not(.e-wallet-wallet-tags) li::marker {
+.page-malaysia :is(.malaysia-section, .casinos-seo, .baccarat-guide-block__body) :is(ul, ol):not(.malaysia-quicknavi__list):not(.malaysia-listing-meta__trust):not(.malaysia-checklist):not(.malaysia-game-list):not(.malaysia-game-list--inline):not(.malaysia-jackpot-list):not(.malaysia-payout-list):not(.malaysia-official-list):not(.malaysia-conclusion-card__features):not(.e-wallet-wallet-tags):not(.malaysia-payments-benefits):not(.malaysia-payments-logos) li::marker {
   color: #64748b;
 }
 
@@ -19907,20 +20113,123 @@ body.page-guide-post {
 
 .page-malaysia .malaysia-payments {
   margin: 1.25rem 0 0;
-  padding: clamp(1rem, 2.5vw, 1.35rem);
+  overflow: hidden;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   background: #ffffff;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.page-malaysia .malaysia-payments__section+.malaysia-payments__section {
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border-light);
+.page-malaysia .malaysia-payments__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.35rem) clamp(1rem, 2.5vw, 1.5rem);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border-light));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, #ffffff) 0%, #ffffff 58%),
+    linear-gradient(180deg, #f8fcfd 0%, #ffffff 100%);
+}
+
+.page-malaysia .malaysia-payments__hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.page-malaysia .malaysia-payments__hero-logo {
+  flex: 0 0 auto;
+  display: block;
+  width: auto;
+  height: 2.25rem;
+  max-width: 7.5rem;
+  object-fit: contain;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.65rem;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.page-malaysia .malaysia-payments__hero-copy {
+  min-width: 0;
+}
+
+.page-malaysia .malaysia-payments__hero-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.page-malaysia .malaysia-payments__hero-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+.page-malaysia .malaysia-payments__hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.page-malaysia .malaysia-payments__hero-link:hover {
+  background: color-mix(in srgb, var(--primary) 8%, #ffffff);
+  border-color: color-mix(in srgb, var(--primary) 42%, transparent);
+  transform: translateY(-1px);
+}
+
+.page-malaysia .malaysia-payments__hero-link :is(i, svg) {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.page-malaysia .malaysia-payments__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 0;
+}
+
+.page-malaysia .malaysia-payments__section {
+  padding: clamp(1rem, 2.5vw, 1.35rem) clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.page-malaysia .malaysia-payments__section--benefits {
+  border-right: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.page-malaysia .malaysia-payments__section--methods {
+  background: #ffffff;
 }
 
 .page-malaysia .malaysia-payments__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   margin: 0 0 0.85rem;
   font-size: 0.8125rem;
   font-weight: 700;
@@ -19929,10 +20238,20 @@ body.page-guide-post {
   color: var(--text-light);
 }
 
+.page-malaysia .malaysia-payments__heading::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
 .page-malaysia .malaysia-payments-benefits {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -19940,22 +20259,32 @@ body.page-guide-post {
 
 .page-malaysia .malaysia-payments-benefit {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 0.75rem;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem;
   border: 1px solid var(--border-light);
   border-radius: 12px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  text-align: center;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.page-malaysia .malaysia-payments-benefit:hover {
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border-light));
+  box-shadow: 0 4px 14px rgba(51, 190, 179, 0.08);
+  transform: translateY(-1px);
 }
 
 .page-malaysia .malaysia-payments-benefit__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  flex: 0 0 auto;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: 10px;
   background: color-mix(in srgb, var(--primary) 14%, #ffffff);
   border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
@@ -19969,37 +20298,94 @@ body.page-guide-post {
 }
 
 .page-malaysia .malaysia-payments-benefit__text {
-  margin: 0;
+  margin: 0.15rem 0 0;
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--text-main);
 }
 
-.page-malaysia .malaysia-payments-methods {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.page-malaysia .malaysia-payments-logos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.page-malaysia .malaysia-payments-method {
-  display: inline-block;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--border-light);
-  border-radius: 999px;
-  background: #f8fafc;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-main);
+.page-malaysia .malaysia-payments-logos__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.page-malaysia .malaysia-payments-logos__item:hover {
+  border-color: rgba(51, 190, 179, 0.28);
+  box-shadow: 0 4px 12px rgba(51, 190, 179, 0.1);
+  transform: translateY(-1px);
+}
+
+.page-malaysia .malaysia-payments-logos__item img {
+  display: block;
+  width: auto;
+  height: 1.55rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.page-malaysia .malaysia-payments-logos__item--text span {
+  font-size: 0.75rem;
+  font-weight: 700;
   line-height: 1.2;
+  color: var(--text-main);
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .page-malaysia .malaysia-payments__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page-malaysia .malaysia-payments__section--benefits {
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+  }
 }
 
 @media (max-width: 768px) {
-  .page-malaysia .malaysia-payments-benefits {
-    grid-template-columns: minmax(0, 1fr);
+  .page-malaysia .malaysia-payments__hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-malaysia .malaysia-payments__hero-link {
+    align-self: flex-start;
+  }
+
+  .page-malaysia .malaysia-payments-logos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .page-malaysia .malaysia-payments__hero-brand {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-malaysia .malaysia-payments-logos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -54,6 +54,5 @@ const fullName = `styles.${fullHash}.css`;
 fs.writeFileSync(path.join(outDir, fullName), fullMin);
 manifest.css.full = { name: 'full', file: `dist/${fullName}`, hash: fullHash, bytes: fullMin.length };
 
-const manifestPath = path.join(outDir, 'manifest.json');
-fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+fs.writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 console.log('CSS bundles:', Object.values(manifest.css).map((b) => `${b.name} ${(b.bytes / 1024).toFixed(1)}KB`).join(', '));

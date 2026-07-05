@@ -6,13 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build:css": "node scripts/build-css.mjs",
-    "build:js": "node scripts/build-js.mjs",
-    "build": "node scripts/build-css.mjs && node scripts/build-js.mjs",
-    "prerender": "node scripts/prerender-hubs.mjs",
-    "build:all": "node scripts/build-all.mjs",
-    "vercel:config": "node scripts/generate-vercel-config.mjs"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
@@ -28,7 +22,6 @@
     "@fontsource/poppins": "^5.2.7",
     "esbuild": "^0.28.1",
     "lightningcss": "^1.32.0",
-    "lucide": "^1.23.0",
     "nodemon": "^3.1.9",
     "sharp": "^0.35.3"
   }

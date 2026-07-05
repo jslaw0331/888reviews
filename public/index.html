@@ -39,8 +39,8 @@
         type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Best Online Casino Malaysia 2026","url":"https://888reviews.com/","description":"Compare the best online casinos for Malaysian players in 2026: licensing, bonuses, payments, slots, and live dealer options.","inLanguage":"en-US","isPartOf":{"@type":"WebSite","name":"888reviews","url":"https://888reviews.com/"}}</script>
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
         <!-- build:css -->
-    <link rel="stylesheet" href="/assets/css/dist/base.24f3b900.css">
-    <link rel="stylesheet" href="/assets/css/dist/hub.138662a9.css">
+    <link rel="stylesheet" href="/assets/css/dist/base.fc76a2ee.css">
+    <link rel="stylesheet" href="/assets/css/dist/hub.d1369724.css">
     <link rel="stylesheet" href="/assets/css/fonts.css">
     <!-- endbuild:css -->
 <link rel="icon" href="/assets/img/888review-siteicon.webp" type="image/webp">
@@ -76,6 +76,7 @@
                     <button type="button" class="main-nav__dropdown-trigger" aria-expanded="false"
                         aria-haspopup="true" aria-controls="main-nav-games-menu">Games</button>
                     <ul class="main-nav__dropdown" id="main-nav-games-menu" role="menu">
+                        <li role="none"><a href="/live" role="menuitem">Live Casino</a></li>
                         <li role="none"><a href="/slots" role="menuitem">Slots</a></li>
                         <li role="none"><a href="/blackjack" role="menuitem">Blackjack</a></li>
                         <li role="none"><a href="/roulette" role="menuitem">Roulette</a></li>
@@ -634,42 +635,68 @@
                 our <a href="/ewallet">Malaysia e-wallet guide</a>.
             </p>
             <div class="malaysia-payments">
-                <div class="malaysia-payments__section">
-                    <h3 class="malaysia-payments__heading">Why DuitNow matters</h3>
-                    <ul class="malaysia-payments-benefits" role="list">
-                        <li class="malaysia-payments-benefit">
-                            <span class="malaysia-payments-benefit__icon" aria-hidden="true"><i
-                                    data-lucide="shield-check"></i></span>
-                            <p class="malaysia-payments-benefit__text">Industry-leading security protocols</p>
-                        </li>
-                        <li class="malaysia-payments-benefit">
-                            <span class="malaysia-payments-benefit__icon" aria-hidden="true"><i
-                                    data-lucide="zap"></i></span>
-                            <p class="malaysia-payments-benefit__text">Fast processing times</p>
-                        </li>
-                        <li class="malaysia-payments-benefit">
-                            <span class="malaysia-payments-benefit__icon" aria-hidden="true"><i
-                                    data-lucide="check-circle"></i></span>
-                            <p class="malaysia-payments-benefit__text">Compliance with Malaysia financial regulations</p>
-                        </li>
-                    </ul>
+                <div class="malaysia-payments__hero">
+                    <div class="malaysia-payments__hero-brand">
+                        <img src="/assets/img/paylogo/duitnow.webp" alt="DuitNow" class="malaysia-payments__hero-logo"
+                            width="120" height="40" loading="lazy">
+                        <div class="malaysia-payments__hero-copy">
+                            <p class="malaysia-payments__hero-kicker">Malaysia&rsquo;s instant payment rail</p>
+                            <p class="malaysia-payments__hero-text">Scan, deposit, and withdraw in minutes — without
+                                international card fees or long bank waits.</p>
+                        </div>
+                    </div>
+                    <a href="/ewallet" class="malaysia-payments__hero-link">Compare e-wallets <i data-lucide="arrow-right"
+                            aria-hidden="true"></i></a>
                 </div>
-                <div class="malaysia-payments__section">
-                    <h3 class="malaysia-payments__heading">Payment methods for local players</h3>
-                    <ul class="malaysia-payments-methods" role="list" aria-label="Supported payment methods">
-                        <li><span class="malaysia-payments-method">VISA</span></li>
-                        <li><span class="malaysia-payments-method">Mastercard</span></li>
-                        <li><span class="malaysia-payments-method">Skrill</span></li>
-                        <li><span class="malaysia-payments-method">Neteller</span></li>
-                        <li><span class="malaysia-payments-method">Bitcoin</span></li>
-                        <li><span class="malaysia-payments-method">Ethereum</span></li>
-                        <li><span class="malaysia-payments-method">GrabPay</span></li>
-                        <li><span class="malaysia-payments-method">Touch 'n Go</span></li>
-                        <li><span class="malaysia-payments-method">DuitNow</span></li>
-                        <li><span class="malaysia-payments-method">Boost</span></li>
-                        <li><span class="malaysia-payments-method">Bank transfer</span></li>
-                        <li><span class="malaysia-payments-method">Help2Pay</span></li>
-                    </ul>
+                <div class="malaysia-payments__grid">
+                    <div class="malaysia-payments__section malaysia-payments__section--benefits">
+                        <h3 class="malaysia-payments__heading">Why DuitNow matters</h3>
+                        <ul class="malaysia-payments-benefits" role="list">
+                            <li class="malaysia-payments-benefit">
+                                <span class="malaysia-payments-benefit__icon" aria-hidden="true"><i
+                                        data-lucide="shield-check"></i></span>
+                                <p class="malaysia-payments-benefit__text">Industry-leading security protocols</p>
+                            </li>
+                            <li class="malaysia-payments-benefit">
+                                <span class="malaysia-payments-benefit__icon" aria-hidden="true"><i
+                                        data-lucide="zap"></i></span>
+                                <p class="malaysia-payments-benefit__text">Fast processing times</p>
+                            </li>
+                            <li class="malaysia-payments-benefit">
+                                <span class="malaysia-payments-benefit__icon" aria-hidden="true"><i
+                                        data-lucide="badge-check"></i></span>
+                                <p class="malaysia-payments-benefit__text">Compliance with Malaysia financial regulations
+                                </p>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="malaysia-payments__section malaysia-payments__section--methods">
+                        <h3 class="malaysia-payments__heading">Payment methods for local players</h3>
+                        <ul class="malaysia-payments-logos" role="list" aria-label="Supported payment methods">
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/visa.webp" alt="Visa"
+                                    width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/mastercard.webp"
+                                    alt="Mastercard" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/skrill.webp"
+                                    alt="Skrill" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/neteller.webp"
+                                    alt="Neteller" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/bitcoin.webp"
+                                    alt="Bitcoin" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item malaysia-payments-logos__item--text"><span>Ethereum</span></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/grabpay.webp"
+                                    alt="GrabPay" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/touchngo.webp"
+                                    alt="Touch 'n Go" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/duitnow.webp"
+                                    alt="DuitNow" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/boost.webp"
+                                    alt="Boost" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item"><img src="/assets/img/paylogo/banktransfer.webp"
+                                    alt="Bank transfer" width="96" height="32" loading="lazy"></li>
+                            <li class="malaysia-payments-logos__item malaysia-payments-logos__item--text"><span>Help2Pay</span></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
@@ -894,10 +921,11 @@
                     <li><a href="https://www.begambleaware.org" class="text-blue" rel="noopener noreferrer"
                             target="_blank">Responsible Gaming</a></li>
                 </ul>
-                <div class="fbl-copyright">
-                    &copy; ${year} 888reviews<br>Responsible Gaming<br>Play with your head, not over it.
-                </div>
             </div>
+        </div>
+        <div class="footer-bottom">
+            <p class="footer-bottom__tagline">Play with your head, not over it.</p>
+            <p class="footer-bottom__copy">&copy; <span class="footer-year"></span> 888reviews</p>
         </div>
         <div class="footer-disclosure">
             <p>18+ only. Gambling can be addictive. Play responsibly. Content is for informational purposes. We
@@ -914,7 +942,7 @@
 </div>
     <script src="/assets/js/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/dist/core.d600187c.js" defer></script>
+    <script src="/assets/js/dist/core.2401e1fc.js" defer></script>
 </body>
 
 </html>
