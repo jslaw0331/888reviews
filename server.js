@@ -88,6 +88,7 @@ app.get('/sitemap.xml', async (req, res) => {
             '/roulette',
             '/baccarat',
             '/mobile',
+            '/live',
             '/ewallet',
             '/guides',
             '/news',
@@ -501,6 +502,7 @@ const MALAYSIA_NAV_ROUTES = {
     '/roulette': 'games-roulette.html',
     '/baccarat': 'games-baccarat.html',
     '/bonus': 'bonus-hub.html',
+    '/live': 'live-casino.html',
 };
 
 Object.entries(MALAYSIA_NAV_ROUTES).forEach(([route, file]) => {
@@ -551,10 +553,10 @@ app.get('/providers/', (req, res) => {
 });
 
 app.get('/live-casino', (req, res) => {
-    res.redirect(301, '/reviews');
+    res.redirect(301, '/live');
 });
 app.get('/live-casino/', (req, res) => {
-    res.redirect(301, '/reviews');
+    res.redirect(301, '/live');
 });
 
 /** Legacy mobile sub-hubs → single Malaysia mobile guide. */
@@ -600,17 +602,11 @@ app.get('/bonuses.html', (req, res) => {
     res.redirect(301, '/bonus');
 });
 
-app.get('/live', (req, res) => {
-    res.redirect(301, '/reviews');
-});
-app.get('/live/', (req, res) => {
-    res.redirect(301, '/reviews');
-});
 app.get('/games/live-casino', (req, res) => {
-    res.redirect(301, '/reviews');
+    res.redirect(301, '/live');
 });
 app.get('/games/live-casino/', (req, res) => {
-    res.redirect(301, '/reviews');
+    res.redirect(301, '/live');
 });
 
 /** Legacy games hub and sub-pages → current nav routes. */

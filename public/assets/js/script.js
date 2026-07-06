@@ -6544,9 +6544,75 @@ const LIVE_CASINO_POPULATE =
     '&populate[conclusionCta][populate][features]=*' +
     '&populate[conclusionCta][populate][certificationLogos]=true' +
     '&populate[paymentMethods]=*' +
-    '&populate[blacklistItems]=*';
+    '&populate[blacklistItems]=*' +
+    '&populate[ratingCriteria]=*' +
+    '&populate[gameCategories]=*' +
+    '&populate[checklistSteps]=*' +
+    '&populate[providerTags]=*';
 
 const LIVE_CASINO_POPULATE_FALLBACK = 'populate=*';
+
+const LIVE_CASINO_CRITERIA_ICONS = ['shield-check', 'radio', 'sparkles', 'wallet', 'headphones', 'smartphone'];
+
+function liveCasinoCriteriaIconForHeading(heading, index) {
+    const h = String(heading || '').toLowerCase();
+    if (/security|licen|trust|safe|audit/.test(h)) return 'shield-check';
+    if (/game|variety|provider|studio|stream|dealer|table/.test(h)) return 'radio';
+    if (/player|experience|value|bonus|payment|mobile|support/.test(h)) return 'sparkles';
+    if (/bank|withdraw|payment|wallet|duitnow|ewallet/.test(h)) return 'wallet';
+    return LIVE_CASINO_CRITERIA_ICONS[index % LIVE_CASINO_CRITERIA_ICONS.length];
+}
+
+function renderLiveCasinoCriteriaCard(c, index) {
+    const heading = escapeHtml(c.heading || c.title || '');
+    const bodyHtml = richTextToHtml(c.body) || plainTextToParagraphsHtml(c.description || c.body || '');
+    const icon = liveCasinoCriteriaIconForHeading(c.heading || c.title, index);
+    const bodyInner = bodyHtml
+        ? `<div class="rich-text-body live-casino-criteria-card__body">${bodyHtml}</div>`
+        : '';
+    return `<article class="live-casino-criteria-card live-criteria-card" role="listitem">
+        <div class="live-criteria-card__head">
+            <span class="live-criteria-card__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+            <h3 class="live-casino-criteria-card__title">${heading}</h3>
+        </div>
+        ${bodyInner}
+    </article>`;
+}
+
+function liveCasinoGameCategoryIcon(heading, index) {
+    const h = String(heading || '').toLowerCase();
+    if (/roulette/.test(h)) return 'circle-dot';
+    if (/blackjack/.test(h)) return 'spade';
+    if (/baccarat/.test(h)) return 'layers';
+    if (/game show|monopoly|crazy time/.test(h)) return 'sparkles';
+    if (/poker|other/.test(h)) return 'club';
+    return ['circle-dot', 'spade', 'layers', 'sparkles', 'club'][index] || 'dice-5';
+}
+
+function renderLiveCasinoGameCategory(g, index) {
+    const rawTitle = g.heading || g.title || '';
+    const title = escapeHtml(rawTitle);
+    const bodyHtml = richTextToHtml(g.body) || plainTextToParagraphsHtml(g.description || g.body || '');
+    const bodyInner = bodyHtml
+        ? `<div class="rich-text-body live-casino-game-category__body">${bodyHtml}</div>`
+        : '';
+    const icon = liveCasinoGameCategoryIcon(rawTitle, index);
+    return `<article class="live-casino-game-category">
+        <div class="live-casino-game-category__head">
+            <span class="live-casino-game-category__icon" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+            <h3>${title}</h3>
+        </div>
+        ${bodyInner}
+    </article>`;
+}
+
+function applyLiveCasinoGameCategories(page) {
+    const gamesEl = document.getElementById('live-casino-game-categories');
+    const gameCategories = page?.gameCategories;
+    if (!gamesEl || !Array.isArray(gameCategories) || gameCategories.length === 0) return;
+    gamesEl.innerHTML = gameCategories.map(renderLiveCasinoGameCategory).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: gamesEl });
+}
 
 async function fetchLiveCasino() {
     try {
@@ -6563,7 +6629,27 @@ async function fetchLiveCasino() {
             console.warn('Live casino CMS:', json?.error?.message || res.status);
             return null;
         }
-        return json.data;
+        let data = json.data;
+        const shallowRes = await fetch(`${API_URL}/api/live-casino?${LIVE_CASINO_POPULATE_FALLBACK}`);
+        const shallowJson = await shallowRes.json();
+        if (shallowRes.ok && shallowJson?.data) {
+            const shallow = shallowJson.data;
+            data = {
+                ...shallow,
+                ...data,
+                ratingCriteria: data.ratingCriteria?.length ? data.ratingCriteria : shallow.ratingCriteria,
+                gameCategories: data.gameCategories?.length ? data.gameCategories : shallow.gameCategories,
+                checklistSteps: data.checklistSteps?.length ? data.checklistSteps : shallow.checklistSteps,
+                providerTags: data.providerTags?.length ? data.providerTags : shallow.providerTags,
+                paymentMethods: data.paymentMethods?.length ? data.paymentMethods : shallow.paymentMethods,
+                blacklistItems: data.blacklistItems?.length ? data.blacklistItems : shallow.blacklistItems,
+                featuredWelcomeBonus: data.featuredWelcomeBonus?.casino
+                    ? data.featuredWelcomeBonus
+                    : shallow.featuredWelcomeBonus,
+                conclusionCta: data.conclusionCta?.casino ? data.conclusionCta : shallow.conclusionCta,
+            };
+        }
+        return data;
     } catch (e) {
         console.warn('Live casino CMS fetch failed:', e);
         return null;
@@ -6909,27 +6995,8 @@ function applyLiveCasinoSectionText(page) {
         if (value == null || value === '') continue;
         setHomepageText(document.getElementById(id), value, mode || 'text');
     }
-    const criteriaEl = document.getElementById('live-casino-rating-criteria');
-    const criteria = page.ratingCriteria;
-    if (criteriaEl && Array.isArray(criteria) && criteria.length > 0) {
-        criteriaEl.innerHTML = criteria
-            .map(
-                (c) => `<article class="live-casino-criteria-card" role="listitem">
-                <h3 class="live-casino-criteria-card__title">${escapeHtml(c.title || c.heading || '')}</h3>
-                <p class="live-casino-criteria-card__body">${escapeHtml(c.body || c.description || '')}</p>
-            </article>`,
-            )
-            .join('');
-    }
-    const gamesEl = document.getElementById('live-casino-game-categories');
-    const gameCategories = page.gameCategories;
-    if (gamesEl && Array.isArray(gameCategories) && gameCategories.length > 0) {
-        gamesEl.innerHTML = gameCategories
-            .map(
-                (g) => `<h3>${escapeHtml(g.title || g.heading || '')}</h3><p>${escapeHtml(g.body || g.description || '')}</p>`,
-            )
-            .join('');
-    }
+    applyLiveCasinoRatingCriteria(page);
+    applyLiveCasinoGameCategories(page);
     const tagsEl = document.getElementById('live-casino-provider-tags');
     const tags = page.providerTags;
     if (tagsEl && Array.isArray(tags) && tags.length > 0) {
@@ -6945,6 +7012,14 @@ function applyLiveCasinoSectionText(page) {
             )
             .join('');
     }
+}
+
+function applyLiveCasinoRatingCriteria(page) {
+    const criteriaEl = document.getElementById('live-casino-rating-criteria');
+    const criteria = page?.ratingCriteria;
+    if (!criteriaEl || !Array.isArray(criteria) || criteria.length === 0) return;
+    criteriaEl.innerHTML = criteria.map(renderLiveCasinoCriteriaCard).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons({ root: criteriaEl });
 }
 
 function buildLiveCasinoJsonLd(page, operators) {
@@ -6965,29 +7040,14 @@ function buildLiveCasinoJsonLd(page, operators) {
             itemListElement: items,
         });
     }
-    const faqItems = page?.faqItems;
-    const faqEl = document.getElementById('live-casino-ld-faq');
-    if (faqEl && Array.isArray(faqItems) && faqItems.length > 0) {
-        faqEl.textContent = JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: faqItems.map((f) => ({
-                '@type': 'Question',
-                name: f.question || f.title || '',
-                acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: f.answer || f.body || richTextToPlainText(f.answerRich) || '',
-                },
-            })),
-        });
-    }
+    // FAQ JSON-LD stays static in live-casino.html (accordion is not CMS-hydrated).
     const webEl = document.getElementById('live-casino-ld-webpage');
     if (webEl && page) {
         webEl.textContent = JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: page.metaTitle || 'Best Live Casinos Malaysia 2026',
-            url: 'https://888reviews.com/live-casino',
+            url: 'https://888reviews.com/live',
             description:
                 page.metaDescription ||
                 'Compare the best live casinos in Malaysia for 2026: live dealer tables, bonuses, and trusted payment methods.',

@@ -232,6 +232,7 @@ const HUB_PATHS = [
     '/roulette',
     '/baccarat',
     '/mobile',
+    '/live',
     '/ewallet',
     '/guides',
     '/news',

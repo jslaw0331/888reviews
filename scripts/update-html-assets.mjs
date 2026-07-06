@@ -7,9 +7,6 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'asset-config.json'), 'utf8'));
 
-const cssManifest = JSON.parse(
-  fs.readFileSync(path.join(publicDir, 'assets/css/dist/manifest.json'), 'utf8'),
-);
 const jsManifest = JSON.parse(
   fs.readFileSync(path.join(publicDir, 'assets/js/dist/manifest.json'), 'utf8'),
 );
@@ -39,14 +36,11 @@ function strapiPublicUrlMeta() {
 
 const strapiUrl = process.env.STRAPI_API_URL?.replace(/\/$/, '') || strapiPublicUrlMeta();
 
-function buildCssBlock(filename) {
-  const bundles = bundlesForPage(filename);
-  const lines = bundles
-    .map((b) => cssManifest.css[b])
-    .filter(Boolean)
-    .map((b) => `    <link rel="stylesheet" href="/assets/css/${b.file}">`);
-  lines.push('    <link rel="stylesheet" href="/assets/css/fonts.css">');
-  return lines.join('\n');
+function buildCssBlock() {
+  return [
+    '    <link rel="stylesheet" href="/assets/css/styles.css">',
+    '    <link rel="stylesheet" href="/assets/css/fonts.css">',
+  ].join('\n');
 }
 
 let updated = 0;
@@ -55,7 +49,7 @@ for (const filename of fs.readdirSync(publicDir).filter((f) => f.endsWith('.html
   let html = fs.readFileSync(filePath, 'utf8');
   let changed = false;
 
-  const cssBlock = buildCssBlock(filename);
+  const cssBlock = buildCssBlock();
   const cssMarker = '    <!-- build:css -->';
   const cssEnd = '    <!-- endbuild:css -->';
 

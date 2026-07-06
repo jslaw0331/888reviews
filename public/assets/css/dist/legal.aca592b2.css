@@ -1,0 +1,587 @@
+  padding-bottom: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.about-article__intro h2,
+.about-section h2,
+.privacy-article__intro h2,
+.privacy-section h2,
+.terms-article__intro h2,
+.terms-section h2,
+.how-we-rate-article__intro h2,
+.how-we-rate-section h2,
+.contact-section h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.about-article__intro p,
+.about-section p,
+.privacy-article__intro p,
+.privacy-section p,
+.terms-article__intro p,
+.terms-section p,
+.how-we-rate-article__intro p,
+.how-we-rate-section p,
+.contact-section p {
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: #334155;
+  margin: 0 0 1.5rem;
+}
+
+.about-article__intro p:last-child,
+.about-section p:last-child,
+.privacy-article__intro p:last-child,
+.privacy-section p:last-child,
+.terms-article__intro p:last-child,
+.terms-section p:last-child,
+.how-we-rate-article__intro p:last-child,
+.how-we-rate-section p:last-child,
+.contact-section p:last-child {
+  margin-bottom: 0;
+}
+
+.about-article__intro,
+.privacy-article__intro,
+.terms-article__intro,
+.how-we-rate-article__intro {
+  margin-bottom: clamp(2.75rem, 5vw, 3.5rem);
+  padding-bottom: clamp(2.25rem, 4vw, 3rem);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.about-section,
+.privacy-section,
+.terms-section,
+.how-we-rate-section,
+.contact-section {
+  margin-bottom: clamp(2.75rem, 5vw, 3.5rem);
+}
+
+.about-section:last-of-type,
+.privacy-section:last-of-type,
+.terms-section:last-of-type,
+.how-we-rate-section:last-of-type,
+.contact-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.about-section a,
+.privacy-section a,
+.terms-section a,
+.how-we-rate-section a,
+.contact-section a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.about-section a:hover,
+.privacy-section a:hover,
+.terms-section a:hover,
+.how-we-rate-section a:hover,
+.contact-section a:hover {
+  color: #1e3a5f;
+}
+
+.privacy-list,
+.terms-list {
+  margin: 0.35rem 0 1.5rem;
+  padding-left: 1.35rem;
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: #334155;
+}
+
+.privacy-list li,
+.terms-list li {
+  margin-bottom: 1rem;
+}
+
+.privacy-list li:last-child,
+.terms-list li:last-child {
+  margin-bottom: 0;
+}
+
+.page-how-we-rate .terms-list--with-icons {
+  list-style: none;
+  padding-left: 0;
+}
+
+.page-how-we-rate .terms-list--with-icons>li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.page-how-we-rate .terms-list__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  margin-top: 0.35rem;
+  line-height: 0;
+}
+
+.page-how-we-rate .terms-list__icon svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2.5;
+}
+
+.page-how-we-rate .terms-list__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-about .about-faq .section-header p,
+.page-how-we-rate .how-we-rate-faq .section-header p {
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.how-we-rate-section h3 {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 1.75rem 0 0.65rem;
+  letter-spacing: -0.01em;
+}
+
+.how-we-rate-toc {
+  margin: 0 0 clamp(2rem, 4vw, 2.75rem);
+  padding: clamp(1.25rem, 2.5vw, 1.65rem) clamp(1.25rem, 2.5vw, 1.75rem);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.how-we-rate-toc h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.1rem, 2vw, 1.25rem);
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.85rem;
+}
+
+.how-we-rate-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.how-we-rate-toc ul li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.page-how-we-rate .how-we-rate-toc__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  margin-top: 0.2rem;
+  line-height: 0;
+}
+
+.page-how-we-rate .how-we-rate-toc__icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.how-we-rate-toc a {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.how-we-rate-toc a:hover {
+  color: #1e3a5f;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial {
+  margin-top: clamp(2rem, 4vw, 3.5rem);
+  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary) 0%, #2aa197 100%);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0f766e;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-content h3 {
+  margin-bottom: 0.65rem;
+  font-size: clamp(1.3rem, 2.4vw, 1.65rem);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-content h3 em {
+  font-style: normal;
+  color: var(--primary);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-dek,
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-content>p:not(.gi-kicker) {
+  max-width: 52ch;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-content a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  text-decoration-color: rgba(51, 190, 179, 0.45);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-content a:hover {
+  color: var(--primary-hover);
+  text-decoration-color: var(--primary-hover);
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.15rem;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-links a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 100px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-links a:hover {
+  border-color: rgba(51, 190, 179, 0.45);
+  background: rgba(51, 190, 179, 0.08);
+  color: #0f766e;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-action {
+  align-self: center;
+}
+
+:is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-action .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  :is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  :is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-dek,
+  :is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-content>p:not(.gi-kicker) {
+    max-width: none;
+    margin-inline: auto;
+  }
+
+  :is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-links {
+    justify-content: center;
+  }
+
+  :is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-action {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  :is(.page-about, .page-privacy, .page-terms, .page-contact, .page-how-we-rate) .guides-interstitial .gi-action .btn {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+.page-about .about-faq.seo-accordion {
+  padding: var(--section-gap) 0;
+}
+
+.page-about .about-faq .section-header {
+  margin-bottom: var(--section-gap);
+}
+
+.page-about .about-faq .accordion--two-cols {
+  gap: clamp(1rem, 2vw, 1.5rem) clamp(1.25rem, 3vw, 2rem);
+}
+
+.page-about .about-faq .accordion--two-cols .accordion-col {
+  gap: clamp(1rem, 2vw, 1.25rem);
+}
+
+/* Legal/static pages — align hero + body columns with breadcrumb inset */
+.page-about .about-hero.container,
+.page-about .static-page-layout.container,
+.page-about .guides-interstitial.container,
+.page-about .about-faq>.container,
+.page-privacy .privacy-hero.container,
+.page-privacy .static-page-layout.container,
+.page-privacy .guides-interstitial.container,
+.page-privacy .privacy-faq>.container,
+.page-terms .terms-hero.container,
+.page-terms .static-page-layout.container,
+.page-terms .guides-interstitial.container,
+.page-terms .terms-faq>.container,
+.page-contact .contact-hero.container,
+.page-contact .static-page-layout.container,
+.page-contact .guides-interstitial.container,
+.page-how-we-rate .how-we-rate-hero.container,
+.page-how-we-rate .static-page-layout.container,
+.page-how-we-rate .guides-interstitial.container {
+  padding-left: var(--bc-inline-padding-x);
+  padding-right: var(--bc-inline-padding-x-end);
+}
+
+/* Contact + About/Privacy/Terms: main column below hero (same width as .container) */
+.contact-layout,
+.static-page-layout {
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: clamp(1.75rem, 3.5vw, 3rem);
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+/* Static editorial pages — full-bleed breadcrumb bar, aligned body column */
+.page-about .static-page-layout .about-article {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.page-about .about-article__intro a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.page-about .about-article__intro a:hover {
+  color: #1e3a5f;
+}
+
+.page-about .about-article__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1rem, 2vw, 1.25rem);
+}
+
+@media (min-width: 768px) {
+  .page-about .about-article__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.page-about .about-section--card {
+  margin-bottom: 0;
+  padding: clamp(1.35rem, 2.5vw, 1.75rem);
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.page-about .about-section--card h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+  font-size: clamp(1.1rem, 2vw, 1.25rem);
+}
+
+.page-about .about-section--card h2 i,
+.page-about .about-section--card h2 svg {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--primary);
+}
+
+.page-about .about-section--card p {
+  font-size: 0.98rem;
+  line-height: 1.75;
+  margin-bottom: 0;
+}
+
+.contact-email-card {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(2rem, 3.5vw, 2.85rem) clamp(1.75rem, 3vw, 2.25rem) clamp(1.75rem, 3vw, 2.25rem) clamp(1.5rem, 2.5vw, 1.85rem);
+  margin-bottom: clamp(2.75rem, 5vw, 3.75rem);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+}
+
+.contact-email-card__icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1) 0%, rgba(30, 58, 95, 0.12) 100%);
+  color: var(--primary);
+}
+
+.contact-email-card__icon i,
+.contact-email-card__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.contact-email-card__title {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+}
+
+.contact-email-card__dek {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 0.5rem;
+}
+
+.contact-email-card__link {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  word-break: break-all;
+}
+
+.contact-email-card__link:hover {
+  color: #1e3a5f;
+}
+
+.contact-email-card__note {
+  margin: 1.25rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.contact-email-card__note a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.contact-email-card__note a:hover {
+  color: #1e3a5f;
+}
+
+/* ========================================= */
+/* Global Brand Overrides */
+/* ========================================= */
+.site-logo {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
+/* ========================================= */
+/* Slots Page specific */
+/* ========================================= */
+.slots-page {
+  background: #fafafa;
+  padding-bottom: var(--section-gap);
+}
+
+.slots-hero {
+  box-sizing: border-box;
+}
+
+.page-slots .slots-hero.container {
+  box-sizing: border-box;
+}
+
+.page-slots .slots-hero .dh-badge {
+  font-size: 0.75rem;
+  padding: 8px 14px;
+  gap: 6px;
+}
+
+.page-slots .slots-hero .dh-badge i {
+  width: 15px;
+  height: 15px;
+}
+
+.slots-hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.35rem, 4.8vw, 3.35rem);
+  font-weight: 700;
+  color: #020617;
+  line-height: 1.12;
+  margin: 18px 0 16px;

@@ -32,11 +32,17 @@ function minifyCss(source, filename) {
 }
 
 function writeBundle(name, css) {
-  const min = minifyCss(css, `${name}.css`);
-  const hash = hashContent(min);
+  let out;
+  try {
+    out = minifyCss(css, `${name}.css`);
+  } catch (err) {
+    console.warn(`${name}: minify skipped (${err.message})`);
+    out = Buffer.from(css, 'utf8');
+  }
+  const hash = hashContent(out);
   const outName = `${name}.${hash}.css`;
-  fs.writeFileSync(path.join(outDir, outName), min);
-  return { name, file: `dist/${outName}`, hash, bytes: min.length };
+  fs.writeFileSync(path.join(outDir, outName), out);
+  return { name, file: `dist/${outName}`, hash, bytes: out.length };
 }
 
 fs.mkdirSync(outDir, { recursive: true });
