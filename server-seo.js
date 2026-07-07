@@ -240,6 +240,7 @@ const HUB_PATHS = [
     '/privacy',
     '/terms',
     '/contact',
+    '/how-we-rate',
 ];
 
 /**

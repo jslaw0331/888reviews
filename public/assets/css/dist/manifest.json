@@ -2,9 +2,9 @@
   "css": {
     "base": {
       "name": "base",
-      "file": "dist/base.31e8c09d.css",
-      "hash": "31e8c09d",
-      "bytes": 169348
+      "file": "dist/base.ba079cc0.css",
+      "hash": "ba079cc0",
+      "bytes": 132668
     },
     "detail": {
       "name": "detail",
@@ -14,22 +14,22 @@
     },
     "legal": {
       "name": "legal",
-      "file": "dist/legal.4c749628.css",
-      "hash": "4c749628",
-      "bytes": 14276
+      "file": "dist/legal.4ac15cb5.css",
+      "hash": "4ac15cb5",
+      "bytes": 27220
     },
     "hub": {
       "name": "hub",
-      "file": "dist/hub.fce55630.css",
-      "hash": "fce55630",
-      "bytes": 292709
+      "file": "dist/hub.9ef2c7dc.css",
+      "hash": "9ef2c7dc",
+      "bytes": 285654
     },
     "full": {
       "name": "full",
-      "file": "dist/styles.24776b26.css",
-      "hash": "24776b26",
-      "bytes": 488901
+      "file": "dist/styles.be6fa875.css",
+      "hash": "be6fa875",
+      "bytes": 507485
     }
   },
-  "builtAt": "2026-07-06T05:24:15.900Z"
+  "builtAt": "2026-07-07T02:22:44.538Z"
 }

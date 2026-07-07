@@ -96,6 +96,7 @@ app.get('/sitemap.xml', async (req, res) => {
             '/privacy',
             '/terms',
             '/contact',
+            '/how-we-rate',
         ];
         const lines = hubPaths.map((p) => {
             const loc = `${base}${p === '/' ? '/' : p}`;
@@ -124,6 +125,7 @@ const ROOT_HTML = [
     'privacy.html',
     'terms.html',
     'contact.html',
+    'how-we-rate.html',
 ];
 
 /**
@@ -536,13 +538,6 @@ app.get('/games/baccarat', (req, res) => {
 });
 app.get('/games/baccarat/', (req, res) => {
     res.redirect(301, '/baccarat');
-});
-
-app.get('/how-we-rate', (req, res) => {
-    res.redirect(301, '/about');
-});
-app.get('/how-we-rate/', (req, res) => {
-    res.redirect(301, '/about');
 });
 
 app.get('/providers', (req, res) => {
