@@ -3955,15 +3955,6 @@ function initGuidesPage() {
     } catch {
         /* ignore */
     }
-    let currentFilter = 'all';
-    try {
-        const fp = new URLSearchParams(window.location.search).get('filter');
-        if (fp === 'guide' || fp === 'strategy' || fp === 'all') {
-            currentFilter = fp;
-        }
-    } catch {
-        /* ignore */
-    }
     let pageCount = 1;
     let guidesFirstFetch = true;
 
@@ -3972,8 +3963,7 @@ function initGuidesPage() {
             const u = new URL(window.location.href);
             if (currentPage <= 1) u.searchParams.delete('page');
             else u.searchParams.set('page', String(currentPage));
-            if (currentFilter === 'all') u.searchParams.delete('filter');
-            else u.searchParams.set('filter', currentFilter);
+            u.searchParams.delete('filter');
             history.replaceState(null, '', `${u.pathname}${u.search}`);
         } catch {
             /* ignore */
@@ -4047,13 +4037,13 @@ function initGuidesPage() {
         grid.innerHTML = skeletonGridHtml('guide-card', 6);
         if (wrap) wrap.style.display = 'none';
         try {
-            let { rows, meta } = await fetchGuidesPage(currentPage, currentFilter);
+            let { rows, meta } = await fetchGuidesPage(currentPage, 'all');
             pageCount = resolvePageCount(meta);
 
             if (currentPage > pageCount) {
                 currentPage = pageCount;
                 setGuidesUrlPage();
-                ({ rows, meta } = await fetchGuidesPage(currentPage, currentFilter));
+                ({ rows, meta } = await fetchGuidesPage(currentPage, 'all'));
                 pageCount = resolvePageCount(meta);
             }
 
@@ -4123,21 +4113,6 @@ function initGuidesPage() {
             guidesFirstFetch = false;
         }
     }
-
-    const filterBtns = document.querySelectorAll('[data-guides-filter]');
-    filterBtns.forEach((btn) => {
-        const v = btn.getAttribute('data-guides-filter') || 'all';
-        btn.classList.toggle('active', v === currentFilter);
-        btn.addEventListener('click', () => {
-            const next = btn.getAttribute('data-guides-filter') || 'all';
-            currentFilter = next;
-            currentPage = 1;
-            setGuidesUrlPage();
-            filterBtns.forEach((b) => b.classList.toggle('active', b === btn));
-            guidesFirstFetch = true;
-            loadAndRender();
-        });
-    });
 
     loadAndRender();
 }

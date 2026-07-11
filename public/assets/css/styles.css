@@ -14071,38 +14071,6 @@ p.bonus-terms.bonus-terms--expanded {
   text-decoration-color: var(--primary-hover);
 }
 
-/* Filter Pills */
-.gh-filters {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.gh-filter-btn {
-  padding: 10px 20px;
-  border-radius: 100px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #475569;
-  background: white;
-  border: 1px solid var(--border-light);
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
-}
-
-.gh-filter-btn:hover {
-  border-color: #cbd5e1;
-  color: #020617;
-}
-
-.gh-filter-btn.active {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-}
-
 /* Guides + news hub: shared hero rhythm (kicker → title → deck → directory) */
 .page-guides .guides-hero,
 .page-news .guides-hero {
@@ -14234,7 +14202,7 @@ p.bonus-terms.bonus-terms--expanded {
   color: #94a3b8;
 }
 
-/* Directory block: heading + filters read as one control surface (desktop: filters align with title row) */
+/* Directory heading block above guides/news grid */
 .guides-directory-intro {
   display: flex;
   flex-wrap: wrap;
@@ -14298,72 +14266,11 @@ p.bonus-terms.bonus-terms--expanded {
   line-height: 1.65;
 }
 
-.guides-directory-intro__filters {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-}
-
 @media (min-width: 768px) {
   .guides-directory-intro {
     align-items: flex-start;
     gap: clamp(20px, 3vw, 32px);
   }
-
-  .guides-directory-intro__filters {
-    align-items: flex-end;
-    align-self: flex-start;
-    padding-top: 0.2rem;
-  }
-
-  .page-guides .guides-directory-intro .gh-filters {
-    justify-content: flex-end;
-  }
-}
-
-/* Segmented-style filters only on guides directory intro */
-.page-guides .guides-directory-intro .gh-filters {
-  gap: 8px;
-  padding: 6px;
-  background: #ffffff;
-  border: 1px solid var(--border-light);
-  border-radius: 999px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-
-.page-guides .guides-directory-intro .gh-filter-btn {
-  border: none;
-  box-shadow: none;
-  padding: 8px 17px;
-  font-size: 0.78rem;
-  background: transparent;
-  color: #64748b;
-}
-
-.page-guides .guides-directory-intro .gh-filter-btn:hover:not(.active) {
-  background: rgba(15, 118, 110, 0.09);
-  color: #0f172a;
-}
-
-.page-guides .guides-directory-intro .gh-filter-btn.active {
-  box-shadow: 0 1px 4px rgba(15, 118, 110, 0.22);
-}
-
-@media (max-width: 767px) {
-  .guides-directory-intro__filters {
-    width: 100%;
-  }
-
-  .page-guides .guides-directory-intro .gh-filters {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-.page-guides .gh-filters {
-  gap: 16px;
 }
 
 /* Featured Guide */
