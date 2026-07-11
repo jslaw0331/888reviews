@@ -12,7 +12,7 @@
       "slot.html",
       "provider.html",
       "post.html",
-      "review.html",
+      "casino.html",
       "bonus-hub.html"
     ],
     "legal": [
@@ -32,12 +32,9 @@
       "mobile.html",
       "malaysia-ewallet.html",
       "bonus-hub.html",
-      "casinos.html",
-      "providers.html",
       "guides.html",
       "news.html",
-      "live-casino.html",
-      "malaysia.html"
+      "live-casino.html"
     ]
   },
   "jsPages": {

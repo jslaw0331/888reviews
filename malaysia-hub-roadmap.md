@@ -1,8 +1,8 @@
 # Malaysia Hub — Future Updates Roadmap
 
-Living checklist for `/malaysia` and related Malaysia market pages.  
+Living checklist for the Malaysia market hub and related pages.  
 Reference structure: https://www.bestonlinecasino.com/malaysia/  
-Production URL: https://888reviews.com/malaysia
+Production hub URL: https://888reviews.com/ (canonical Malaysia hub)
 
 ## Explicit non-goals
 
@@ -13,15 +13,15 @@ Production URL: https://888reviews.com/malaysia
 
 ## Phase 1 — Static long-form hub (v1)
 
-- [x] Long-form page at `/malaysia` with all 20 reference sections
+- [x] Long-form Malaysia hub (now served at `/` via `public/index.html`)
 - [x] Static hardcoded top-11 casino table
 - [x] Mirrored editorial copy (888reviews voice)
 - [x] FAQ + Breadcrumb + ItemList JSON-LD
-- [x] Sitemap includes `/malaysia`, `/malaysia/ewallet`, `/malaysia/touch-n-go`
-- [x] 301 redirects from `/casinos/malaysia/*` to `/malaysia/*`
+- [x] Sitemap includes `/` and `/ewallet` (legacy `/malaysia*` URLs redirect)
+- [x] 301 redirects from `/casinos/malaysia/*` and `/malaysia*` to current routes
 - [x] Scoped CSS under `.page-malaysia`
 
-**Primary files:** `public/malaysia.html`, `public/assets/css/styles.css`, `server.js`, `server-seo.js`
+**Primary files:** `public/index.html`, `public/assets/css/styles.css`, `server.js`, `server-seo.js`
 
 ---
 
@@ -61,16 +61,16 @@ Production URL: https://888reviews.com/malaysia
 
 ## Phase 3 — Sub-hubs
 
-- [x] `/malaysia/ewallet` — `public/malaysia-ewallet.html`
-- [x] `/malaysia/touch-n-go` — `public/malaysia-touch-n-go.html`
-- [x] 301 from `/casinos/malaysia/ewallet` and `/casinos/malaysia/touch-n-go`
-- [x] Retired legacy `public/casinos-malaysia*.html`
+- [x] `/ewallet` — `public/malaysia-ewallet.html`
+- [x] Touch 'n Go content folded into e-wallet hub (`/touch-n-go` → `/ewallet`)
+- [x] 301 from `/casinos/malaysia/ewallet`, `/malaysia/ewallet`, `/malaysia/touch-n-go`
+- [x] Retired legacy `public/casinos-malaysia*.html`, `malaysia.html`, `malaysia-touch-n-go.html`
 
 ---
 
 ## Phase 4 — Internal linking
 
-- [x] Sitewide inbound links updated to `/malaysia`
+- [x] Sitewide inbound links point at `/` (hub) and `/ewallet`
 - [x] Contextual cross-links on Malaysia hub body sections
 
 **Files updated:** payment pages, mobile, real-money pages, Malaysia hub pages
@@ -87,7 +87,7 @@ Production URL: https://888reviews.com/malaysia
 - [ ] Verify affiliate disclosures and CTA URLs
 - [ ] Run heading hierarchy + word-count audit per `seo-task.md`
 - [ ] Validate JSON-LD in Google Rich Results Test (BreadcrumbList, FAQPage, ItemList)
-- [ ] Confirm `/malaysia` indexed with correct canonical
+- [ ] Confirm `/` indexed with correct Malaysia hub canonical
 
 ### Schema (implemented)
 
@@ -111,16 +111,22 @@ Production URL: https://888reviews.com/malaysia
 
 ## URL map
 
-| URL | File |
-|-----|------|
-| `/malaysia` | `public/malaysia.html` |
-| `/malaysia/ewallet` | `public/malaysia-ewallet.html` |
-| `/malaysia/touch-n-go` | `public/malaysia-touch-n-go.html` |
+| URL | File / behavior |
+|-----|-----------------|
+| `/` | `public/index.html` (Malaysia casino hub) |
+| `/ewallet` | `public/malaysia-ewallet.html` |
+| `/malaysia` | 301 → `/` |
+| `/malaysia/ewallet` | 301 → `/ewallet` |
+| `/malaysia/touch-n-go` | 301 → `/ewallet` |
+| `/touch-n-go` | 301 → `/ewallet` |
 
 ## Legacy redirects
 
 | From | To |
 |------|-----|
-| `/casinos/malaysia` | `/malaysia` |
-| `/casinos/malaysia/ewallet` | `/malaysia/ewallet` |
-| `/casinos/malaysia/touch-n-go` | `/malaysia/touch-n-go` |
+| `/casinos/malaysia` | `/` |
+| `/casinos/malaysia/ewallet` | `/ewallet` |
+| `/casinos/malaysia/touch-n-go` | `/ewallet` |
+| `/malaysia` | `/` |
+| `/malaysia/ewallet` | `/ewallet` |
+| `/malaysia/touch-n-go` | `/ewallet` |

@@ -402,65 +402,65 @@ app.use(
     }),
 );
 
-/** Legacy casino review URLs → reviews directory. */
-app.get('/casino/:slug', (req, res) => {
+/** Casino review detail (Strapi `casinos`). */
+app.get('/casino/:slug', async (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    res.redirect(301, '/reviews');
+    await serverSeo.sendDetailPage(res, PUBLIC_DIR, 'casino', raw, sitePublicOrigin(req));
 });
 
 app.get('/review.html', (req, res) => {
     res.redirect(301, '/reviews');
 });
 
-app.get('/provider/:slug', (req, res) => {
+app.get('/provider/:slug', async (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'provider', raw, sitePublicOrigin(req));
+    await serverSeo.sendDetailPage(res, PUBLIC_DIR, 'provider', raw, sitePublicOrigin(req));
 });
 
-app.get('/slot/:slug', (req, res) => {
+app.get('/slot/:slug', async (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'slot', raw, sitePublicOrigin(req));
+    await serverSeo.sendDetailPage(res, PUBLIC_DIR, 'slot', raw, sitePublicOrigin(req));
 });
 
-app.get('/bonus/:slug', (req, res) => {
+app.get('/bonus/:slug', async (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'bonus', raw, sitePublicOrigin(req));
+    await serverSeo.sendDetailPage(res, PUBLIC_DIR, 'bonus', raw, sitePublicOrigin(req));
 });
 
 /** Guide / strategy article (Strapi `blog-posts`); legacy `post.html?slug=` → `/guide/:slug`. */
-app.get('/guide/:slug', (req, res) => {
+app.get('/guide/:slug', async (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'guide', raw, sitePublicOrigin(req));
+    await serverSeo.sendDetailPage(res, PUBLIC_DIR, 'guide', raw, sitePublicOrigin(req));
 });
 
 /** News article (Strapi `blog-posts`, category news). */
-app.get('/news/:slug', (req, res) => {
+app.get('/news/:slug', async (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
         res.status(404).send('Not found');
         return;
     }
-    serverSeo.sendDetailPage(res, PUBLIC_DIR, 'news', raw, sitePublicOrigin(req));
+    await serverSeo.sendDetailPage(res, PUBLIC_DIR, 'news', raw, sitePublicOrigin(req));
 });
 
 app.get('/post.html', (req, res) => {

@@ -72,9 +72,10 @@ const HOME_TOP_PROVIDERS_LIMIT = 5;
 /** Featured operator on the homepage hero + Tier One sidebar (Strapi Slug, case-insensitive). */
 const HOME_FEATURED_CASINO_SLUG = 'bk-8';
 
-/** Internal link for casino listings (individual /casino/{slug} pages removed). */
-function casinoReviewPath(_slug) {
-    return '/reviews';
+/** Internal link for casino review detail pages. */
+function casinoReviewPath(slug) {
+    if (!slug) return '/reviews';
+    return `/casino/${encodeURIComponent(String(slug).trim())}`;
 }
 
 /** Path to provider dossier page: /provider/{slug} */
@@ -106,6 +107,27 @@ function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = String(s);
     return d.innerHTML;
+}
+
+function setRobotsMeta(content) {
+    const el = document.querySelector('meta[name="robots"]');
+    if (el) el.setAttribute('content', content);
+}
+
+function setRobotsNoindex() {
+    setRobotsMeta('noindex, follow');
+}
+
+function setJsonLdScript(id, data) {
+    if (!data) return;
+    let el = document.getElementById(id);
+    if (!el) {
+        el = document.createElement('script');
+        el.id = id;
+        el.type = 'application/ld+json';
+        document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify(data);
 }
 
 /** Centered spinner + message for empty containers and homepage sections. */
@@ -207,6 +229,7 @@ function clearDetailPageLoading(rootEl) {
 /** Which boot path to run — avoids bonus-map + homepage fetches on unrelated pages. */
 function detectBootPageType() {
     if (document.getElementById('gp-page-root')) return 'guide-post';
+    if (document.getElementById('casino-page-root') && document.getElementById('cr-title')) return 'casino-detail';
     if (document.getElementById('bonus-page-root') && document.getElementById('bd-title')) return 'bonus-detail';
     if (document.getElementById('provider-content') && document.getElementById('pv-title')) return 'provider-detail';
     if (document.getElementById('slot-page-root') && document.getElementById('sv-title')) return 'slot-detail';
@@ -222,10 +245,6 @@ function detectBootPageType() {
     if (document.getElementById('blackjack-operator-list')) return 'blackjack-hub';
     if (document.getElementById('baccarat-operator-list')) return 'baccarat-hub';
     if (document.getElementById('slot-page-operator-list')) return 'slot-page-hub';
-    if (document.getElementById('casinos-listing-container')) return 'casinos-listing';
-    if (document.getElementById('slots-listing-grid')) return 'slots-listing';
-    if (document.getElementById('providers-listing-grid')) return 'providers-listing';
-    if (document.getElementById('bonuses-grid')) return 'bonuses-listing';
     if (document.getElementById('guides-grid')) return 'guides-listing';
     if (document.getElementById('news-grid')) return 'news-listing';
     if (
@@ -988,14 +1007,6 @@ let bonusesPageRawList = null;
 let bonusesPageFilter = 'all';
 let bonusesPageSort = 'newest';
 
-/** Slots list sort. Use `Rank:asc` only after adding a Rank field to the Slot type in Strapi (otherwise Strapi returns 400). */
-const SLOTS_LIST_SORT = 'publishedAt:desc';
-
-/** Slots listing: items per page - 4 cards per row × 2 rows = 8. */
-const SLOTS_PAGE_SIZE = 8;
-
-/** Providers listing (/providers.html) - aligned with slots grid (4×2). */
-const PROVIDERS_PAGE_SIZE = 8;
 
 const DEFAULT_SLOT_CARD_IMAGE =
     'https://images.unsplash.com/photo-1596203597022-b5eefceca167?w=600&auto=format&fit=crop';
@@ -3587,6 +3598,64 @@ function showGuidePostError(isNewsPage) {
             : 'This guide is not available yet.';
     }
     document.title = isNewsPage ? 'Article not found | 888reviews' : 'Guide not found | 888reviews';
+    setRobotsNoindex();
+}
+
+function injectGuidePostJsonLd(attr, slug, isNewsPage, pageTitle, seoDesc) {
+    const pub = getPublicSiteOrigin();
+    const path = isNewsPage ? newsDetailPath(slug) : guideDetailPath(slug);
+    let abs = '';
+    try {
+        abs = new URL(path, pub).href;
+    } catch {
+        abs = `${pub}${path}`;
+    }
+    const headline = postTitlePlain(attr);
+    const published = attr.publishedAt || attr.published_at || attr.createdAt || attr.created_at;
+    const modified = attr.updatedAt || attr.updated_at || published;
+    const image = postCoverImageUrl(attr);
+    let imageAbs = image || `${pub}/assets/img/888review-siteicon.webp`;
+    if (imageAbs.startsWith('/')) imageAbs = `${pub}${imageAbs}`;
+
+    const articleType = isNewsPage ? 'NewsArticle' : 'Article';
+    setJsonLdScript('gp-jsonld-article', {
+        '@context': 'https://schema.org',
+        '@type': articleType,
+        headline,
+        name: headline,
+        description: (seoDesc || '').slice(0, 500),
+        url: abs,
+        mainEntityOfPage: abs,
+        image: imageAbs,
+        datePublished: published || undefined,
+        dateModified: modified || undefined,
+        author: { '@type': 'Organization', name: '888reviews', url: `${pub}/` },
+        publisher: {
+            '@type': 'Organization',
+            name: '888reviews',
+            url: `${pub}/`,
+            logo: {
+                '@type': 'ImageObject',
+                url: `${pub}/assets/img/888review-siteicon.webp`,
+            },
+        },
+        isPartOf: { '@type': 'WebSite', name: '888reviews', url: `${pub}/` },
+    });
+
+    setJsonLdScript('gp-jsonld-breadcrumb', {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: `${pub}/` },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: isNewsPage ? 'News' : 'Guides',
+                item: `${pub}${isNewsPage ? '/news' : '/guides'}`,
+            },
+            { '@type': 'ListItem', position: 3, name: headline, item: abs },
+        ],
+    });
 }
 
 function setGuideCanonicalAndOg(attr, slug, pageTitle, seoDesc) {
@@ -3890,6 +3959,7 @@ function populateGuidePostPage(attr, slug, options = {}) {
 
     initGuideReadingProgress();
     loadGuideRelatedPosts(slug, isNewsPage);
+    injectGuidePostJsonLd(attr, slug, isNewsPage, pageTitle, seoDesc);
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -4681,6 +4751,7 @@ function showBonusDetailError() {
     const err = document.getElementById('bonus-error');
     if (root) root.style.display = 'none';
     if (err) err.hidden = false;
+    setRobotsNoindex();
 }
 
 function setBonusCanonicalAndOg(attr, slug, pageTitle, seoDesc) {
@@ -5099,6 +5170,9 @@ async function bootApp() {
         case 'guide-post':
             await initGuidePostPage();
             return;
+        case 'casino-detail':
+            await initCasinoDetailPage();
+            return;
         case 'bonus-detail':
             await initBonusDetailPage();
             return;
@@ -5147,31 +5221,6 @@ async function bootApp() {
         case 'bonus-hub':
             await initBonusHubPage();
             return;
-        case 'casinos-listing': {
-            const casinosEl = document.getElementById('casinos-listing-container');
-            if (casinosEl) casinosEl.innerHTML = skeletonGridHtml('listing-card', 5);
-            try {
-                await ensureCasinoBonusSlugMap();
-            } catch (e) {
-                console.warn('Bonus / casino map:', e);
-            }
-            initCasinosListingPage();
-            return;
-        }
-        case 'slots-listing': {
-            const slotsEl = document.getElementById('slots-listing-grid');
-            if (slotsEl) slotsEl.innerHTML = skeletonGridHtml('slot-card', 6);
-            initSlotsListingPage();
-            return;
-        }
-        case 'providers-listing': {
-            const providersEl = document.getElementById('providers-listing-grid');
-            if (providersEl) providersEl.innerHTML = skeletonGridHtml('provider-card', 6);
-            initProvidersListingPage();
-            return;
-        }
-        case 'bonuses-listing':
-            return;
         case 'guides-listing': {
             const guidesEl = document.getElementById('guides-grid');
             const guidesStatus = document.getElementById('guides-status');
@@ -5204,751 +5253,6 @@ function scheduleBootApp() {
     }
 }
 
-/**
- * Strapi query fragment for providers directory filters (see providers.html tabs).
- * Uses boolean / string fields aligned with `providerTierBadgeClass` + homepage cards.
- */
-function providersListingFilterQuery(filter) {
-    if (filter === 'top') return '&filters[IsTopProvider][$eq]=true';
-    if (filter === 'innovator') return '&filters[TierBadge][$containsi]=Innovator';
-    return '';
-}
-
-// ============================================================
-// Providers listing (/providers.html)
-// ============================================================
-function initProvidersListingPage() {
-    const grid = document.getElementById('providers-listing-grid');
-    if (!grid) return;
-    grid.innerHTML = skeletonGridHtml('provider-card', 6);
-
-    let currentPage = 1;
-    const pageSize = PROVIDERS_PAGE_SIZE;
-    let pageCount = 1;
-    let activeFilter = 'all';
-    let sortParam = 'Rank:asc';
-
-    const wrap = document.getElementById('providers-pagination-wrap');
-    const firstBtn = document.getElementById('providers-btn-first');
-    const prevBtn = document.getElementById('providers-btn-prev');
-    const nextBtn = document.getElementById('providers-btn-next');
-    const lastBtn = document.getElementById('providers-btn-last');
-    const pageNumbersEl = document.getElementById('providers-page-numbers');
-    const pageInput = document.getElementById('providers-page-input');
-    const pageGoBtn = document.getElementById('providers-page-go');
-    const pageTotalHint = document.getElementById('providers-page-total-hint');
-    const totalEl = document.getElementById('providers-total-count');
-    const sortSelect = document.getElementById('providers-sort');
-    let providersListingFirstFetch = true;
-    /** After first response we can optimistically update pager before fetch completes. */
-    let providersPagerReady = false;
-
-    function setProviderFilterTabsUi(filter) {
-        document.querySelectorAll('[data-provider-filter]').forEach((btn) => {
-            const on = btn.getAttribute('data-provider-filter') === filter;
-            btn.classList.toggle('active', on);
-            btn.setAttribute('aria-selected', on ? 'true' : 'false');
-        });
-    }
-
-    document.querySelectorAll('[data-provider-filter]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const next = btn.getAttribute('data-provider-filter') || 'all';
-            if (next === activeFilter) return;
-            activeFilter = next;
-            setProviderFilterTabsUi(activeFilter);
-            currentPage = 1;
-            fetchAndRender();
-        });
-    });
-
-    if (sortSelect) {
-        sortSelect.value = sortParam;
-        sortSelect.addEventListener('change', () => {
-            sortParam = sortSelect.value || 'Rank:asc';
-            currentPage = 1;
-            fetchAndRender();
-        });
-    }
-
-    function navigateToProvidersPage(p) {
-        const n = Math.max(1, Math.min(pageCount, Math.floor(Number(p))));
-        if (n === currentPage) return;
-        currentPage = n;
-        fetchAndRender();
-    }
-
-    bindListingPagerGoto(pageNumbersEl, pageInput, pageGoBtn, navigateToProvidersPage);
-
-    function renderCard(p) {
-        const attr = p.attributes || p;
-        const img = getProviderCardImageUrl(attr);
-        const badge = escapeHtml(attr.TierBadge || 'VERIFIED');
-        const score = formatRatingScoreHeadline(attr);
-        const scoreDisplay = score !== 'N/A' ? score : '-';
-        const name = escapeHtml(attr.Name || 'Provider');
-        const imgAlt = escapeHtml(`${attr.Name || 'Provider'} logo`);
-        const lines = providerSignatureLines(attr);
-        const sigLis = lines.length ? lines.map((l) => `<li>${escapeHtml(l)}</li>`).join('') : '<li>-</li>';
-        const portfolio = escapeHtml(String(attr.GamePortfolioCount ?? '-'));
-        const slugForLink =
-            providerSlugValue(attr) || (attr.Name ? slugifyLabel(attr.Name) : '');
-        const href = slugForLink ? providerPath(slugForLink) : '#';
-        const matClass = providerLogoMatIsDark(attr) ? ' pc-image-wrap--mat-dark' : '';
-
-        return `
-        <a href="${href}" class="provider-card reveal delay-200 active" style="text-decoration:none;color:inherit;display:block;">
-            <div class="pc-image-wrap${matClass}">
-                <img src="${img}" alt="${imgAlt}" class="pc-image" loading="lazy">
-            </div>
-            <div class="pc-content">
-                <div class="pc-header">
-                    <div class="pc-badge-wrap">
-                        <span class="pc-badge">${badge}</span>
-                    </div>
-                    <div class="pc-rating-wrap">
-                        <div class="pc-score">${escapeHtml(scoreDisplay)}</div>
-                        <div class="review-stars small">${renderStars(attr)}</div>
-                    </div>
-                </div>
-                <h3 class="pc-title">${name}</h3>
-                <div class="pc-signature">
-                    <span class="pc-sig-label">SIGNATURE TITLES</span>
-                    <ul class="pc-sig-list">${sigLis}</ul>
-                </div>
-                <div class="pc-footer">
-                    <div class="pc-portfolio">
-                        <span class="port-label">Portfolio</span>
-                        <span class="port-value"><strong>${portfolio}</strong> games</span>
-                    </div>
-                    <span class="pc-action-btn" aria-hidden="true"><i data-lucide="arrow-right"></i></span>
-                </div>
-            </div>
-        </a>`;
-    }
-
-    async function fetchAndRender(opts = {}) {
-        const skipScroll = opts.skipScroll === true;
-        if (!providersListingFirstFetch && !skipScroll) {
-            scrollListingAnchorIntoView('.providers-grid-section');
-        }
-        if (providersPagerReady && wrap && pageCount > 1) {
-            updateListingPagerDom(
-                wrap,
-                pageCount,
-                currentPage,
-                prevBtn,
-                nextBtn,
-                pageNumbersEl,
-                pageInput,
-                pageTotalHint
-            );
-        }
-
-        const holdHeight = Math.max(grid.offsetHeight, 200);
-        grid.style.minHeight = `${holdHeight}px`;
-        grid.innerHTML = skeletonGridHtml('provider-card', 6);
-
-        const clearListingMinHeight = () => {
-            grid.style.minHeight = '';
-        };
-
-        try {
-            const sortQ = encodeURIComponent(sortParam);
-            const filterQ = providersListingFilterQuery(activeFilter);
-            const qs = `populate=*&sort=${sortQ}${filterQ}&pagination[page]=${currentPage}&pagination[pageSize]=${pageSize}`;
-            const res = await fetch(`${API_URL}/api/providers?${qs}`);
-            const json = await res.json();
-            if (!res.ok) {
-                clearListingMinHeight();
-                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${apiErrorMessage(res.status, json, 'providers')}</p>`;
-                if (wrap) wrap.style.display = 'none';
-                providersListingFirstFetch = false;
-                return;
-            }
-            const { data, meta } = json;
-            const total = meta?.pagination?.total ?? data?.length ?? 0;
-            pageCount = meta?.pagination?.pageCount ?? 1;
-            if (totalEl) totalEl.textContent = String(total);
-
-            if (currentPage > pageCount && pageCount >= 1) {
-                currentPage = pageCount;
-                clearListingMinHeight();
-                return fetchAndRender({ skipScroll: true });
-            }
-
-            if (!data || data.length === 0) {
-                clearListingMinHeight();
-                grid.innerHTML =
-                    '<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">No providers listed yet.</p>';
-                if (wrap) wrap.style.display = 'none';
-                providersListingFirstFetch = false;
-                providersPagerReady = true;
-                return;
-            }
-
-            clearListingMinHeight();
-            grid.innerHTML = data.map(renderCard).join('');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-
-            providersPagerReady = true;
-            updateListingPagerDom(
-                wrap,
-                pageCount,
-                currentPage,
-                prevBtn,
-                nextBtn,
-                pageNumbersEl,
-                pageInput,
-                pageTotalHint
-            );
-            providersListingFirstFetch = false;
-        } catch (e) {
-            console.error(e);
-            clearListingMinHeight();
-            grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${contentEmptyMessage('providers')}</p>`;
-            if (wrap) wrap.style.display = 'none';
-            providersListingFirstFetch = false;
-        }
-    }
-
-    if (firstBtn) {
-        firstBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage = 1;
-                fetchAndRender();
-            }
-        });
-    }
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                fetchAndRender();
-            }
-        });
-    }
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (currentPage < pageCount) {
-                currentPage++;
-                fetchAndRender();
-            }
-        });
-    }
-    if (lastBtn) {
-        lastBtn.addEventListener('click', () => {
-            if (currentPage < pageCount) {
-                currentPage = pageCount;
-                fetchAndRender();
-            }
-        });
-    }
-
-    fetchAndRender();
-}
-
-// ============================================================
-// Slots listing (/slots.html) - Strapi collection `slots` (see SLOTS_API_COLLECTION)
-// ============================================================
-function slotStatIsEmpty(display) {
-    const s = String(display || '').trim();
-    return s === '' || s === '-' || s === 'N/A';
-}
-
-/** One short editorial line for cards (HighlightQuote / Tagline only). */
-function slotCardExcerptPlain(attr) {
-    const raw = firstNonEmptyAttr(attr, ['HighlightQuote', 'Tagline']);
-    if (!raw) return '';
-    const plain = String(raw)
-        .replace(/<[^>]+>/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-    if (!plain) return '';
-    if (plain.length > 72) return `${plain.slice(0, 69)}…`;
-    return plain;
-}
-
-/** Full slot list cached when dropdown filters need client-side matching (reliable vs Strapi filter quirks). */
-let slotsListingFullCache = null;
-
-function slotsListingUsesClientFilters(state) {
-    return !!(state.providerVal || state.volatility || state.rtpBand);
-}
-
-function slotPassesSlotListingFilters(entry, state) {
-    const attr = entry.attributes || entry;
-    if (state.searchQuery) {
-        const q = state.searchQuery.toLowerCase();
-        const title = String(attr.Name || attr.Title || '').toLowerCase();
-        const prov = (slotProviderDisplayName(attr) || '').toLowerCase();
-        if (!title.includes(q) && !prov.includes(q)) return false;
-    }
-    if (state.providerVal) {
-        if (state.providerVal.startsWith('id:')) {
-            const want = state.providerVal.slice(3);
-            const rel = attr.provider ?? attr.Provider ?? attr.providers;
-            const pd = rel && (rel.data != null ? rel.data : rel);
-            if (!pd) return false;
-            const list = Array.isArray(pd) ? pd : [pd];
-            const ids = list.map((x) => String(x?.id ?? '')).filter(Boolean);
-            if (!ids.includes(want)) return false;
-        } else if (state.providerVal.startsWith('name:')) {
-            const want = state.providerVal.slice(5).toLowerCase();
-            const prov = (slotProviderDisplayName(attr) || '').toLowerCase();
-            if (!prov.includes(want)) return false;
-        } else {
-            const prov = (slotProviderDisplayName(attr) || '').toLowerCase();
-            if (!prov.includes(state.providerVal.toLowerCase())) return false;
-        }
-    }
-    if (state.volatility) {
-        const v = formatSlotVolatilityBadge(attr);
-        if (!v || !v.toUpperCase().includes(state.volatility.toUpperCase())) return false;
-    }
-    if (state.rtpBand) {
-        const p = slotRtpPercentNumber(attr);
-        if (p == null) return false;
-        if (state.rtpBand === 'under94' && !(p < 94)) return false;
-        if (state.rtpBand === '94-96' && !(p >= 94 && p < 96)) return false;
-        if (state.rtpBand === 'over96' && !(p >= 96)) return false;
-    }
-    return true;
-}
-
-async function fetchAllSlotsForListingFilters() {
-    if (slotsListingFullCache) return slotsListingFullCache;
-    const all = [];
-    let page = 1;
-    let totalPages = 1;
-    do {
-        const qs = `populate=*&sort=${encodeURIComponent(SLOTS_LIST_SORT)}&pagination[page]=${page}&pagination[pageSize]=100`;
-        const res = await fetch(`${API_URL}/api/${SLOTS_API_COLLECTION}?${qs}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error('slots-list');
-        (json.data || []).forEach((row) => all.push(row));
-        totalPages = json.meta?.pagination?.pageCount || 1;
-        page++;
-    } while (page <= totalPages);
-    slotsListingFullCache = all;
-    return all;
-}
-
-/** Shorten native <option> labels so the OS dropdown width stays near the field (long text widens the menu). */
-function truncateSlotsFilterOptionLabel(text, maxLen = 28) {
-    const s = String(text || '').trim();
-    if (s.length <= maxLen) return s;
-    return `${s.slice(0, Math.max(0, maxLen - 1))}…`;
-}
-
-async function populateSlotsProviderFilterSelect() {
-    const sel = document.getElementById('slots-filter-provider');
-    if (!sel) return;
-    sel.innerHTML = '';
-    const allOpt = new Option('All providers', '');
-    allOpt.title = 'All providers';
-    sel.appendChild(allOpt);
-    try {
-        const res = await fetch(`${API_URL}/api/providers?pagination[limit]=500&sort=Name:asc`);
-        const json = await res.json();
-        if (!res.ok) return;
-        (json.data || []).forEach((row) => {
-            const a = row.attributes || row;
-            const name = String(a.Name || '').trim();
-            if (!name) return;
-            const id = row.id != null ? String(row.id) : '';
-            const opt = document.createElement('option');
-            opt.value = id ? `id:${id}` : `name:${name}`;
-            opt.textContent = truncateSlotsFilterOptionLabel(name);
-            opt.title = name;
-            sel.appendChild(opt);
-        });
-    } catch {
-        /* non-fatal */
-    }
-}
-
-function renderSlotCard(entry) {
-    const attr = entry.attributes || entry;
-    const title = escapeHtml(attr.Name || attr.Title || 'Slot');
-    const providerName = (slotProviderDisplayName(attr) || '').trim();
-    const providerInner = providerName
-        ? escapeHtml(providerName.toUpperCase())
-        : 'PROVIDER';
-    const providerClass = providerName ? 'sc-provider-name' : 'sc-provider-name sc-provider-name--empty';
-    const rtp = escapeHtml(formatSlotRtpDisplay(attr));
-    const vol = formatSlotVolatilityBadge(attr);
-    const volHtml = vol ? `<span class="sc-volatility-badge">${escapeHtml(vol)}</span>` : '';
-    const imgUrl = getSlotCardImageUrl(attr);
-    const img = escapeHtml(imgUrl);
-    const slug = slotSlugValue(attr);
-    const reviewHref = slotDetailPath(slug);
-    const playUrl = slotPlayLinkUrl(attr);
-    const fallback = escapeHtml(DEFAULT_SLOT_CARD_IMAGE);
-
-    const pros = slotBenefitTexts(attr.Pros);
-    const prosN = pros.length;
-    const highlightsStr = prosN > 0 ? `${prosN} highlight${prosN === 1 ? '' : 's'}` : '';
-
-    const excerpt = slotCardExcerptPlain(attr);
-    const excerptHtml = excerpt
-        ? `<p class="sc-dek">${escapeHtml(excerpt)}</p>`
-        : '';
-
-    const highlightsRow =
-        prosN > 0
-            ? `<div class="sc-quick-meta"><span class="sc-quick-meta__item"><i data-lucide="sparkles"></i> ${escapeHtml(highlightsStr)}</span></div>`
-            : '';
-
-    const playBtn = playUrl
-        ? `<a href="${escapeHtml(playUrl)}" class="sc-btn sc-btn--play" target="_blank" rel="noopener noreferrer">PLAY</a>`
-        : '';
-
-    return `
-        <div class="slot-card">
-            <div class="sc-image-wrap">
-                ${volHtml}
-                <img src="${img}" alt="" class="sc-image" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallback}';">
-                <div class="sc-image-shade" aria-hidden="true"></div>
-            </div>
-            <div class="sc-content">
-                <div class="sc-content-head">
-                    <div class="${providerClass}" title="${providerInner}">${providerInner}</div>
-                    <div class="sc-rtp-pill">
-                        <span class="sc-rtp-pill__val">${rtp}</span>
-                        <span class="sc-rtp-pill__lbl">RTP</span>
-                    </div>
-                </div>
-                <h3 class="sc-title">${title}</h3>
-                ${excerptHtml}
-                ${highlightsRow}
-                <div class="sc-card-actions">
-                    <a href="${reviewHref}" class="sc-btn">READ REVIEW</a>
-                    ${playBtn}
-                </div>
-            </div>
-        </div>`;
-}
-
-function initSlotsListingPage() {
-    const grid = document.getElementById('slots-listing-grid');
-    if (!grid) return;
-    grid.innerHTML = skeletonGridHtml('slot-card', 6);
-
-    let currentPage = 1;
-    const pageSize = SLOTS_PAGE_SIZE;
-    let pageCount = 1;
-    let searchQuery = '';
-    let searchDebounce = null;
-    /** After first load, scroll the listing into view before fetch when changing page or search. */
-    let slotsListingFirstFetch = true;
-    let slotsPagerReady = false;
-
-    const wrap = document.getElementById('slots-pagination-wrap');
-    const firstBtn = document.getElementById('slots-btn-first');
-    const prevBtn = document.getElementById('slots-btn-prev');
-    const nextBtn = document.getElementById('slots-btn-next');
-    const lastBtn = document.getElementById('slots-btn-last');
-    const pageNumbersEl = document.getElementById('slots-page-numbers');
-    const pageInput = document.getElementById('slots-page-input');
-    const pageGoBtn = document.getElementById('slots-page-go');
-    const pageTotalHint = document.getElementById('slots-page-total-hint');
-    const totalEl = document.getElementById('slots-hero-total');
-    const searchInput = document.getElementById('slots-search-input');
-    const clearBtn = document.getElementById('slots-clear-btn');
-    const providerSel = document.getElementById('slots-filter-provider');
-    const volSel = document.getElementById('slots-filter-volatility');
-    const rtpSel = document.getElementById('slots-filter-rtp');
-
-    function readSlotFilterState() {
-        return {
-            searchQuery,
-            providerVal: providerSel?.value?.trim() || '',
-            volatility: volSel?.value?.trim() || '',
-            rtpBand: rtpSel?.value?.trim() || '',
-        };
-    }
-
-    function navigateToSlotsPage(p) {
-        const n = Math.max(1, Math.min(pageCount, Math.floor(Number(p))));
-        if (n === currentPage) return;
-        currentPage = n;
-        fetchAndRender();
-    }
-
-    bindListingPagerGoto(pageNumbersEl, pageInput, pageGoBtn, navigateToSlotsPage);
-
-    async function fetchAndRender(opts = {}) {
-        const skipScroll = opts.skipScroll === true;
-        if (!slotsListingFirstFetch && !skipScroll) {
-            scrollListingAnchorIntoView('.slots-grid-section');
-        }
-        if (slotsPagerReady && wrap && pageCount > 1) {
-            updateListingPagerDom(
-                wrap,
-                pageCount,
-                currentPage,
-                prevBtn,
-                nextBtn,
-                pageNumbersEl,
-                pageInput,
-                pageTotalHint
-            );
-        }
-
-        const holdHeight = Math.max(grid.offsetHeight, 200);
-        grid.style.minHeight = `${holdHeight}px`;
-        grid.innerHTML = skeletonGridHtml('slot-card', 6);
-
-        const clearListingMinHeight = () => {
-            grid.style.minHeight = '';
-        };
-
-        const state = readSlotFilterState();
-
-        try {
-            if (slotsListingUsesClientFilters(state)) {
-                const all = await fetchAllSlotsForListingFilters();
-                const filtered = all.filter((e) => slotPassesSlotListingFilters(e, state));
-                const total = filtered.length;
-                pageCount = Math.max(1, Math.ceil(total / pageSize));
-                if (totalEl) totalEl.textContent = String(total);
-
-                if (currentPage > pageCount && pageCount >= 1) {
-                    currentPage = pageCount;
-                    clearListingMinHeight();
-                    return fetchAndRender({ skipScroll: true });
-                }
-
-                clearListingMinHeight();
-
-                if (filtered.length === 0) {
-                    grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">No slots match your filters.</p>`;
-                    if (wrap) wrap.style.display = 'none';
-                    slotsListingFirstFetch = false;
-                    slotsPagerReady = true;
-                    return;
-                }
-
-                const slice = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-                grid.innerHTML = slice.map(renderSlotCard).join('');
-                if (typeof lucide !== 'undefined') lucide.createIcons();
-
-                slotsPagerReady = true;
-                updateListingPagerDom(
-                    wrap,
-                    pageCount,
-                    currentPage,
-                    prevBtn,
-                    nextBtn,
-                    pageNumbersEl,
-                    pageInput,
-                    pageTotalHint
-                );
-                slotsListingFirstFetch = false;
-                return;
-            }
-
-            let qs = `populate=*&sort=${encodeURIComponent(SLOTS_LIST_SORT)}&pagination[page]=${currentPage}&pagination[pageSize]=${pageSize}`;
-            if (searchQuery) {
-                qs += `&filters[$and][0][$or][0][Title][$containsi]=${encodeURIComponent(searchQuery)}`;
-                qs += `&filters[$and][0][$or][1][ProviderName][$containsi]=${encodeURIComponent(searchQuery)}`;
-                qs += `&filters[$and][0][$or][2][Software][$containsi]=${encodeURIComponent(searchQuery)}`;
-            }
-
-            let res = await fetch(`${API_URL}/api/${SLOTS_API_COLLECTION}?${qs}`);
-            let json = await res.json();
-            if (!res.ok && res.status === 400 && searchQuery) {
-                qs = `populate=*&sort=${encodeURIComponent(SLOTS_LIST_SORT)}&pagination[page]=${currentPage}&pagination[pageSize]=${pageSize}&filters[Title][$containsi]=${encodeURIComponent(searchQuery)}`;
-                res = await fetch(`${API_URL}/api/${SLOTS_API_COLLECTION}?${qs}`);
-                json = await res.json();
-            }
-            if (!res.ok) {
-                clearListingMinHeight();
-                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${apiErrorMessage(res.status, json, 'slots')}</p>`;
-                if (wrap) wrap.style.display = 'none';
-                if (totalEl) totalEl.textContent = '-';
-                slotsListingFirstFetch = false;
-                return;
-            }
-            const { data, meta } = json;
-            const total = meta?.pagination?.total ?? data?.length ?? 0;
-            pageCount = meta?.pagination?.pageCount ?? 1;
-            if (totalEl) totalEl.textContent = String(total);
-
-            if (currentPage > pageCount && pageCount >= 1) {
-                currentPage = pageCount;
-                clearListingMinHeight();
-                return fetchAndRender({ skipScroll: true });
-            }
-
-            clearListingMinHeight();
-
-            if (!data || data.length === 0) {
-                const emptyMsg = searchQuery
-                    ? 'No slots match your search.'
-                    : 'No slots listed yet.';
-                grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${emptyMsg}</p>`;
-                if (wrap) wrap.style.display = 'none';
-                slotsListingFirstFetch = false;
-                slotsPagerReady = true;
-                return;
-            }
-
-            const cardsHtml = data.map(renderSlotCard).join('');
-            grid.innerHTML = cardsHtml;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-
-            slotsPagerReady = true;
-            updateListingPagerDom(
-                wrap,
-                pageCount,
-                currentPage,
-                prevBtn,
-                nextBtn,
-                pageNumbersEl,
-                pageInput,
-                pageTotalHint
-            );
-            slotsListingFirstFetch = false;
-        } catch (e) {
-            console.error(e);
-            clearListingMinHeight();
-            grid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding: 48px; color: #64748b;">${contentEmptyMessage('slots')}</p>`;
-            if (wrap) wrap.style.display = 'none';
-            if (totalEl) totalEl.textContent = '-';
-            slotsListingFirstFetch = false;
-        }
-    }
-
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            if (searchDebounce) clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(() => {
-                searchQuery = searchInput.value.trim();
-                currentPage = 1;
-                fetchAndRender();
-            }, 400);
-        });
-    }
-
-    [providerSel, volSel, rtpSel].forEach((el) => {
-        if (!el) return;
-        el.addEventListener('change', () => {
-            currentPage = 1;
-            fetchAndRender();
-        });
-    });
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (searchInput) searchInput.value = '';
-            searchQuery = '';
-            if (providerSel) providerSel.value = '';
-            if (volSel) volSel.value = '';
-            if (rtpSel) rtpSel.value = '';
-            slotsListingFullCache = null;
-            currentPage = 1;
-            fetchAndRender();
-        });
-    }
-
-    if (firstBtn) {
-        firstBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage = 1;
-                fetchAndRender();
-            }
-        });
-    }
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                fetchAndRender();
-            }
-        });
-    }
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (currentPage < pageCount) {
-                currentPage++;
-                fetchAndRender();
-            }
-        });
-    }
-    if (lastBtn) {
-        lastBtn.addEventListener('click', () => {
-            if (currentPage < pageCount) {
-                currentPage = pageCount;
-                fetchAndRender();
-            }
-        });
-    }
-
-    populateSlotsProviderFilterSelect().finally(() => {
-        fetchAndRender();
-    });
-}
-
-// ============================================================
-// Casinos listing: slide-out filter drawer (tablet & mobile)
-// ============================================================
-function initCasinosListingFilterDrawer() {
-    const toggle = document.getElementById('listing-filter-toggle');
-    const drawer = document.getElementById('listing-filter-drawer');
-    const backdrop = document.getElementById('listing-filter-backdrop');
-    const closeBtn = document.getElementById('listing-filter-close');
-    if (!toggle || !drawer) return;
-
-    const mq = window.matchMedia('(max-width: 1024px)');
-
-    const setOpen = (open) => {
-        if (!mq.matches) {
-            document.body.classList.remove('listing-filter-open');
-            drawer.classList.remove('is-open');
-            drawer.removeAttribute('aria-hidden');
-            toggle.setAttribute('aria-expanded', 'false');
-            if (backdrop) backdrop.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
-            return;
-        }
-        document.body.classList.toggle('listing-filter-open', open);
-        drawer.classList.toggle('is-open', open);
-        drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
-        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (backdrop) {
-            backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
-        }
-        document.body.style.overflow = open ? 'hidden' : '';
-    };
-
-    const closeDrawer = () => setOpen(false);
-
-    toggle.addEventListener('click', () => {
-        setOpen(!document.body.classList.contains('listing-filter-open'));
-    });
-    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-    if (backdrop) backdrop.addEventListener('click', closeDrawer);
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && document.body.classList.contains('listing-filter-open')) {
-            closeDrawer();
-        }
-    });
-
-    const onMqChange = () => {
-        if (!mq.matches) closeDrawer();
-    };
-    if (typeof mq.addEventListener === 'function') {
-        mq.addEventListener('change', onMqChange);
-    } else if (typeof mq.addListener === 'function') {
-        mq.addListener(onMqChange);
-    }
-    window.addEventListener('resize', onMqChange);
-    setOpen(false);
-}
 
 // ============================================================
 // Malaysia Hub: static table with optional Strapi override
@@ -7516,10 +6820,10 @@ function renderReviewsOperatorRow(item, listPos, slugMap) {
 function applyReviewsMeta(page) {
     if (!page) return;
     const title =
-        page.metaTitle || 'Best Online Casino Reviews Malaysia 2026 | Top Site Ratings | 888reviews';
+        page.metaTitle || 'Online Casino Reviews Directory Malaysia 2026 | Full Site Reviews | 888reviews';
     const desc =
         page.metaDescription ||
-        'Independent online casino reviews for Malaysian players: hands-on testing, ranked operators, bonus guides, and trusted payment methods. 18+ only.';
+        'Browse our full directory of independent online casino reviews for Malaysian players: hands-on testing, per-site ratings, bonus guides, and payment method checks. 18+ only.';
     document.title = title;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', desc);
@@ -11475,234 +10779,7 @@ function appendHubListingFilters(qs, container) {
 }
 
 // ============================================================
-// Casinos Listing Page: Dynamic Strapi Integration
-// Only runs when the #casinos-listing-container element exists
-// ============================================================
-function initCasinosListingPage() {
-    const container = document.getElementById('casinos-listing-container');
-    if (!container) return; // Not on the casinos listing page, bail out
-    container.innerHTML = skeletonGridHtml('listing-card', 5);
-
-    // --- State ---
-    let currentPage = 1;
-    let currentSort = 'Rank:asc';
-    let currentPageSize = 5;
-    let filterTierOne = false;
-    /** Avoids first-paint jump; after that, scroll listing into view after each fetch. */
-    let casinosListingFirstFetch = true;
-
-    function renderCard(c, listPos) {
-        const attr = attrFromCasinoEntry(c);
-        const logoUrl = getLogoUrl(attr);
-
-        const tierBadge = attr.IsTierOne
-            ? `<span class="badge badge-light badge-sm">TIER ONE</span>` : '';
-
-        const bonusAmt = casinoBonusAmountDisplay(attr);
-        const bonus = bonusAmt
-            ? `<div class="stat-col stat-col--bonus"><span class="stat-label-row"><i data-lucide="gift" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Casino bonus</span></span><span class="stat-value primary">${escapeHtml(bonusAmt)}</span></div>`
-            : `<div class="stat-col stat-col--bonus stat-col--empty"><span class="stat-label-row"><i data-lucide="gift" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Casino bonus</span></span><span class="stat-value stat-value--muted">No offer on file</span></div>`;
-        const payoutSpeed = casinoPayoutSpeedDisplay(attr);
-        const gameCount = casinoGameCountDisplay(attr);
-        const payout = payoutSpeed
-            ? `<div class="stat-col stat-col--payout"><span class="stat-label-row"><i data-lucide="zap" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Payout speed</span></span><span class="stat-value">${escapeHtml(payoutSpeed)}</span></div>`
-            : '';
-        const games = gameCount
-            ? `<div class="stat-col stat-col--games"><span class="stat-label-row"><i data-lucide="layout-grid" class="stat-label-icon" aria-hidden="true"></i><span class="stat-label">Games count</span></span><span class="stat-value">${escapeHtml(gameCount)}</span></div>`
-            : '';
-
-        const reviewLink = casinoReviewPath(attr.Slug);
-        const visitHref = escapeHtml(casinoVisitSiteHref(attr));
-        const visitRel = casinoVisitSiteIsExternal(attr)
-            ? ' target="_blank" rel="noopener noreferrer"'
-            : '';
-
-        return `
-        <article class="listing-card">
-            <div class="listing-card__review-panel">
-                ${renderReviewRankPanelHtml({
-                    listPos,
-                    attr,
-                    logoUrl,
-                    isVerified: !!attr.IsTierOne,
-                })}
-            </div>
-            <div class="card-content-area">
-                <div class="card-top">
-                    <div class="card-title-row">
-                        <h3 class="casino-name">${attr.Name || ''}</h3>
-                        ${tierBadge}
-                    </div>
-                    <div class="rating">
-                        ${renderStars(attr)}
-                        <span>${formatRatingScoreLine(attr)}</span>
-                    </div>
-                </div>
-                <div class="card-stats">
-                    ${bonus}${payout}${games}
-                </div>
-            </div>
-            <div class="card-action-area">
-                <a href="${visitHref}" class="btn btn-primary btn-block listing-visit-btn"${visitRel}><i data-lucide="external-link" aria-hidden="true"></i><span>VISIT SITE</span></a>
-                <a href="${reviewLink}" class="read-review-link"><i data-lucide="arrow-right" aria-hidden="true"></i><span>READ REVIEW</span></a>
-            </div>
-        </article>`;
-    }
-
-    function renderPagination(meta) {
-        const { page, pageCount, total } = meta.pagination;
-        const paginationEl = document.getElementById('pagination-container');
-        const pageNumbersEl = document.getElementById('page-numbers');
-        const countEl = document.getElementById('results-count');
-
-        if (countEl) countEl.textContent = total;
-
-        if (!paginationEl) return;
-
-        if (pageCount <= 1) {
-            paginationEl.style.display = 'none';
-            return;
-        }
-        paginationEl.style.display = 'flex';
-
-        const prevBtn = document.getElementById('btn-prev');
-        const nextBtn = document.getElementById('btn-next');
-        if (prevBtn) prevBtn.classList.toggle('disabled', page <= 1);
-        if (nextBtn) nextBtn.classList.toggle('disabled', page >= pageCount);
-
-        // Smart page numbers with ellipsis
-        const range = [];
-        for (let i = 1; i <= pageCount; i++) {
-            if (i === 1 || i === pageCount || (i >= page - 1 && i <= page + 1)) range.push(i);
-        }
-        let numbersHtml = '';
-        let prev = null;
-        range.forEach(p => {
-            if (prev !== null && p - prev > 1) numbersHtml += `<span class="ellipsis">…</span>`;
-            numbersHtml += `<a href="#" class="page-num ${p === page ? 'active' : ''}" data-page="${p}">${p}</a>`;
-            prev = p;
-        });
-        if (pageNumbersEl) {
-            pageNumbersEl.innerHTML = numbersHtml;
-            pageNumbersEl.querySelectorAll('.page-num').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    currentPage = parseInt(btn.dataset.page);
-                    fetchAndRender({ scrollListing: true });
-                });
-            });
-        }
-
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-
-    async function fetchAndRender(opts = {}) {
-        const scrollListing = opts.scrollListing === true;
-        const skipScroll = opts.skipScroll === true;
-        if (scrollListing && !casinosListingFirstFetch && !skipScroll) {
-            scrollListingAnchorIntoView('.listing-main');
-        }
-
-        const holdHeight = Math.max(container.offsetHeight, 200);
-        container.style.minHeight = `${holdHeight}px`;
-        container.innerHTML = skeletonGridHtml('listing-card', currentPageSize);
-
-        let qs = `populate=*&sort=${currentSort}&pagination[page]=${currentPage}&pagination[pageSize]=${currentPageSize}`;
-        if (filterTierOne) qs += `&filters[IsTierOne][$eq]=true`;
-        const hubFilterResult = appendHubListingFilters(qs, container);
-        qs = hubFilterResult.qs;
-
-        const clearListingMinHeight = () => {
-            container.style.minHeight = '';
-        };
-
-        async function fetchListing(queryString) {
-            const res = await fetchCasinosWithBonusPopulate(queryString);
-            const json = await res.json();
-            return { res, json };
-        }
-
-        try {
-            let { res, json } = await fetchListing(qs);
-            if (!res.ok && hubFilterResult.hasHubFilters) {
-                let fallbackQs = `populate=*&sort=${currentSort}&pagination[page]=${currentPage}&pagination[pageSize]=${currentPageSize}`;
-                if (filterTierOne) fallbackQs += `&filters[IsTierOne][$eq]=true`;
-                ({ res, json } = await fetchListing(fallbackQs));
-            }
-            if (!res.ok) {
-                clearListingMinHeight();
-                container.innerHTML = `<p style="text-align:center; padding: 60px; color: #64748b;">${apiErrorMessage(res.status, json, 'casinos')}</p>`;
-                casinosListingFirstFetch = false;
-                return;
-            }
-            const { data, meta } = json;
-
-            if (!data || data.length === 0) {
-                clearListingMinHeight();
-                container.innerHTML = `<p style="text-align:center; padding: 60px; color: #64748b;">No casinos match your current filters.</p>`;
-                const paginationEl = document.getElementById('pagination-container');
-                if (paginationEl) paginationEl.style.display = 'none';
-                const countEl = document.getElementById('results-count');
-                if (countEl) countEl.textContent = '0';
-                casinosListingFirstFetch = false;
-                return;
-            }
-
-            clearListingMinHeight();
-            const baseRank = (currentPage - 1) * currentPageSize;
-            container.innerHTML = data.map((c, i) => renderCard(c, baseRank + i + 1)).join('');
-            renderPagination(meta);
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-
-            casinosListingFirstFetch = false;
-
-        } catch (e) {
-            console.error(e);
-            clearListingMinHeight();
-            container.innerHTML = `<p style="text-align:center; padding: 60px; color: #64748b;">${contentEmptyMessage('casinos')}</p>`;
-            casinosListingFirstFetch = false;
-        }
-    }
-
-    // --- Wire up sidebar filter controls ---
-    const filterTierOneEl = document.getElementById('filter-tier-one');
-    if (filterTierOneEl) {
-        filterTierOneEl.addEventListener('change', (e) => {
-            filterTierOne = e.target.checked;
-            currentPage = 1;
-            fetchAndRender();
-        });
-    }
-
-    document.querySelectorAll('input[name="sort"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            currentSort = e.target.value;
-            currentPage = 1;
-            fetchAndRender();
-        });
-    });
-
-    document.querySelectorAll('input[name="pageSize"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            currentPageSize = parseInt(e.target.value);
-            currentPage = 1;
-            fetchAndRender();
-        });
-    });
-
-    const prevBtn = document.getElementById('btn-prev');
-    const nextBtn = document.getElementById('btn-next');
-    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.preventDefault(); if (currentPage > 1) { currentPage--; fetchAndRender({ scrollListing: true }); } });
-    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.preventDefault(); currentPage++; fetchAndRender({ scrollListing: true }); });
-
-    initCasinosListingFilterDrawer();
-
-    // Initial fetch
-    fetchAndRender();
-}
-
-// ============================================================
-// Casino Review Page: Dynamic Strapi Integration
+// Casino / provider / slot shared helpers (player rating, slug fetch)
 // ============================================================
 
 function normalizeCasinoRepeatable(field) {
@@ -11843,7 +10920,7 @@ async function fetchSlotBySlug(slug) {
 
 /**
  * Fetch one provider by slug. Strapi filter query strings vary by version/schema;
- * if filters return empty, we fall back to the same paged list as /providers.html
+ * if filters return empty, we fall back to a paged providers list
  * and match Slug (or slugified Name).
  */
 async function fetchProviderBySlug(slug) {
@@ -12250,6 +11327,24 @@ function populateProviderDetailPage(attr) {
     if (pvTwImg) pvTwImg.setAttribute('content', shareImgPv);
     if (pvTwTitle) pvTwTitle.setAttribute('content', pageTitlePv);
     if (pvTwDesc && descOgPv) pvTwDesc.setAttribute('content', descOgPv.slice(0, 320));
+
+    setJsonLdScript('pv-jsonld-webpage', {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: pageTitlePv,
+        description: descOgPv.slice(0, 500),
+        url: canonicalAbsPv,
+        isPartOf: { '@type': 'WebSite', name: '888reviews', url: `${pubOriginPv}/` },
+    });
+    setJsonLdScript('pv-jsonld-breadcrumb', {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: `${pubOriginPv}/` },
+            { '@type': 'ListItem', position: 2, name: 'Slots', item: `${pubOriginPv}/slots` },
+            { '@type': 'ListItem', position: 3, name: name, item: canonicalAbsPv },
+        ],
+    });
 }
 
 function showProviderError() {
@@ -12257,6 +11352,7 @@ function showProviderError() {
     const err = document.getElementById('provider-error');
     if (main) main.style.display = 'none';
     if (err) err.style.display = 'block';
+    setRobotsNoindex();
 }
 
 function showSlotError() {
@@ -12264,6 +11360,7 @@ function showSlotError() {
     const err = document.getElementById('slot-error');
     if (main) main.style.display = 'none';
     if (err) err.style.display = 'block';
+    setRobotsNoindex();
 }
 
 function populateSlotDetailPage(attr) {
@@ -12460,6 +11557,24 @@ function populateSlotDetailPage(attr) {
     if (svTwImg) svTwImg.setAttribute('content', shareImgSv);
     if (svTwTitle) svTwTitle.setAttribute('content', pageTitleSv);
     if (svTwDesc && descOgSv) svTwDesc.setAttribute('content', descOgSv);
+
+    setJsonLdScript('sv-jsonld-webpage', {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: pageTitleSv,
+        description: descOgSv.slice(0, 500),
+        url: canonicalAbsSv,
+        isPartOf: { '@type': 'WebSite', name: '888reviews', url: `${pubOriginSv}/` },
+    });
+    setJsonLdScript('sv-jsonld-breadcrumb', {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: `${pubOriginSv}/` },
+            { '@type': 'ListItem', position: 2, name: 'Slots', item: `${pubOriginSv}/slots` },
+            { '@type': 'ListItem', position: 3, name: title, item: canonicalAbsSv },
+        ],
+    });
 }
 
 /** Slot detail: toggles .is-stuck on the sticky verdict sidebar for extra top padding while pinned. */
@@ -12539,6 +11654,263 @@ async function initSlotDetailPage() {
     } catch (e) {
         console.error('Failed to load slot:', e);
         showSlotError();
+    } finally {
+        clearDetailPageLoading(rootEl);
+    }
+}
+
+function showCasinoError() {
+    const main = document.getElementById('casino-page-root');
+    const err = document.getElementById('casino-error');
+    if (main) main.style.display = 'none';
+    if (err) err.hidden = false;
+    setRobotsNoindex();
+}
+
+function humanizeSlugFromPath(slug) {
+    try {
+        return decodeURIComponent(String(slug))
+            .replace(/[-_]+/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+    } catch {
+        return String(slug || '');
+    }
+}
+
+function populateCasinoDetailPage(attr, slug) {
+    const DASH = '-';
+    const name = String(attr.Name || attr.name || humanizeSlugFromPath(slug) || 'Casino').trim();
+    const seoTitle = firstNonEmptyAttr(attr, ['SEOTitle', 'seoTitle']);
+    const seoDesc = firstNonEmptyAttr(attr, ['SEODescription', 'seoDescription']);
+    const pageTitle = seoTitle || `${name} Review | 888reviews`;
+    document.title = pageTitle;
+
+    const excerptPlain = richTextToPlainText(attr.Excerpt ?? attr.excerpt ?? '');
+    const metaDesc = document.getElementById('cr-meta-description');
+    if (metaDesc) {
+        const desc = seoDesc || excerptPlain;
+        if (desc) metaDesc.setAttribute('content', String(desc).slice(0, 320));
+    }
+
+    const canonEl = document.getElementById('cr-canonical');
+    const pubOrigin = getPublicSiteOrigin();
+    let canonicalAbs = '';
+    try {
+        canonicalAbs = new URL(`/casino/${encodeURIComponent(String(slug).trim())}`, pubOrigin).href;
+    } catch {
+        canonicalAbs = `${pubOrigin}/casino/${encodeURIComponent(String(slug).trim())}`;
+    }
+    if (canonEl) canonEl.setAttribute('href', canonicalAbs);
+
+    const bc = document.getElementById('cr-bc-current');
+    if (bc) bc.textContent = name;
+    const titleEl = document.getElementById('cr-title');
+    if (titleEl) titleEl.textContent = name;
+
+    const summaryEl = document.getElementById('cr-summary');
+    if (summaryEl) {
+        summaryEl.textContent = excerptPlain;
+        summaryEl.hidden = !excerptPlain;
+    }
+
+    const scoreFive = getCuratorScoreOutOfFive(attr);
+    const scoreDisplay = scoreFive != null ? formatRatingNumber(scoreFive) : DASH;
+    const heroScore = document.getElementById('cr-hero-editorial-score');
+    if (heroScore) heroScore.textContent = scoreDisplay;
+
+    const rankRaw = attr.Rank ?? attr.rank;
+    const rankDisplay =
+        rankRaw != null && String(rankRaw).trim() !== '' && !Number.isNaN(Number(rankRaw))
+            ? `#${Number(rankRaw)}`
+            : DASH;
+    const rankEl = document.getElementById('cr-fact-rank');
+    if (rankEl) rankEl.textContent = rankDisplay;
+
+    const payoutEl = document.getElementById('cr-fact-payout');
+    if (payoutEl) payoutEl.textContent = casinoPayoutSpeedDisplay(attr) || DASH;
+
+    const gamesEl = document.getElementById('cr-fact-games');
+    if (gamesEl) gamesEl.textContent = casinoGameCountDisplay(attr) || DASH;
+
+    const paymentsEl = document.getElementById('cr-fact-payments');
+    if (paymentsEl) {
+        const labels = casinoPaymentMethodLabels(attr);
+        paymentsEl.textContent = labels.length ? labels.slice(0, 4).join(', ') : DASH;
+    }
+
+    const logoUrl = getLogoUrl(attr);
+    const heroLogo = document.getElementById('cr-hero-logo');
+    const heroWrap = document.getElementById('cr-hero-logo-wrap');
+    if (heroLogo && logoUrl) {
+        heroLogo.src = logoUrl;
+        heroLogo.alt = name;
+    } else if (heroWrap) {
+        heroWrap.hidden = true;
+    }
+
+    const visitHref = casinoVisitSiteHref(attr);
+    const visitEl = document.getElementById('cr-visit-link');
+    if (visitEl) {
+        if (visitHref && visitHref !== '#') {
+            visitEl.href = visitHref;
+            if (casinoVisitSiteIsExternal(attr)) {
+                visitEl.target = '_blank';
+                visitEl.rel = 'noopener noreferrer';
+            }
+        } else {
+            visitEl.removeAttribute('href');
+        }
+    }
+
+    const bonusLink = document.getElementById('cr-bonus-link');
+    const linkedBonus = bonusFromSlugMapForCasino(attr);
+    if (bonusLink && linkedBonus) {
+        const bonusSlug = firstNonEmptyAttr(linkedBonus, ['Slug', 'slug', 'URLSlug', 'urlSlug']);
+        if (bonusSlug) {
+            bonusLink.href = bonusDetailPath(bonusSlug);
+            bonusLink.hidden = false;
+        } else {
+            bonusLink.hidden = true;
+        }
+    } else if (bonusLink) {
+        bonusLink.hidden = true;
+    }
+
+    const prosConsSection = document.getElementById('cr-pros-cons-section');
+    const prosConsWrap = document.getElementById('cr-pros-cons-wrap');
+    if (prosConsWrap) {
+        const html = renderCasinoProsConsHTML(attr.Pros, attr.Cons);
+        if (html) {
+            prosConsWrap.innerHTML = html;
+            if (prosConsSection) prosConsSection.hidden = false;
+            wireTierProsConsExpand(prosConsWrap);
+        } else if (prosConsSection) {
+            prosConsSection.hidden = true;
+        }
+    }
+
+    const bodyEl = document.getElementById('cr-review-body');
+    const reviewMeta = document.getElementById('cr-review-meta');
+    if (reviewMeta && attr.updatedAt) {
+        reviewMeta.textContent = `Last updated ${formatFullDate(attr.updatedAt)}`;
+    }
+    if (bodyEl) {
+        const raw = attr.ReviewBody ?? attr.reviewBody ?? attr.Excerpt ?? attr.excerpt;
+        if (raw) {
+            setRichTextHtml(bodyEl, raw);
+        } else if (excerptPlain) {
+            bodyEl.innerHTML = `<p>${escapeHtml(excerptPlain)}</p>`;
+        } else {
+            bodyEl.innerHTML = `<p>${escapeHtml(`Editorial review of ${name} is being updated.`)}</p>`;
+        }
+    }
+
+    const descOg = (seoDesc || excerptPlain || '').slice(0, 320);
+    const shareImg =
+        logoUrl && logoUrl.startsWith('/')
+            ? `${pubOrigin}${logoUrl}`
+            : logoUrl || `${pubOrigin}/assets/img/888review-siteicon.webp`;
+    ['cr-og-title', 'cr-twitter-title'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('content', pageTitle);
+    });
+    ['cr-og-description', 'cr-twitter-description'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && descOg) el.setAttribute('content', descOg);
+    });
+    const ogUrl = document.getElementById('cr-og-url');
+    if (ogUrl) ogUrl.setAttribute('content', canonicalAbs);
+    ['cr-og-image', 'cr-twitter-image'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('content', shareImg);
+    });
+
+    const reviewLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Review',
+        name: `${name} review`,
+        reviewBody: (excerptPlain || descOg).slice(0, 500),
+        url: canonicalAbs,
+        itemReviewed: {
+            '@type': 'Organization',
+            name,
+            url: visitHref && visitHref !== '#' ? visitHref : canonicalAbs,
+        },
+        author: { '@type': 'Organization', name: '888reviews', url: `${pubOrigin}/` },
+        publisher: {
+            '@type': 'Organization',
+            name: '888reviews',
+            url: `${pubOrigin}/`,
+            logo: { '@type': 'ImageObject', url: `${pubOrigin}/assets/img/888review-siteicon.webp` },
+        },
+    };
+    if (scoreFive != null) {
+        reviewLd.reviewRating = {
+            '@type': 'Rating',
+            ratingValue: formatRatingNumber(scoreFive),
+            bestRating: '5',
+            worstRating: '1',
+        };
+    }
+    setJsonLdScript('cr-jsonld-review', reviewLd);
+    setJsonLdScript('cr-jsonld-breadcrumb', {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: `${pubOrigin}/` },
+            { '@type': 'ListItem', position: 2, name: 'Reviews', item: `${pubOrigin}/reviews` },
+            { '@type': 'ListItem', position: 3, name: name, item: canonicalAbs },
+        ],
+    });
+}
+
+async function initCasinoDetailPage() {
+    if (!document.getElementById('cr-title')) return;
+
+    const slugFromPath = window.location.pathname.match(/^\/casino\/([^/]+)\/?$/);
+    const slug = slugFromPath
+        ? decodeURIComponent(slugFromPath[1])
+        : new URLSearchParams(window.location.search).get('slug');
+
+    if (!slug) {
+        showCasinoError();
+        return;
+    }
+
+    const rootEl = document.getElementById('casino-page-root');
+    setDetailPageLoading(rootEl);
+    try {
+        await ensureCasinoBonusSlugMap();
+        bindPlayerRatingHeroListener();
+
+        const { res, json } = await fetchCasinoBySlug(slug);
+        if (!res || !res.ok || !json?.data?.length) {
+            showCasinoError();
+            return;
+        }
+
+        const entry = json.data[0];
+        const attr = attrFromCasinoEntry(entry);
+        populateCasinoDetailPage(attr, slug);
+
+        if (typeof window.PlayerReviews !== 'undefined' && window.PlayerReviews.render) {
+            try {
+                await window.PlayerReviews.render({
+                    parentKey: 'casino',
+                    slug,
+                    documentId: entry.documentId || attr.documentId,
+                    parentNumericId: entry.id != null ? entry.id : attr.id,
+                    parentAttr: attr,
+                });
+            } catch (e) {
+                console.warn('Player reviews failed to render:', e);
+            }
+        }
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    } catch (e) {
+        console.error('Failed to load casino review:', e);
+        showCasinoError();
     } finally {
         clearDetailPageLoading(rootEl);
     }
