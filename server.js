@@ -443,7 +443,7 @@ app.get('/bonus/:slug', (req, res) => {
     serverSeo.sendDetailPage(res, PUBLIC_DIR, 'bonus', raw, sitePublicOrigin(req));
 });
 
-/** Guide / strategy article (Strapi `posts`); legacy `post.html?slug=` → `/guide/:slug`. */
+/** Guide / strategy article (Strapi `blog-posts`); legacy `post.html?slug=` → `/guide/:slug`. */
 app.get('/guide/:slug', (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {
@@ -453,7 +453,7 @@ app.get('/guide/:slug', (req, res) => {
     serverSeo.sendDetailPage(res, PUBLIC_DIR, 'guide', raw, sitePublicOrigin(req));
 });
 
-/** News article (Strapi `posts`, category news). */
+/** News article (Strapi `blog-posts`, category news). */
 app.get('/news/:slug', (req, res) => {
     const raw = req.params.slug;
     if (!raw || /[/\\]|\.\./.test(raw)) {

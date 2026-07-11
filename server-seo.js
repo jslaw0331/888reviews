@@ -201,10 +201,20 @@ async function fetchAllSlugsForEndpoint(endpoint) {
     let page = 1;
     const pageSize = 100;
     let pageCount = 1;
+    // Guides/news: only completed + published blog-posts in the sitemap.
+    const blogPublishQs =
+        endpoint === 'blog-posts'
+            ? '&filters[workflowStatus][$eq]=completed&status=published'
+            : '';
 
     do {
-        const qs = `pagination[page]=${page}&pagination[pageSize]=${pageSize}`;
-        const data = await strapiFetchJson(`${endpoint}?${qs}`);
+        const qs = `pagination[page]=${page}&pagination[pageSize]=${pageSize}${blogPublishQs}`;
+        let data = await strapiFetchJson(`${endpoint}?${qs}`);
+        // Strapi 4 may reject `status=published`; retry with workflow filter only.
+        if (data == null && endpoint === 'blog-posts') {
+            const qsFallback = `pagination[page]=${page}&pagination[pageSize]=${pageSize}&filters[workflowStatus][$eq]=completed`;
+            data = await strapiFetchJson(`${endpoint}?${qsFallback}`);
+        }
         if (!data?.data?.length) {
             break;
         }
@@ -269,7 +279,7 @@ async function collectSitemapUrlLines(req, escapeXml, sitePublicOrigin) {
         ['providers', '/provider/'],
         ['slots', '/slot/'],
         ['bonuses', '/bonus/'],
-        ['posts', '/guide/'],
+        ['blog-posts', '/guide/'],
     ];
 
     const slugResults = await Promise.all(

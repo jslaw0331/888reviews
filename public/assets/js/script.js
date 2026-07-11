@@ -976,6 +976,9 @@ const SLOTS_API_COLLECTION = 'slots';
 const BONUSES_API_COLLECTION = 'bonuses';
 const BONUSES_PAGE_SIZE = 50;
 
+/** Guides / news articles — Strapi collection `blog-posts` (category: guide | strategy | news). */
+const POSTS_API_COLLECTION = 'blog-posts';
+
 /** Built from GET /api/bonuses so each casino slug/id maps to its Bonus entry (correct card + hero copy). */
 let casinoBonusSlugMapCache = null;
 let bonusesListRowsCache = null;
@@ -2918,32 +2921,88 @@ async function loadHomeFeaturedCasino() {
 }
 
 // ============================================================
-// Guides index (/guides.html) - Strapi /api/posts (categories guide | strategy)
+// Guides index (/guides.html) - Strapi /api/blog-posts (categories guide | strategy)
 // ============================================================
 
 const GUIDES_PAGE_SIZE = 6;
 const GUIDES_PLACEHOLDER_IMAGE =
     'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=1000&auto=format&fit=crop';
 
-/** Strapi often 400s on `filters[slug]` for posts; chunk unfiltered list instead. */
+function emptyPostsPageResult(page) {
+    const p = Math.max(1, Math.floor(Number(page)) || 1);
+    return {
+        rows: [],
+        meta: {
+            pagination: {
+                page: p,
+                pageSize: GUIDES_PAGE_SIZE,
+                pageCount: 1,
+                total: 0,
+            },
+        },
+    };
+}
+
+/** Append category filters for blog-posts (enum/string field, not a relation). */
+function appendBlogPostCategoryFilters(params, filterKey) {
+    if (filterKey === 'guide' || filterKey === 'strategy' || filterKey === 'news') {
+        params.set('filters[category][$eq]', filterKey);
+        return;
+    }
+    // Guides listing "all": guide + strategy (news has its own index)
+    params.set('filters[category][$in][0]', 'guide');
+    params.set('filters[category][$in][1]', 'strategy');
+}
+
+/** Site only surfaces completed + published blog-posts (Strapi 5: status=published). */
+function appendBlogPostPublishFilters(params) {
+    params.set('filters[workflowStatus][$eq]', 'completed');
+    params.set('status', 'published');
+}
+
+/** Client-side guard when API filters are skipped or chunked fallback is used. */
+function isBlogPostPubliclyVisible(attr) {
+    if (!attr) return false;
+    const wf = String(
+        firstNonEmptyAttr(attr, ['workflowStatus', 'WorkflowStatus']) || '',
+    )
+        .trim()
+        .toLowerCase();
+    if (wf !== 'completed') return false;
+    const pub = attr.publishedAt || attr.published_at;
+    return Boolean(pub);
+}
+
+/** Strapi often 400s on `filters[slug]`; chunk list as a last-resort fallback. */
 async function fetchAllPostsChunked() {
     const chunkLimit = 100;
     let allData = [];
     let start = 0;
     for (let i = 0; i < 40; i++) {
-        const res = await fetch(
-            `${API_URL}/api/posts?populate=*&sort=publishedAt:desc&pagination[start]=${start}&pagination[limit]=${chunkLimit}`,
-        );
-        const json = await res.json();
-        if (!res.ok || !json || !Array.isArray(json.data)) {
-            throw new Error(`posts list failed (${res.status})`);
+        const params = new URLSearchParams();
+        params.set('populate', '*');
+        params.set('sort', 'publishedAt:desc');
+        params.set('pagination[start]', String(start));
+        params.set('pagination[limit]', String(chunkLimit));
+        appendBlogPostPublishFilters(params);
+        let res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${params}`);
+        let json = await res.json();
+        // Strapi 4 may reject `status=published`; retry with workflow filter only.
+        if (!res.ok && (res.status === 400 || res.status === 500)) {
+            params.delete('status');
+            res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${params}`);
+            json = await res.json();
         }
-        const batch = json.data;
-        if (batch.length === 0) break;
+        if (!res.ok || !json || !Array.isArray(json.data)) {
+            throw new Error(`blog-posts list failed (${res.status})`);
+        }
+        const batch = json.data.filter((row) => isBlogPostPubliclyVisible(postEntryAttr(row)));
+        if (json.data.length === 0) break;
         allData.push(...batch);
         const total = json.meta?.pagination?.total;
-        start += batch.length;
+        start += json.data.length;
         if (typeof total === 'number' && start >= total) break;
+        if (json.data.length < chunkLimit) break;
     }
     return allData;
 }
@@ -2962,13 +3021,11 @@ async function fetchGuidesPageFallback(page, filterKey) {
     try {
         const allData = await fetchAllPostsChunked();
         if (allData.length === 0) {
-            return {
-                rows: [],
-                meta: { pagination: { page: 1, pageSize: GUIDES_PAGE_SIZE, pageCount: 1, total: 0 } },
-            };
+            return emptyPostsPageResult(1);
         }
         let rows = allData.filter((row) => {
             const a = postEntryAttr(row);
+            if (!isBlogPostPubliclyVisible(a)) return false;
             const s = postCategorySlugForFilter(a);
             if (filterKey === 'guide') return s === 'guide';
             if (filterKey === 'strategy') return s === 'strategy';
@@ -2993,31 +3050,53 @@ async function fetchGuidesPageFallback(page, filterKey) {
         };
     } catch (e) {
         console.warn('[guides] fallback failed:', e);
-        return {
-            rows: [],
-            meta: { pagination: { page: 1, pageSize: GUIDES_PAGE_SIZE, pageCount: 1, total: 0 } },
-        };
+        return emptyPostsPageResult(page);
     }
 }
 
 async function fetchGuidesPage(page, filterKey) {
-    // Strapi often returns 400 for `filters[category][slug]`-style queries when the relation UID
-    // in the deployed schema does not match these paths. Chunked unfiltered fetch + client-side filter is reliable.
-    return fetchGuidesPageFallback(page, filterKey);
+    const p = Math.max(1, Math.floor(Number(page)) || 1);
+    const params = new URLSearchParams();
+    params.set('populate', '*');
+    params.set('sort', 'publishedAt:desc');
+    params.set('pagination[page]', String(p));
+    params.set('pagination[pageSize]', String(GUIDES_PAGE_SIZE));
+    appendBlogPostCategoryFilters(params, filterKey === 'guide' || filterKey === 'strategy' ? filterKey : 'all');
+    appendBlogPostPublishFilters(params);
+
+    try {
+        let res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${params}`);
+        let json = await res.json();
+        if (!res.ok && (res.status === 400 || res.status === 500)) {
+            params.delete('status');
+            res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${params}`);
+            json = await res.json();
+        }
+        if (!res.ok || !json || !Array.isArray(json.data)) {
+            throw new Error(`blog-posts guides list failed (${res.status})`);
+        }
+        return {
+            rows: json.data.filter((row) => isBlogPostPubliclyVisible(postEntryAttr(row))),
+            meta: json.meta || emptyPostsPageResult(p).meta,
+        };
+    } catch (e) {
+        console.warn('[guides] filtered fetch failed, using fallback:', e);
+        return fetchGuidesPageFallback(p, filterKey);
+    }
 }
 
-/** News index (/news.html): Strapi /api/posts (category news only). */
+/** News index (/news.html): Strapi /api/blog-posts (category news only). */
 async function fetchNewsPageFallback(page) {
     const p = Math.max(1, Math.floor(Number(page)) || 1);
     try {
         const allData = await fetchAllPostsChunked();
         if (allData.length === 0) {
-            return {
-                rows: [],
-                meta: { pagination: { page: 1, pageSize: GUIDES_PAGE_SIZE, pageCount: 1, total: 0 } },
-            };
+            return emptyPostsPageResult(1);
         }
-        const rows = allData.filter((row) => postCategorySlugForFilter(postEntryAttr(row)) === 'news');
+        const rows = allData.filter((row) => {
+            const a = postEntryAttr(row);
+            return isBlogPostPubliclyVisible(a) && postCategorySlugForFilter(a) === 'news';
+        });
         rows.sort((a, b) => postPublishedTime(postEntryAttr(b)) - postPublishedTime(postEntryAttr(a)));
         const total = rows.length;
         const pageCount = Math.max(1, Math.ceil(total / GUIDES_PAGE_SIZE));
@@ -3037,15 +3116,39 @@ async function fetchNewsPageFallback(page) {
         };
     } catch (e) {
         console.warn('[news] fallback failed:', e);
-        return {
-            rows: [],
-            meta: { pagination: { page: 1, pageSize: GUIDES_PAGE_SIZE, pageCount: 1, total: 0 } },
-        };
+        return emptyPostsPageResult(p);
     }
 }
 
 async function fetchNewsPage(page) {
-    return fetchNewsPageFallback(page);
+    const p = Math.max(1, Math.floor(Number(page)) || 1);
+    const params = new URLSearchParams();
+    params.set('populate', '*');
+    params.set('sort', 'publishedAt:desc');
+    params.set('pagination[page]', String(p));
+    params.set('pagination[pageSize]', String(GUIDES_PAGE_SIZE));
+    appendBlogPostCategoryFilters(params, 'news');
+    appendBlogPostPublishFilters(params);
+
+    try {
+        let res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${params}`);
+        let json = await res.json();
+        if (!res.ok && (res.status === 400 || res.status === 500)) {
+            params.delete('status');
+            res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${params}`);
+            json = await res.json();
+        }
+        if (!res.ok || !json || !Array.isArray(json.data)) {
+            throw new Error(`blog-posts news list failed (${res.status})`);
+        }
+        return {
+            rows: json.data.filter((row) => isBlogPostPubliclyVisible(postEntryAttr(row))),
+            meta: json.meta || emptyPostsPageResult(p).meta,
+        };
+    } catch (e) {
+        console.warn('[news] filtered fetch failed, using fallback:', e);
+        return fetchNewsPageFallback(p);
+    }
 }
 
 function postEntryAttr(entry) {
@@ -3154,6 +3257,10 @@ function postPublishedTime(attr) {
 function postMainBodyPlain(attr) {
     if (!attr) return '';
     const keys = [
+        'bodyLinked',
+        'BodyLinked',
+        'bodyRaw',
+        'BodyRaw',
         'content',
         'Content',
         'body',
@@ -3188,6 +3295,10 @@ function postMainBodyPlain(attr) {
 function postMainBodyRaw(attr) {
     if (!attr) return null;
     const keys = [
+        'bodyLinked',
+        'BodyLinked',
+        'bodyRaw',
+        'BodyRaw',
         'content',
         'Content',
         'body',
@@ -3421,17 +3532,26 @@ async function fetchPostBySlug(slug, allowedCategories = ['guide', 'strategy']) 
     const raw = decodeURIComponent(String(slug)).trim();
     if (!raw) return { res: null, json: null };
     const allowed = new Set(allowedCategories);
+    const publishQs = 'filters[workflowStatus][$eq]=completed&status=published';
     const slugQueries = [
-        `filters[Slug][$eqi]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1`,
-        `filters[Slug][$eq]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1`,
+        `filters[Slug][$eqi]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1&${publishQs}`,
+        `filters[Slug][$eq]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1&${publishQs}`,
+        `filters[slug][$eqi]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1&${publishQs}`,
+        `filters[slug][$eq]=${encodeURIComponent(raw)}&populate=*&pagination[limit]=1&${publishQs}`,
     ];
 
     for (const qs of slugQueries) {
         try {
-            const res = await fetch(`${API_URL}/api/posts?${qs}`);
-            const json = await res.json();
+            let res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${qs}`);
+            let json = await res.json();
+            if (!res.ok && (res.status === 400 || res.status === 500)) {
+                const qsNoStatus = qs.replace(/&?status=published/, '').replace(/^&/, '');
+                res = await fetch(`${API_URL}/api/${POSTS_API_COLLECTION}?${qsNoStatus}`);
+                json = await res.json();
+            }
             if (!res.ok || !json || !Array.isArray(json.data) || json.data.length === 0) continue;
             const attr = postEntryAttr(json.data[0]);
+            if (!isBlogPostPubliclyVisible(attr)) continue;
             const cat = postCategorySlugForFilter(attr);
             if (!allowed.has(cat)) continue;
             return { res, json };
@@ -3445,6 +3565,7 @@ async function fetchPostBySlug(slug, allowedCategories = ['guide', 'strategy']) 
         const hit = findPostRowBySlug(rows, raw);
         if (!hit) return { res: null, json: null };
         const attr = postEntryAttr(hit);
+        if (!isBlogPostPubliclyVisible(attr)) return { res: null, json: null };
         const cat = postCategorySlugForFilter(attr);
         if (!allowed.has(cat)) return { res: null, json: null };
         return { res: { ok: true, status: 200 }, json: { data: [hit] } };
@@ -3483,9 +3604,192 @@ function setGuideCanonicalAndOg(attr, slug, pageTitle, seoDesc) {
     if (ogDesc) ogDesc.setAttribute('content', seoDesc);
 }
 
-function populateGuidePostPage(attr, slug) {
+function guideHeadingSlug(text, used) {
+    let base = String(text || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 64);
+    if (!base) base = 'section';
+    let id = base;
+    let n = 2;
+    while (used.has(id)) {
+        id = `${base}-${n}`;
+        n += 1;
+    }
+    used.add(id);
+    return id;
+}
+
+function stripDuplicateGuideTitle(mdRoot, title) {
+    if (!mdRoot || !title) return;
+    const first = mdRoot.querySelector('h1, h2');
+    if (!first) return;
+    const a = first.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    const b = String(title).replace(/\s+/g, ' ').trim().toLowerCase();
+    if (a && b && a === b) first.remove();
+}
+
+function buildGuidePostToc(bodyEl) {
+    const toc = document.getElementById('gp-toc');
+    const list = document.getElementById('gp-toc-list');
+    if (!toc || !list || !bodyEl) return;
+    const md = bodyEl.querySelector('.guide-post-md') || bodyEl;
+    const headings = [...md.querySelectorAll('h2')];
+    list.innerHTML = '';
+    if (headings.length < 2) {
+        toc.hidden = true;
+        return;
+    }
+    const used = new Set();
+    const items = [];
+    for (const h of headings) {
+        const text = (h.textContent || '').trim();
+        if (!text) continue;
+        const id = h.id || guideHeadingSlug(text, used);
+        h.id = id;
+        items.push({ id, text });
+    }
+    if (items.length < 2) {
+        toc.hidden = true;
+        return;
+    }
+    list.innerHTML = items
+        .map(
+            (it) =>
+                `<li><a href="#${escapeHtml(it.id)}" data-toc-id="${escapeHtml(it.id)}">${escapeHtml(it.text)}</a></li>`,
+        )
+        .join('');
+    toc.hidden = false;
+
+    const links = [...list.querySelectorAll('a[data-toc-id]')];
+    const syncActive = () => {
+        const offset = 120;
+        let activeId = items[0]?.id || '';
+        for (const it of items) {
+            const el = document.getElementById(it.id);
+            if (!el) continue;
+            if (el.getBoundingClientRect().top <= offset) activeId = it.id;
+        }
+        for (const a of links) {
+            a.classList.toggle('is-active', a.getAttribute('data-toc-id') === activeId);
+        }
+    };
+    if (window.__gpTocScroll) {
+        window.removeEventListener('scroll', window.__gpTocScroll);
+    }
+    window.__gpTocScroll = () => {
+        window.requestAnimationFrame(syncActive);
+    };
+    window.addEventListener('scroll', window.__gpTocScroll, { passive: true });
+    syncActive();
+}
+
+function initGuideReadingProgress() {
+    const bar = document.getElementById('gp-progress-bar');
+    const article = document.getElementById('gp-content-article');
+    if (!bar || !article) return;
+    const update = () => {
+        const rect = article.getBoundingClientRect();
+        const total = article.offsetHeight - window.innerHeight;
+        const scrolled = Math.min(Math.max(-rect.top, 0), Math.max(total, 1));
+        const pct = total > 0 ? (scrolled / total) * 100 : 0;
+        bar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    };
+    if (window.__gpProgressScroll) {
+        window.removeEventListener('scroll', window.__gpProgressScroll);
+        window.removeEventListener('resize', window.__gpProgressScroll);
+    }
+    window.__gpProgressScroll = () => window.requestAnimationFrame(update);
+    window.addEventListener('scroll', window.__gpProgressScroll, { passive: true });
+    window.addEventListener('resize', window.__gpProgressScroll, { passive: true });
+    update();
+}
+
+function initGuideShareButton(title) {
+    const btn = document.getElementById('gp-share-btn');
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', async () => {
+        const url = window.location.href;
+        const shareData = { title: title || document.title, url };
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+                return;
+            }
+        } catch {
+            /* fall through to clipboard */
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            btn.classList.add('is-copied');
+            const label = btn.querySelector('span');
+            const prev = label ? label.textContent : '';
+            if (label) label.textContent = 'Copied';
+            setTimeout(() => {
+                btn.classList.remove('is-copied');
+                if (label) label.textContent = prev || 'Share';
+            }, 1600);
+        } catch (e) {
+            console.warn('[guide share]', e);
+        }
+    });
+}
+
+async function loadGuideRelatedPosts(currentSlug, isNewsPage) {
+    const section = document.getElementById('gp-related');
+    const list = document.getElementById('gp-related-list');
+    if (!section || !list) return;
+    const filterKey = isNewsPage ? 'news' : 'all';
+    try {
+        const { rows } = isNewsPage
+            ? await fetchNewsPage(1)
+            : await fetchGuidesPage(1, filterKey);
+        const cards = (rows || [])
+            .filter((row) => postSlugValue(postEntryAttr(row)).toLowerCase() !== String(currentSlug || '').toLowerCase())
+            .slice(0, 3);
+        if (!cards.length) {
+            section.hidden = true;
+            return;
+        }
+        list.innerHTML = cards
+            .map((row) => {
+                const a = postEntryAttr(row);
+                const title = escapeHtml(postTitlePlain(a));
+                const slug = postSlugValue(a);
+                const href = escapeHtml(postDetailHref(slug, postCategorySlugForFilter(a)));
+                const cat = escapeHtml(postCategoryDisplayLabel(a));
+                const mins = postReadingMinutes(a);
+                const img = postCoverImageUrl(a) || GUIDES_PLACEHOLDER_IMAGE;
+                return `<li>
+                    <a class="gp-related-card" href="${href}">
+                        <div class="gp-related-card__img"><img src="${escapeHtml(img)}" alt="" loading="lazy" decoding="async" width="400" height="250"></div>
+                        <div class="gp-related-card__body">
+                            <span class="gp-related-card__cat">${cat}</span>
+                            <span class="gp-related-card__title">${title}</span>
+                            <span class="gp-related-card__meta">${mins} min read</span>
+                        </div>
+                    </a>
+                </li>`;
+            })
+            .join('');
+        section.hidden = false;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    } catch (e) {
+        console.warn('[guide related]', e);
+        section.hidden = true;
+    }
+}
+
+function populateGuidePostPage(attr, slug, options = {}) {
+    const isNewsPage = !!options.isNewsPage;
     const title = postTitlePlain(attr);
-    const excerpt = postExcerptPlain(attr);
+    const excerpt =
+        postExcerptPlain(attr) ||
+        String(firstNonEmptyAttr(attr, ['seoDescription', 'SeoDescription']) || '').trim();
     const mins = postReadingMinutes(attr);
     const catLabel = postCategoryDisplayLabel(attr);
     const pillEl = document.getElementById('gp-pill');
@@ -3493,20 +3797,38 @@ function populateGuidePostPage(attr, slug) {
     const titleEl = document.getElementById('gp-title');
     const dekEl = document.getElementById('gp-dek');
     const dateEl = document.getElementById('gp-date');
-    const authorNameEl = document.getElementById('gp-author-name');
-    const authorImgEl = document.getElementById('gp-author-img');
     const heroImg = document.getElementById('gp-hero-img');
     const heroVisual = document.getElementById('gp-hero-visual');
     const bodyEl = document.getElementById('gp-body');
     const crumbEl = document.getElementById('gp-crumb-current');
+    const crumbHub = document.getElementById('gp-crumb-hub');
+    const footHub = document.getElementById('gp-foot-hub');
+    const relatedTitle = document.getElementById('gp-related-title');
+    const relatedAll = document.getElementById('gp-related-all');
 
-    const pageTitle = `${title} | 888reviews`;
+    const seoTitle = String(firstNonEmptyAttr(attr, ['seoTitle', 'SeoTitle']) || '').trim();
+    const pageTitle = `${seoTitle || title} | 888reviews`;
     document.title = pageTitle;
     const seoDesc =
+        String(firstNonEmptyAttr(attr, ['seoDescription', 'SeoDescription']) || '').trim() ||
         excerpt ||
         `Editorial ${catLabel.toLowerCase()}: ${title}. Always verify terms with licensed operators.`;
 
     setGuideCanonicalAndOg(attr, slug, pageTitle, seoDesc);
+
+    if (crumbHub) {
+        crumbHub.href = isNewsPage ? '/news' : '/guides';
+        crumbHub.textContent = isNewsPage ? 'News' : 'Guides';
+    }
+    if (footHub) {
+        footHub.href = isNewsPage ? '/news' : '/guides';
+        footHub.textContent = isNewsPage ? 'Browse all news' : 'Browse all guides';
+    }
+    if (relatedTitle) relatedTitle.textContent = isNewsPage ? 'More news' : 'More guides';
+    if (relatedAll) {
+        relatedAll.href = isNewsPage ? '/news' : '/guides';
+        relatedAll.innerHTML = `${isNewsPage ? 'View all news' : 'View all guides'} <i data-lucide="arrow-right" aria-hidden="true"></i>`;
+    }
 
     if (pillEl) pillEl.textContent = catLabel;
     if (readEl) readEl.textContent = `${mins} min read`;
@@ -3519,7 +3841,7 @@ function populateGuidePostPage(attr, slug) {
     if (dateEl && pub) {
         const d = new Date(pub);
         if (!Number.isNaN(d.getTime())) {
-            dateEl.textContent = `${d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} · EDITORIAL`;
+            dateEl.textContent = `${d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} · Editorial`;
             dateEl.hidden = false;
         } else {
             dateEl.hidden = true;
@@ -3528,23 +3850,12 @@ function populateGuidePostPage(attr, slug) {
         dateEl.hidden = true;
     }
 
-    const authorName = postAuthorLine(attr);
-    if (authorNameEl) authorNameEl.textContent = authorName;
-    if (authorImgEl) {
-        authorImgEl.src = postAuthorAvatarUrl(attr);
-        authorImgEl.alt = authorName;
+    const cover = postCoverImageUrl(attr) || GUIDES_PLACEHOLDER_IMAGE;
+    if (heroImg) {
+        heroImg.src = cover;
+        heroImg.alt = title;
     }
-
-    const cover = postCoverImageUrl(attr);
-    if (heroImg && heroVisual) {
-        if (cover) {
-            heroImg.src = cover;
-            heroImg.alt = title;
-            heroVisual.hidden = false;
-        } else {
-            heroVisual.hidden = true;
-        }
-    }
+    if (heroVisual) heroVisual.hidden = false;
 
     const pubOriginGuide = getPublicSiteOrigin();
     const defaultShareImgGuide = `${pubOriginGuide}/assets/img/888review-siteicon.webp`;
@@ -3566,13 +3877,19 @@ function populateGuidePostPage(attr, slug) {
             const inner = postBodyToHtmlForGuide(raw);
             if (inner) {
                 bodyEl.innerHTML = `<div class="rich-text-body guide-post-md">${inner}</div>`;
+                const mdRoot = bodyEl.querySelector('.guide-post-md');
+                stripDuplicateGuideTitle(mdRoot, title);
             } else {
                 bodyEl.innerHTML = '';
             }
         } else {
             bodyEl.innerHTML = `<p>${escapeHtml(excerpt || 'Full article content will appear here soon.')}</p>`;
         }
+        buildGuidePostToc(bodyEl);
     }
+
+    initGuideReadingProgress();
+    loadGuideRelatedPosts(slug, isNewsPage);
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -3603,7 +3920,7 @@ async function initGuidePostPage() {
             return null;
         }
         const attr = postEntryAttr(json.data[0]);
-        populateGuidePostPage(attr, slug);
+        populateGuidePostPage(attr, slug, { isNewsPage });
         return attr;
     } catch (e) {
         console.error('[post detail]', e);

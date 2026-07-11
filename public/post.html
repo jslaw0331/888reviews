@@ -104,52 +104,77 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/guides" class="btn btn-primary">Browse all guides</a>
     </div>
 
+    <div class="gp-progress" aria-hidden="true">
+        <div class="gp-progress__bar" id="gp-progress-bar"></div>
+    </div>
+
     <main class="post-page detail-page--loading" id="gp-page-root">
-        <section class="post-hero post-hero--guide post-hero--guide-fit reveal">
+        <section class="post-hero post-hero--guide post-hero--guide-fit">
+            <div class="post-hero__guide-atmosphere" aria-hidden="true"></div>
             <div class="post-hero__guide-inner">
                 <div class="ph-layout ph-layout--guide-hero">
                     <div class="ph-content">
-                        <nav class="gp-breadcrumb reveal" aria-label="Breadcrumb">
+                        <nav class="gp-breadcrumb" aria-label="Breadcrumb">
                             <ol class="gp-breadcrumb__list">
                                 <li><a href="/">Home</a></li>
-                                <li><a href="/guides">Guides</a></li>
+                                <li><a href="/guides" id="gp-crumb-hub">Guides</a></li>
                                 <li id="gp-crumb-current" aria-current="page">Loading&hellip;</li>
                             </ol>
                         </nav>
                         <div class="ph-meta">
                             <span class="ph-pill" id="gp-pill">GUIDE</span>
+                            <span class="ph-meta-dot" aria-hidden="true"></span>
                             <span class="ph-meta-text" id="gp-read-time">&mdash; min read</span>
                         </div>
                         <h1 class="ph-title" id="gp-title">Loading&hellip;</h1>
                         <p class="ph-subtitle" id="gp-dek" hidden></p>
-                        <div class="ph-author">
-                            <img src="https://ui-avatars.com/api/?name=Editorial&background=0D8ABC&color=fff" alt="" class="pha-img" id="gp-author-img" width="48" height="48">
-                            <div class="pha-info">
-                                <span class="pha-name" id="gp-author-name">888reviews Editorial</span>
-                                <span class="pha-date" id="gp-date" hidden></span>
-                            </div>
-                        </div>
+                        <p class="ph-byline" id="gp-date" hidden></p>
                     </div>
-                    <div class="ph-hero-visual" id="gp-hero-visual" hidden>
-                        <img src="" alt="" class="ph-hero-cover-img" id="gp-hero-img" width="800" height="600" loading="eager" decoding="async" />
+                    <div class="ph-hero-visual" id="gp-hero-visual">
+                        <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=1000&auto=format&fit=crop" alt="" class="ph-hero-cover-img" id="gp-hero-img" width="800" height="600" loading="eager" decoding="async" />
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- No .reveal here: transform on an ancestor breaks position:sticky on the sidebar -->
+        <!-- No .reveal on this section: transform breaks position:sticky for the TOC -->
         <section class="post-main-container container">
-            <div class="post-layout">
-                <aside class="post-share-sidebar" hidden aria-hidden="true">
-                    <div class="share-sticky">
-                        <span class="share-lbl">SHARE</span>
-                        <button type="button" class="share-btn" aria-label="Share"><i data-lucide="share-2"></i></button>
-                    </div>
+            <div class="post-layout post-layout--guide-read">
+                <aside class="gp-toc" id="gp-toc" hidden>
+                    <nav class="gp-toc__nav" aria-label="On this page">
+                        <p class="gp-toc__label">On this page</p>
+                        <ol class="gp-toc__list" id="gp-toc-list"></ol>
+                    </nav>
                 </aside>
 
                 <article class="post-core-content cr-article" id="gp-content-article">
                     <div id="gp-body" class="gp-article-body"></div>
+
+                    <footer class="gp-article-foot">
+                        <p class="gp-article-foot__note">
+                            Editorial guide for informational purposes only. Offers and rules change &mdash;
+                            always verify details on the operator&rsquo;s site. 18+ only. Play responsibly.
+                        </p>
+                        <div class="gp-article-foot__actions">
+                            <a href="/guides" class="btn btn-primary" id="gp-foot-hub">Browse all guides</a>
+                            <a href="/reviews" class="btn btn-outline">Casino reviews</a>
+                        </div>
+                    </footer>
                 </article>
+            </div>
+        </section>
+
+        <section class="gp-related-latest-section" id="gp-related" hidden>
+            <div class="gp-related-latest-inner">
+                <header class="gp-related-latest-head">
+                    <p class="gp-related-kicker">Keep reading</p>
+                    <h2 class="gp-related-title" id="gp-related-title">More guides</h2>
+                    <p class="gp-related-dek">Fresh editorial explainers from the same library.</p>
+                </header>
+                <ul class="gp-related-list gp-related-list--grid" id="gp-related-list"></ul>
+                <div class="gp-related-latest-foot">
+                    <a href="/guides" class="gp-related-all" id="gp-related-all">View all guides <i data-lucide="arrow-right" aria-hidden="true"></i></a>
+                </div>
             </div>
         </section>
     </main>
@@ -227,7 +252,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
     <script src="/assets/js/lucide.min.js" defer></script>
     <script src="/components/components.js" defer></script>
-    <script src="/assets/js/dist/core.2401e1fc.js" defer></script>
+    <script src="/assets/js/dist/core.f93e596a.js" defer></script>
+
+
+
+
 
 </body>
 </html>
