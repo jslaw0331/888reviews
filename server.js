@@ -65,11 +65,50 @@ app.get('/robots.txt', (req, res) => {
 
 /**
  * SEO: hub URLs + CMS detail URLs when STRAPI_API_URL and STRAPI_API_TOKEN are set.
- * Falls back to hub-only lines if Strapi pagination fails.
+ * Falls back to hub-only lines if Strapi pagination fails or the build exceeds the soft timeout
+ * (avoids Vercel killing the function with a bare 500 before the catch runs).
  */
+const SITEMAP_SOFT_TIMEOUT_MS = 20000;
+
+function sitemapHubOnlyBody(req) {
+    const base = sitePublicOrigin(req);
+    const hubPaths = [
+        '/',
+        '/reviews',
+        '/bonus',
+        '/slots',
+        '/blackjack',
+        '/roulette',
+        '/baccarat',
+        '/mobile',
+        '/live',
+        '/ewallet',
+        '/guides',
+        '/news',
+        '/about',
+        '/privacy',
+        '/terms',
+        '/contact',
+        '/how-we-rate',
+    ];
+    const lines = hubPaths.map((p) => {
+        const loc = `${base}${p === '/' ? '/' : p}`;
+        const priority = p === '/' ? '1.0' : '0.8';
+        return `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
+    });
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
+        '\n',
+    )}\n</urlset>\n`;
+}
+
 app.get('/sitemap.xml', async (req, res) => {
     try {
-        const lines = await serverSeo.collectSitemapUrlLines(req, escapeXml, sitePublicOrigin);
+        const lines = await Promise.race([
+            serverSeo.collectSitemapUrlLines(req, escapeXml, sitePublicOrigin),
+            new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('sitemap soft timeout')), SITEMAP_SOFT_TIMEOUT_MS);
+            }),
+        ]);
         const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
             '\n',
         )}\n</urlset>\n`;
@@ -77,37 +116,9 @@ app.get('/sitemap.xml', async (req, res) => {
         res.type('application/xml');
         res.send(body);
     } catch (e) {
-        console.error('[sitemap]', e);
-        const base = sitePublicOrigin(req);
-        const hubPaths = [
-            '/',
-            '/reviews',
-            '/bonus',
-            '/slots',
-            '/blackjack',
-            '/roulette',
-            '/baccarat',
-            '/mobile',
-            '/live',
-            '/ewallet',
-            '/guides',
-            '/news',
-            '/about',
-            '/privacy',
-            '/terms',
-            '/contact',
-            '/how-we-rate',
-        ];
-        const lines = hubPaths.map((p) => {
-            const loc = `${base}${p === '/' ? '/' : p}`;
-            const priority = p === '/' ? '1.0' : '0.8';
-            return `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
-        });
-        const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
-            '\n',
-        )}\n</urlset>\n`;
+        console.error('[sitemap]', e.message || e);
         res.setHeader('Cache-Control', SITEMAP_CACHE_CONTROL);
-        res.type('application/xml').send(body);
+        res.type('application/xml').send(sitemapHubOnlyBody(req));
     }
 });
 
@@ -191,20 +202,235 @@ app.use((req, res, next) => {
     res.redirect(302, '/bonus');
 });
 
-/** Legacy WordPress-style provider hub → slots directory. */
-app.get('/casino-gaming-provider', (req, res) => {
-    res.redirect(301, '/slots');
-});
-app.get('/casino-gaming-provider/', (req, res) => {
-    res.redirect(301, '/slots');
+/**
+ * Legacy WordPress / GSC "Not found" URLs → current hubs (301).
+ * Exact matches win over prefix rules. Prefer hubs until CMS detail slugs return 200.
+ * Host cms.888reviews.com is not handled here (separate origin).
+ */
+function normalizeLegacyPath(pathname) {
+    let p = String(pathname || '/').split('?')[0];
+    try {
+        p = decodeURIComponent(p);
+    } catch {
+        /* keep raw */
+    }
+    p = p.replace(/\/+/g, '/').trim();
+    if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
+    return p || '/';
+}
+
+const WP_LEGACY_EXACT = new Map([
+    ['/home', '/'],
+    ['/author/randall', '/'],
+    ['/about-us', '/about'],
+    ['/casino-live-dealers', '/live'],
+    ['/casino-sportbooks', '/reviews'],
+    ['/casino-category/casino', '/reviews'],
+    ['/casino-category', '/reviews'],
+    ['/casino-games', '/slots'],
+    ['/asia-gaming-review', '/slots'],
+    ['/188bet-casino-review', '/reviews'],
+    ['/bitstarz-casino-review', '/reviews'],
+    ['/bk8-casino-review', '/reviews'],
+    ['/bk8-review', '/reviews'],
+    ['/w88-casino-review', '/reviews'],
+    ['/aw8-casino-review', '/reviews'],
+    ['/fun88-casino-review', '/reviews'],
+    ['/dafabet-casino-review-2', '/reviews'],
+    ['/betway-casino-review-3', '/reviews'],
+    ['/bet365-casino-review-3', '/reviews'],
+    ['/1xbet-casino-review', '/reviews'],
+    ['/12bet-casino-review', '/reviews'],
+    ['/play666-casino-review', '/reviews'],
+    ['/play88-casino-review', '/reviews'],
+    ['/cmd368-casino-review', '/reviews'],
+    ['/maxim88-casino-review', '/reviews'],
+    ['/sbobet-casino-review', '/reviews'],
+    ['/god55-casino-review-2', '/reviews'],
+    ['/918kiss-review', '/reviews'],
+    ['/mega888-review', '/reviews'],
+    ['/qqclub-review', '/reviews'],
+    ['/ali88win-review', '/reviews'],
+    ['/mylvking-review', '/reviews'],
+    ['/wgw93-review', '/reviews'],
+    ['/xe88-casino-games', '/reviews'],
+    ['/king855-casino-games', '/reviews'],
+    ['/rca918-casino-games', '/reviews'],
+    ['/joker123-casino-games', '/reviews'],
+    ['/casino/qqclub-review', '/reviews'],
+    ['/no-deposit-bonus', '/bonus'],
+    ['/casino-bonus', '/bonus'],
+    ['/casino-bonus-2', '/bonus'],
+    ['/casino-reviews/how-to-make-a-deposit-in-malaysia-online-casinos', '/ewallet'],
+    ['/casino-top-10/online-casino-payment-methods', '/ewallet'],
+    ['/casino-top-10/best-ewallets-play88', '/ewallet'],
+    ['/casino-top-10/top-6-online-casino-providers-2022', '/slots'],
+    ['/casino-tips-tricks/blackjack-best-betting-system', '/blackjack'],
+    ['/casino-tips/top-6-sportsbook-platform-2023', '/reviews'],
+    ['/casino-provider/9-steps-to-play-online-casino-in-malaysia', '/guides'],
+    ['/provider-review/bk8-sports-online-casino-games-review-malaysia', '/reviews'],
+    ['/real-money-guides/best-ewallets-play88', '/ewallet'],
+    ['/real-money-guides/crypto-online-casino', '/ewallet'],
+    ['/real-money-casinos', '/reviews'],
+]);
+
+/** Longest prefix first so nested trees resolve correctly. */
+const WP_LEGACY_PREFIXES = [
+    ['/casino-reviews/mega888-online-casino-malaysia-review/provider-review', '/slots'],
+    ['/category/casino-slots-reviews', '/slots'],
+    ['/category/casino-reviews', '/reviews'],
+    ['/category/casino-top-10', '/reviews'],
+    ['/casino-slots-reviews', '/slots'],
+    ['/casino-slots-game', '/slots'],
+    ['/casino-gaming-provider', '/slots'],
+    ['/casino-tips-tricks', '/guides'],
+    ['/casino-tips', '/guides'],
+    ['/casino-guides', '/guides'],
+    ['/casino-provider', '/slots'],
+    ['/casino-top-10', '/reviews'],
+    ['/casino-reviews', '/reviews'],
+    ['/provider-review', '/slots'],
+    ['/provider_reviews', '/slots'],
+    ['/online-casino-bonus', '/bonus'],
+    ['/online-casino-guides', '/guides'],
+    ['/online-casino-guide', '/guides'],
+    ['/online-casino-review', '/reviews'],
+    ['/real-money-guides', '/guides'],
+    ['/real-money-casinos', '/reviews'],
+    ['/category', '/reviews'],
+    ['/2023', '/news'],
+];
+
+/** Soft 404 / legacy detail slug aliases → current CMS slugs or hubs. */
+const DETAIL_SLUG_ALIASES = new Map([
+    ['/casino/bk8-review', '/casino/bk-8'],
+    ['/casino/bk8', '/casino/bk-8'],
+    ['/casino/mylvking-review', '/reviews'],
+    ['/casino/ali88win-review', '/reviews'],
+    ['/casino/qqclub-review', '/reviews'],
+    ['/casino/918kiss', '/reviews'],
+    ['/casino/play88', '/reviews'],
+]);
+
+/** Legacy / junk query keys that should never be indexed as separate URLs. */
+const JUNK_QUERY_KEYS = new Set(['archives-list', 'reviews-page', 'byp455']);
+
+/**
+ * Prefer apex host (matches static canonical tags + sitemap).
+ * Vercel also 301s www → apex in vercel.json; this covers Express/local edge cases.
+ */
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next();
+        return;
+    }
+    const host = String(req.get('x-forwarded-host') || req.get('host') || '')
+        .split(',')[0]
+        .trim()
+        .toLowerCase()
+        .replace(/:\d+$/, '');
+    if (host === 'www.888reviews.com') {
+        const pathAndQuery = req.originalUrl || req.url || '/';
+        res.redirect(301, `https://888reviews.com${pathAndQuery}`);
+        return;
+    }
+    next();
 });
 
-/** Legacy WordPress slot hub (`/casino-slots-game/`) → pretty URL. */
-app.get('/casino-slots-game', (req, res) => {
-    res.redirect(301, '/slots');
+/** Collapse duplicate slashes (e.g. /w88-casino-review// → /w88-casino-review). */
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next();
+        return;
+    }
+    const pathname = String(req.path || '/');
+    if (pathname.includes('//')) {
+        const cleaned = pathname.replace(/\/{2,}/g, '/');
+        const qsIdx = req.url.indexOf('?');
+        const qs = qsIdx >= 0 ? req.url.slice(qsIdx) : '';
+        res.redirect(301, `${cleaned || '/'}${qs}`);
+        return;
+    }
+    next();
 });
-app.get('/casino-slots-game/', (req, res) => {
-    res.redirect(301, '/slots');
+
+/** Strip trailing slashes (except `/`) so detail routes and canonicals stay consistent. */
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next();
+        return;
+    }
+    const pathname = String(req.path || '/');
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+        const qsIdx = req.url.indexOf('?');
+        const qs = qsIdx >= 0 ? req.url.slice(qsIdx) : '';
+        res.redirect(301, `${pathname.replace(/\/+$/, '')}${qs}`);
+        return;
+    }
+    next();
+});
+
+/** Drop known junk query params (GSC alternate / crawl-waste URLs). */
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next();
+        return;
+    }
+    const full = req.originalUrl || req.url || '/';
+    const qIdx = full.indexOf('?');
+    if (qIdx < 0) {
+        next();
+        return;
+    }
+    const pathname = full.slice(0, qIdx) || '/';
+    const params = new URLSearchParams(full.slice(qIdx + 1));
+
+    // Legacy WordPress `?p=123` permalinks → home (content lives on pretty URLs now).
+    if ([...params.keys()].length === 1 && params.has('p')) {
+        res.redirect(301, '/');
+        return;
+    }
+
+    let changed = false;
+    for (const key of [...params.keys()]) {
+        if (JUNK_QUERY_KEYS.has(key)) {
+            params.delete(key);
+            changed = true;
+        }
+    }
+    if (!changed) {
+        next();
+        return;
+    }
+    const qs = params.toString();
+    res.redirect(301, qs ? `${pathname}?${qs}` : pathname);
+});
+
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next();
+        return;
+    }
+    const pathNorm = normalizeLegacyPath(req.path);
+    const aliasDest = DETAIL_SLUG_ALIASES.get(pathNorm);
+    if (aliasDest) {
+        res.redirect(301, aliasDest);
+        return;
+    }
+    const exactDest = WP_LEGACY_EXACT.get(pathNorm);
+    if (exactDest) {
+        res.redirect(301, exactDest);
+        return;
+    }
+    for (let i = 0; i < WP_LEGACY_PREFIXES.length; i++) {
+        const prefix = WP_LEGACY_PREFIXES[i][0];
+        const dest = WP_LEGACY_PREFIXES[i][1];
+        if (pathNorm === prefix || pathNorm.startsWith(`${prefix}/`)) {
+            res.redirect(301, dest);
+            return;
+        }
+    }
+    next();
 });
 
 /**

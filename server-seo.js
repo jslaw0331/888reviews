@@ -1,6 +1,7 @@
 /**
- * Server-side SEO helpers: SSR meta/canonical for CMS detail routes,
+ * Server-side SEO helpers: SSR meta/canonical + body content for CMS detail routes,
  * Strapi slug validation (404 + noindex), and sitemap URL generation.
+ * Body SSR reduces Google Soft 404s on client-hydrated detail shells.
  */
 const fs = require('fs');
 const path = require('path');
@@ -145,6 +146,386 @@ function coverImageFromAttr(attr) {
     return '';
 }
 
+function firstAttrValue(attr, keys) {
+    if (!attr) return null;
+    for (const k of keys) {
+        const v = attr[k];
+        if (v == null) continue;
+        if (typeof v === 'string' && !v.trim()) continue;
+        if (typeof v === 'object' && v !== null && v.type === 'doc' && !Array.isArray(v.content)) continue;
+        return v;
+    }
+    return null;
+}
+
+function strapiInlineToHtml(nodes) {
+    if (!nodes || !Array.isArray(nodes)) return '';
+    return nodes
+        .map((node) => {
+            if (!node) return '';
+            if (node.type === 'text' || node.text != null) {
+                let t = escapeHtmlText(node.text ?? '');
+                if (node.bold) t = `<strong>${t}</strong>`;
+                if (node.italic) t = `<em>${t}</em>`;
+                if (node.underline) t = `<u>${t}</u>`;
+                if (node.strikethrough || node.strike) t = `<s>${t}</s>`;
+                if (node.code) t = `<code>${t}</code>`;
+                if (node.link?.url || node.url) {
+                    const href = escapeHtmlAttr(String(node.link?.url || node.url));
+                    t = `<a href="${href}">${t}</a>`;
+                }
+                return t;
+            }
+            if (node.type === 'link' && node.url) {
+                const href = escapeHtmlAttr(String(node.url));
+                const kids = strapiInlineToHtml(node.children ?? node.content);
+                return `<a href="${href}">${kids}</a>`;
+            }
+            if (node.type === 'hard_break') return '<br>';
+            if (node.children || node.content) {
+                return strapiInlineToHtml(node.children ?? node.content);
+            }
+            return '';
+        })
+        .join('');
+}
+
+function strapiBlockNodeToHtml(node) {
+    if (!node || !node.type) return '';
+    const kids = node.content ?? node.children;
+    switch (node.type) {
+        case 'paragraph':
+            return `<p>${strapiInlineToHtml(kids) || '&nbsp;'}</p>`;
+        case 'heading': {
+            const level = Math.min(4, Math.max(2, Number(node.attrs?.level ?? node.level ?? 2) || 2));
+            return `<h${level}>${strapiInlineToHtml(kids)}</h${level}>`;
+        }
+        case 'bulletList':
+            return `<ul>${(kids || []).map(strapiBlockNodeToHtml).join('')}</ul>`;
+        case 'orderedList':
+            return `<ol>${(kids || []).map(strapiBlockNodeToHtml).join('')}</ol>`;
+        case 'list': {
+            const tag = node.format === 'ordered' ? 'ol' : 'ul';
+            return `<${tag}>${(kids || []).map(strapiBlockNodeToHtml).join('')}</${tag}>`;
+        }
+        case 'listItem':
+        case 'list-item': {
+            const inline = strapiInlineToHtml(kids);
+            if (inline) return `<li>${inline}</li>`;
+            return `<li>${(kids || []).map(strapiBlockNodeToHtml).join('')}</li>`;
+        }
+        case 'blockquote':
+            return `<blockquote>${(kids || []).map(strapiBlockNodeToHtml).join('')}</blockquote>`;
+        case 'code':
+            return `<pre><code>${escapeHtmlText(strapiInlineToHtml(kids))}</code></pre>`;
+        default:
+            return (kids || []).map(strapiBlockNodeToHtml).join('');
+    }
+}
+
+function strapiBlocksToHtml(doc) {
+    if (!doc || doc.type !== 'doc' || !Array.isArray(doc.content)) return '';
+    return doc.content.map(strapiBlockNodeToHtml).join('');
+}
+
+function plainTextToParagraphsHtml(text) {
+    const trimmed = String(text ?? '').trim();
+    if (!trimmed) return '';
+    let chunks = trimmed.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    if (chunks.length <= 1 && trimmed.includes('\n')) {
+        chunks = trimmed.split('\n').map((p) => p.trim()).filter(Boolean);
+    }
+    if (chunks.length === 0) return '';
+    return chunks.map((c) => `<p>${escapeHtmlText(c)}</p>`).join('');
+}
+
+function looksLikeMarkdown(s) {
+    const t = String(s ?? '').trim();
+    if (!t) return false;
+    const lines = t.split('\n');
+    for (let i = 0; i < Math.min(lines.length, 80); i++) {
+        const L = lines[i].trim();
+        if (!L) continue;
+        if (/^#{1,6}\s+/.test(L)) return true;
+        if (/^(\*{3}|-{3}|_{3})\s*$/.test(L)) return true;
+        if (/^[-*+]\s+/.test(L)) return true;
+        if (/^\d+\.\s+/.test(L)) return true;
+        if (/^>\s+/.test(L)) return true;
+    }
+    return false;
+}
+
+function inlineMarkdownToHtml(text) {
+    let s = escapeHtmlText(String(text ?? ''));
+    s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+    return s;
+}
+
+/** Lightweight GFM-ish converter for SSR when `marked` is not available on the server. */
+function lightweightMarkdownToHtml(md) {
+    const src = String(md ?? '').replace(/\r\n/g, '\n').trim();
+    if (!src) return '';
+    const blocks = src.split(/\n\n+/);
+    return blocks
+        .map((block) => {
+            const lines = block.split('\n').map((l) => l.trimEnd());
+            const nonEmpty = lines.filter((l) => l.trim());
+            if (nonEmpty.length === 0) return '';
+            const first = nonEmpty[0].trim();
+            const heading = first.match(/^(#{1,6})\s+(.*)$/);
+            if (heading && nonEmpty.length === 1) {
+                const level = Math.min(4, heading[1].length);
+                return `<h${level}>${inlineMarkdownToHtml(heading[2])}</h${level}>`;
+            }
+            if (nonEmpty.every((l) => /^[-*+]\s+/.test(l.trim()))) {
+                return `<ul>${nonEmpty
+                    .map((l) => `<li>${inlineMarkdownToHtml(l.trim().replace(/^[-*+]\s+/, ''))}</li>`)
+                    .join('')}</ul>`;
+            }
+            if (nonEmpty.every((l) => /^\d+\.\s+/.test(l.trim()))) {
+                return `<ol>${nonEmpty
+                    .map((l) => `<li>${inlineMarkdownToHtml(l.trim().replace(/^\d+\.\s+/, ''))}</li>`)
+                    .join('')}</ol>`;
+            }
+            if (nonEmpty.every((l) => /^>\s?/.test(l.trim()))) {
+                return `<blockquote>${nonEmpty
+                    .map((l) => `<p>${inlineMarkdownToHtml(l.trim().replace(/^>\s?/, ''))}</p>`)
+                    .join('')}</blockquote>`;
+            }
+            return `<p>${nonEmpty.map((l) => inlineMarkdownToHtml(l)).join('<br>')}</p>`;
+        })
+        .filter(Boolean)
+        .join('');
+}
+
+function richTextToHtml(raw) {
+    if (raw == null) return '';
+    if (typeof raw === 'object' && raw !== null && raw.type === 'doc') {
+        return strapiBlocksToHtml(raw);
+    }
+    if (Array.isArray(raw) && raw.length > 0 && raw.some((n) => n && n.type)) {
+        return raw.map(strapiBlockNodeToHtml).join('');
+    }
+    if (typeof raw === 'string') {
+        const t = raw.trim();
+        if (!t) return '';
+        if (t.startsWith('{') && t.includes('"type"') && t.includes('"doc"')) {
+            try {
+                const parsed = JSON.parse(t);
+                if (parsed && parsed.type === 'doc') return strapiBlocksToHtml(parsed);
+            } catch {
+                /* fall through */
+            }
+        }
+        if (/<[a-z][\s\S]*>/i.test(t)) return t;
+        if (looksLikeMarkdown(t)) return lightweightMarkdownToHtml(t);
+        return plainTextToParagraphsHtml(t);
+    }
+    return '';
+}
+
+function richTextToPlainText(raw) {
+    if (raw == null || raw === '') return '';
+    if (typeof raw === 'object' && raw !== null && raw.type === 'doc' && Array.isArray(raw.content)) {
+        const walk = (nodes) => {
+            if (!nodes || !Array.isArray(nodes)) return '';
+            return nodes
+                .map((n) => {
+                    if (!n) return '';
+                    if (n.type === 'text' || n.text != null) return n.text ?? '';
+                    if (n.content) return walk(n.content);
+                    if (n.children) return walk(n.children);
+                    return '';
+                })
+                .join(' ');
+        };
+        return walk(raw.content).replace(/\s+/g, ' ').trim();
+    }
+    if (Array.isArray(raw) && raw.length > 0 && raw.some((n) => n && n.type)) {
+        return richTextToPlainText({ type: 'doc', content: raw });
+    }
+    if (typeof raw === 'string') {
+        const t = raw.trim();
+        if (!t) return '';
+        if (t.startsWith('{') && t.includes('"type"') && t.includes('"doc"')) {
+            try {
+                const parsed = JSON.parse(t);
+                if (parsed && parsed.type === 'doc') return richTextToPlainText(parsed);
+            } catch {
+                /* fall through */
+            }
+        }
+        return t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    return '';
+}
+
+function replaceElementInnerById(html, id, innerHtml) {
+    const openRe = new RegExp(`(<([a-zA-Z][\\w:-]*)\\b[^>]*\\bid="${id}"[^>]*>)`, 'i');
+    const m = openRe.exec(html);
+    if (!m) return html;
+    const openTag = m[1];
+    const tagName = m[2].toLowerCase();
+    const start = m.index + openTag.length;
+    const lower = html.toLowerCase();
+    let i = start;
+    let depth = 1;
+    while (i < html.length && depth > 0) {
+        const nextOpen = lower.indexOf(`<${tagName}`, i);
+        const nextClose = lower.indexOf(`</${tagName}`, i);
+        if (nextClose === -1) return html;
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+            const after = lower.charAt(nextOpen + tagName.length + 1);
+            if (after === ' ' || after === '\t' || after === '\n' || after === '\r' || after === '>' || after === '/') {
+                const selfClose = html.indexOf('>', nextOpen);
+                if (selfClose !== -1 && html[selfClose - 1] === '/') {
+                    i = selfClose + 1;
+                } else {
+                    depth += 1;
+                    i = nextOpen + tagName.length + 1;
+                }
+            } else {
+                i = nextOpen + tagName.length + 1;
+            }
+            continue;
+        }
+        depth -= 1;
+        if (depth === 0) {
+            const closeEnd = html.indexOf('>', nextClose);
+            if (closeEnd === -1) return html;
+            return html.slice(0, start) + innerHtml + html.slice(nextClose);
+        }
+        i = nextClose + tagName.length + 2;
+    }
+    return html;
+}
+
+function setElementTextById(html, id, text) {
+    return replaceElementInnerById(html, id, escapeHtmlText(text));
+}
+
+function removeAttrFromTagById(html, id, attrName) {
+    const re = new RegExp(`(<[a-zA-Z][\\w:-]*\\b[^>]*\\bid="${id}"[^>]*)\\s+${attrName}(?:=["'][^"']*["'])?([^>]*>)`, 'i');
+    return html.replace(re, '$1$2');
+}
+
+function addAttrToTagById(html, id, attrName, attrValue) {
+    const re = new RegExp(`(<[a-zA-Z][\\w:-]*\\b[^>]*\\bid="${id}")([^>]*>)`, 'i');
+    return html.replace(re, (full, open, close) => {
+        if (new RegExp(`\\b${attrName}\\b`, 'i').test(open + close)) return full;
+        if (attrValue == null || attrValue === true) return `${open} ${attrName}${close}`;
+        return `${open} ${attrName}="${escapeHtmlAttr(attrValue)}"${close}`;
+    });
+}
+
+function removeClassToken(html, classToken) {
+    return html.replace(
+        new RegExp(`\\s*\\b${classToken}\\b`, 'g'),
+        '',
+    );
+}
+
+function emptyErrorBlockById(html, errorId) {
+    if (!errorId) return html;
+    return replaceElementInnerById(html, errorId, '');
+}
+
+function applyNotFoundShell(html, ssr) {
+    if (!ssr) return html;
+    let out = html;
+    if (ssr.mainId) {
+        out = addAttrToTagById(out, ssr.mainId, 'hidden');
+        out = addAttrToTagById(out, ssr.mainId, 'style', 'display:none');
+    }
+    if (ssr.errorId) {
+        out = removeAttrFromTagById(out, ssr.errorId, 'hidden');
+        out = out.replace(
+            new RegExp(`(<[a-zA-Z][\\w:-]*\\b[^>]*\\bid="${ssr.errorId}"[^>]*style=")[^"]*(")`, 'i'),
+            '$1$2',
+        );
+        out = removeAttrFromTagById(out, ssr.errorId, 'style');
+    }
+    if (ssr.titleId) {
+        out = setElementTextById(out, ssr.titleId, 'Not found');
+    }
+    return out;
+}
+
+function bodyHtmlForPageType(pageType, attr, fallbackPlain) {
+    const cfg = PAGE_CONFIG[pageType];
+    const ssr = cfg?.ssr;
+    if (!ssr) return '';
+    const raw = firstAttrValue(attr, ssr.bodyKeys || []);
+    let html = '';
+    if (ssr.bodyMode === 'bonus-terms') {
+        const s = typeof raw === 'string' ? raw.trim() : richTextToPlainText(raw);
+        html = s ? (looksLikeMarkdown(s) ? lightweightMarkdownToHtml(s) : plainTextToParagraphsHtml(s)) : '';
+        if (html) return `<div class="rich-text-body bonus-terms-md">${html}</div>`;
+    } else if (ssr.bodyMode === 'guide') {
+        html = richTextToHtml(raw);
+        if (html) return `<div class="rich-text-body guide-post-md">${html}</div>`;
+    } else {
+        html = richTextToHtml(raw);
+        if (html) return `<div class="${ssr.bodyClass || 'rich-text-body'}">${html}</div>`;
+    }
+    const plain = String(fallbackPlain || '').trim();
+    if (plain) {
+        return `<div class="${ssr.bodyClass || 'rich-text-body'}"><p>${escapeHtmlText(plain)}</p></div>`;
+    }
+    return '';
+}
+
+function injectSsrBodyContent(html, pageType, attr, seoMeta) {
+    const cfg = PAGE_CONFIG[pageType];
+    const ssr = cfg?.ssr;
+    if (!ssr || !attr) return html;
+
+    const displayName =
+        firstNonEmptyAttr(attr, ssr.titleKeys || []) ||
+        humanizeSlug(slugValueFromAttr(attr) || '') ||
+        '888reviews';
+
+    let summaryPlain = '';
+    const summaryRaw = firstAttrValue(attr, ssr.summaryKeys || []);
+    if (summaryRaw != null) {
+        summaryPlain = ssr.summaryAsPlain
+            ? richTextToPlainText(summaryRaw) || (typeof summaryRaw === 'string' ? summaryRaw.trim() : '')
+            : typeof summaryRaw === 'string'
+              ? summaryRaw.trim()
+              : richTextToPlainText(summaryRaw);
+    }
+
+    let out = html;
+    out = removeClassToken(out, 'detail-page--loading');
+    out = emptyErrorBlockById(out, ssr.errorId);
+    if (ssr.errorId) {
+        out = addAttrToTagById(out, ssr.errorId, 'hidden');
+    }
+
+    if (ssr.titleId) out = setElementTextById(out, ssr.titleId, displayName);
+    if (ssr.crumbId) out = setElementTextById(out, ssr.crumbId, displayName);
+    if (ssr.summaryId && summaryPlain) {
+        out = setElementTextById(out, ssr.summaryId, summaryPlain);
+        out = removeAttrFromTagById(out, ssr.summaryId, 'hidden');
+        if (ssr.summaryWrapId) out = removeAttrFromTagById(out, ssr.summaryWrapId, 'hidden');
+    }
+
+    const bodyHtml = bodyHtmlForPageType(
+        pageType,
+        attr,
+        summaryPlain || (seoMeta && seoMeta.description) || '',
+    );
+    if (ssr.bodyId && bodyHtml) {
+        out = replaceElementInnerById(out, ssr.bodyId, bodyHtml);
+        if (ssr.bodyWrapId) out = removeAttrFromTagById(out, ssr.bodyWrapId, 'hidden');
+        if (ssr.bodySectionId) out = removeAttrFromTagById(out, ssr.bodySectionId, 'hidden');
+    }
+    return out;
+}
+
 const PAGE_CONFIG = {
     provider: {
         file: 'provider.html',
@@ -155,6 +536,21 @@ const PAGE_CONFIG = {
         titleTpl: (h) => `${h} | Software provider | 888reviews`,
         descTpl: (h) =>
             `Provider dossier on 888reviews: game portfolio, standout titles, and editorial notes on ${h}.`,
+        ssr: {
+            titleId: 'pv-title',
+            summaryId: 'pv-summary',
+            bodyId: 'pv-perspective-body',
+            crumbId: 'pv-bc-current',
+            errorId: 'provider-error',
+            mainId: 'provider-content',
+            titleKeys: ['Name', 'name'],
+            summaryKeys: ['Excerpt', 'excerpt'],
+            summaryAsPlain: true,
+            bodyKeys: ['ReviewBody', 'reviewBody'],
+            bodyClass: 'rich-text-body',
+            bodyMode: 'rich',
+            bodySectionId: 'pv-review',
+        },
     },
     slot: {
         file: 'slot.html',
@@ -165,6 +561,20 @@ const PAGE_CONFIG = {
         titleTpl: (h) => `${h} | Slot review | 888reviews`,
         descTpl: (h) =>
             `Slot review on 888reviews: features, volatility context, RTP notes, and where to play ${h}. 18+ only.`,
+        ssr: {
+            titleId: 'sv-title',
+            summaryId: 'sv-excerpt',
+            bodyId: 'sv-review-body',
+            crumbId: 'sv-crumb-current',
+            errorId: 'slot-error',
+            mainId: 'slot-page-root',
+            titleKeys: ['Title', 'title', 'Name', 'name'],
+            summaryKeys: ['Excerpt', 'excerpt'],
+            summaryAsPlain: true,
+            bodyKeys: ['ReviewBody', 'reviewBody'],
+            bodyClass: 'rich-text-body',
+            bodyMode: 'rich',
+        },
     },
     bonus: {
         file: 'bonus.html',
@@ -175,6 +585,22 @@ const PAGE_CONFIG = {
         titleTpl: (h) => `${h} | Casino bonus | 888reviews`,
         descTpl: (h) =>
             `Casino bonus breakdown on 888reviews: headline value, wagering context, and eligibility notes for ${h}. 18+ only.`,
+        ssr: {
+            titleId: 'bd-title',
+            summaryId: 'bd-desc',
+            summaryWrapId: 'bd-desc-wrap',
+            bodyId: 'bd-full-terms',
+            bodyWrapId: 'bd-terms-wrap',
+            crumbId: 'bd-crumb-current',
+            errorId: 'bonus-error',
+            mainId: 'bonus-page-root',
+            titleKeys: ['Title', 'title', 'Name', 'name'],
+            summaryKeys: ['Description', 'description', 'ShortDescription', 'shortDescription'],
+            summaryAsPlain: true,
+            bodyKeys: ['FullTerms', 'fullTerms'],
+            bodyClass: 'rich-text-body',
+            bodyMode: 'bonus-terms',
+        },
     },
     guide: {
         file: 'post.html',
@@ -186,6 +612,52 @@ const PAGE_CONFIG = {
         titleTpl: (h) => `${h} | Guide | 888reviews`,
         descTpl: (h) =>
             `Editorial guide on 888reviews: expert notes and practical takeaways — ${h}. 18+ only. Play responsibly.`,
+        ssr: {
+            titleId: 'gp-title',
+            summaryId: 'gp-dek',
+            bodyId: 'gp-body',
+            crumbId: 'gp-crumb-current',
+            errorId: 'gp-error',
+            mainId: 'gp-page-root',
+            titleKeys: ['title', 'Title', 'name', 'Name'],
+            summaryKeys: [
+                'excerpt',
+                'Excerpt',
+                'description',
+                'Description',
+                'summary',
+                'Summary',
+                'dek',
+                'Dek',
+                'seoDescription',
+                'SeoDescription',
+            ],
+            summaryAsPlain: true,
+            bodyKeys: [
+                'bodyLinked',
+                'BodyLinked',
+                'bodyRaw',
+                'BodyRaw',
+                'content',
+                'Content',
+                'body',
+                'Body',
+                'article',
+                'Article',
+                'copy',
+                'Copy',
+                'post',
+                'Post',
+                'mainContent',
+                'MainContent',
+                'richText',
+                'RichText',
+                'ArticleBody',
+                'articleBody',
+            ],
+            bodyClass: 'rich-text-body',
+            bodyMode: 'guide',
+        },
     },
     news: {
         file: 'post.html',
@@ -197,6 +669,52 @@ const PAGE_CONFIG = {
         titleTpl: (h) => `${h} | News | 888reviews`,
         descTpl: (h) =>
             `Latest news on 888reviews: industry updates and editorial coverage — ${h}. 18+ only. Play responsibly.`,
+        ssr: {
+            titleId: 'gp-title',
+            summaryId: 'gp-dek',
+            bodyId: 'gp-body',
+            crumbId: 'gp-crumb-current',
+            errorId: 'gp-error',
+            mainId: 'gp-page-root',
+            titleKeys: ['title', 'Title', 'name', 'Name'],
+            summaryKeys: [
+                'excerpt',
+                'Excerpt',
+                'description',
+                'Description',
+                'summary',
+                'Summary',
+                'dek',
+                'Dek',
+                'seoDescription',
+                'SeoDescription',
+            ],
+            summaryAsPlain: true,
+            bodyKeys: [
+                'bodyLinked',
+                'BodyLinked',
+                'bodyRaw',
+                'BodyRaw',
+                'content',
+                'Content',
+                'body',
+                'Body',
+                'article',
+                'Article',
+                'copy',
+                'Copy',
+                'post',
+                'Post',
+                'mainContent',
+                'MainContent',
+                'richText',
+                'RichText',
+                'ArticleBody',
+                'articleBody',
+            ],
+            bodyClass: 'rich-text-body',
+            bodyMode: 'guide',
+        },
     },
     casino: {
         file: 'casino.html',
@@ -207,6 +725,20 @@ const PAGE_CONFIG = {
         titleTpl: (h) => `${h} Review | 888reviews`,
         descTpl: (h) =>
             `Independent ${h} review for Malaysian players: licensing, bonuses, payments, games, and editorial rating. 18+ only.`,
+        ssr: {
+            titleId: 'cr-title',
+            summaryId: 'cr-summary',
+            bodyId: 'cr-review-body',
+            crumbId: 'cr-bc-current',
+            errorId: 'casino-error',
+            mainId: 'casino-page-root',
+            titleKeys: ['Name', 'name'],
+            summaryKeys: ['Excerpt', 'excerpt'],
+            summaryAsPlain: true,
+            bodyKeys: ['ReviewBody', 'reviewBody', 'Excerpt', 'excerpt'],
+            bodyClass: 'rich-text-body',
+            bodyMode: 'rich',
+        },
     },
 };
 
@@ -317,7 +849,9 @@ function buildSeoFromAttr(pageType, attr, slug, siteOrigin) {
         else if (pageType === 'bonus') title = `${name} | Casino bonus | 888reviews`;
         if (seoDesc) description = seoDesc;
         else {
-            const excerpt = firstNonEmptyAttr(attr, ['Excerpt', 'excerpt', 'Description', 'ShortDescription']);
+            const excerpt =
+                firstNonEmptyAttr(attr, ['Excerpt', 'excerpt', 'Description', 'ShortDescription']) ||
+                richTextToPlainText(attr.Excerpt ?? attr.excerpt ?? attr.Description ?? '');
             if (excerpt) description = String(excerpt).slice(0, 320);
         }
     }
@@ -378,6 +912,12 @@ function injectDetailPageHtml(html, pageType, slug, siteOrigin, seoMeta, options
     }
     const pageTitle = options.notFound ? cfg.notFoundTitle : meta.title;
     out = out.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtmlText(pageTitle)}</title>`);
+
+    if (options.notFound) {
+        out = applyNotFoundShell(out, cfg.ssr);
+    } else if (options.attr) {
+        out = injectSsrBodyContent(out, pageType, options.attr, meta);
+    }
     return out;
 }
 
@@ -466,8 +1006,24 @@ async function sendDetailPage(res, rootDir, pageType, slug, siteOrigin) {
             res.status(404).type('html').send(html);
             return;
         }
-        const seoMeta = buildSeoFromAttr(pageType, attr, slug, siteOrigin);
-        const html = injectDetailPageHtml(raw, pageType, slug, siteOrigin, seoMeta);
+
+        const cmsSlug = slugValueFromAttr(attr);
+        let reqSlug = String(slug || '').trim();
+        try {
+            reqSlug = decodeURIComponent(reqSlug);
+        } catch {
+            /* keep raw */
+        }
+        if (cmsSlug && cmsSlug !== reqSlug) {
+            const qs = '';
+            res.redirect(301, `/${cfg.pathSeg}/${encodeURIComponent(cmsSlug)}${qs}`);
+            return;
+        }
+
+        const seoMeta = buildSeoFromAttr(pageType, attr, cmsSlug || slug, siteOrigin);
+        const html = injectDetailPageHtml(raw, pageType, cmsSlug || slug, siteOrigin, seoMeta, {
+            attr,
+        });
         res.type('html').send(html);
     } catch (e) {
         console.error('[sendDetailPage]', pageType, slug, e.message);
