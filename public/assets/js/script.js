@@ -6602,10 +6602,16 @@ function applyLiveCasinoSectionText(page) {
     const steps = page.checklistSteps;
     if (stepsEl && Array.isArray(steps) && steps.length > 0) {
         stepsEl.innerHTML = steps
-            .map(
-                (s, i) =>
-                    `<li><strong>Step ${s.step || i + 1}: ${escapeHtml(s.title || s.heading || '')}</strong> — ${escapeHtml(s.body || s.description || '')}</li>`,
-            )
+            .map((s, i) => {
+                const title = escapeHtml(String(s.title || s.heading || '').trim());
+                const bodyText =
+                    richTextToPlainText(s.body) ||
+                    richTextToPlainText(s.description) ||
+                    richTextToPlainText(s.bodyText) ||
+                    '';
+                const body = bodyText ? ` — ${escapeHtml(bodyText)}` : '';
+                return `<li><strong>Step ${s.step || i + 1}: ${title}</strong>${body}</li>`;
+            })
             .join('');
     }
 }
@@ -9195,8 +9201,13 @@ function applyBaccaratSteps(containerId, steps) {
     container.innerHTML = steps
         .map((s, i) => {
             const num = s.step != null ? s.step : i + 1;
-            const title = escapeHtml(s.title || s.heading || '');
-            const body = escapeHtml(s.body || s.description || '');
+            const title = escapeHtml(String(s.title || s.heading || '').trim());
+            const bodyText =
+                richTextToPlainText(s.body) ||
+                richTextToPlainText(s.description) ||
+                richTextToPlainText(s.bodyText) ||
+                '';
+            const body = escapeHtml(bodyText);
             return `<li class="roulette-checklist__step">
                 <span class="roulette-checklist__num" aria-hidden="true">${num}</span>
                 <div class="roulette-checklist__content">
