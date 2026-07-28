@@ -6,6 +6,7 @@ const cors = require('cors');
 const axios = require('axios');
 const serverSeo = require('./server-seo');
 const { restoreVercelUrlMiddleware } = require('./server-vercel-url');
+const { resolveCanonicalUrl } = require('./server-canonical');
 const {
     getStrapiAxiosTimeoutMs,
     API_PROXY_CACHE_CONTROL,
@@ -205,20 +206,8 @@ app.use((req, res, next) => {
 /**
  * Legacy WordPress / GSC "Not found" URLs → current hubs (301).
  * Exact matches win over prefix rules. Prefer hubs until CMS detail slugs return 200.
- * Host cms.888reviews.com is not handled here (separate origin).
+ * Retired host cms.888reviews.com → apex (see APEX_REDIRECT_HOSTS).
  */
-function normalizeLegacyPath(pathname) {
-    let p = String(pathname || '/').split('?')[0];
-    try {
-        p = decodeURIComponent(p);
-    } catch {
-        /* keep raw */
-    }
-    p = p.replace(/\/+/g, '/').trim();
-    if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
-    return p || '/';
-}
-
 const WP_LEGACY_EXACT = new Map([
     ['/home', '/'],
     ['/author/randall', '/'],
@@ -261,6 +250,7 @@ const WP_LEGACY_EXACT = new Map([
     ['/no-deposit-bonus', '/bonus'],
     ['/casino-bonus', '/bonus'],
     ['/casino-bonus-2', '/bonus'],
+    ['/bonuses.html', '/bonus'],
     ['/casino-reviews/how-to-make-a-deposit-in-malaysia-online-casinos', '/ewallet'],
     ['/casino-top-10/online-casino-payment-methods', '/ewallet'],
     ['/casino-top-10/best-ewallets-play88', '/ewallet'],
@@ -297,8 +287,10 @@ const WP_LEGACY_PREFIXES = [
     ['/online-casino-review', '/reviews'],
     ['/real-money-guides', '/guides'],
     ['/real-money-casinos', '/reviews'],
+    ['/bonuses', '/bonus'],
     ['/category', '/reviews'],
     ['/2023', '/news'],
+    ['/wp-content', '/'],
 ];
 
 /** Soft 404 / legacy detail slug aliases → current CMS slugs or hubs. */
@@ -315,9 +307,19 @@ const DETAIL_SLUG_ALIASES = new Map([
 /** Legacy / junk query keys that should never be indexed as separate URLs. */
 const JUNK_QUERY_KEYS = new Set(['archives-list', 'reviews-page', 'byp455']);
 
+const CANONICAL_OPTS = {
+    aliases: DETAIL_SLUG_ALIASES,
+    exact: WP_LEGACY_EXACT,
+    prefixes: WP_LEGACY_PREFIXES,
+    junkKeys: JUNK_QUERY_KEYS,
+};
+
+/** www + retired cms subdomain always 301 to apex with the canonical path. */
+const APEX_REDIRECT_HOSTS = new Set(['www.888reviews.com', 'cms.888reviews.com']);
+
 /**
- * Prefer apex host (matches static canonical tags + sitemap).
- * Vercel also 301s www → apex in vercel.json; this covers Express/local edge cases.
+ * One 301 to the final URL: host (www / retired cms → apex) + slash/junk/legacy path rules.
+ * Avoids slash-strip → legacy chains that GSC reports as Redirect error.
  */
 app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -329,106 +331,16 @@ app.use((req, res, next) => {
         .trim()
         .toLowerCase()
         .replace(/:\d+$/, '');
-    if (host === 'www.888reviews.com') {
-        const pathAndQuery = req.originalUrl || req.url || '/';
-        res.redirect(301, `https://888reviews.com${pathAndQuery}`);
-        return;
-    }
-    next();
-});
+    const original = req.originalUrl || req.url || '/';
+    const { href, changed } = resolveCanonicalUrl(original, CANONICAL_OPTS);
 
-/** Collapse duplicate slashes (e.g. /w88-casino-review// → /w88-casino-review). */
-app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        next();
+    if (APEX_REDIRECT_HOSTS.has(host)) {
+        res.redirect(301, `https://888reviews.com${href}`);
         return;
     }
-    const pathname = String(req.path || '/');
-    if (pathname.includes('//')) {
-        const cleaned = pathname.replace(/\/{2,}/g, '/');
-        const qsIdx = req.url.indexOf('?');
-        const qs = qsIdx >= 0 ? req.url.slice(qsIdx) : '';
-        res.redirect(301, `${cleaned || '/'}${qs}`);
+    if (changed) {
+        res.redirect(301, href);
         return;
-    }
-    next();
-});
-
-/** Strip trailing slashes (except `/`) so detail routes and canonicals stay consistent. */
-app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        next();
-        return;
-    }
-    const pathname = String(req.path || '/');
-    if (pathname.length > 1 && pathname.endsWith('/')) {
-        const qsIdx = req.url.indexOf('?');
-        const qs = qsIdx >= 0 ? req.url.slice(qsIdx) : '';
-        res.redirect(301, `${pathname.replace(/\/+$/, '')}${qs}`);
-        return;
-    }
-    next();
-});
-
-/** Drop known junk query params (GSC alternate / crawl-waste URLs). */
-app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        next();
-        return;
-    }
-    const full = req.originalUrl || req.url || '/';
-    const qIdx = full.indexOf('?');
-    if (qIdx < 0) {
-        next();
-        return;
-    }
-    const pathname = full.slice(0, qIdx) || '/';
-    const params = new URLSearchParams(full.slice(qIdx + 1));
-
-    // Legacy WordPress `?p=123` permalinks → home (content lives on pretty URLs now).
-    if ([...params.keys()].length === 1 && params.has('p')) {
-        res.redirect(301, '/');
-        return;
-    }
-
-    let changed = false;
-    for (const key of [...params.keys()]) {
-        if (JUNK_QUERY_KEYS.has(key)) {
-            params.delete(key);
-            changed = true;
-        }
-    }
-    if (!changed) {
-        next();
-        return;
-    }
-    const qs = params.toString();
-    res.redirect(301, qs ? `${pathname}?${qs}` : pathname);
-});
-
-app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        next();
-        return;
-    }
-    const pathNorm = normalizeLegacyPath(req.path);
-    const aliasDest = DETAIL_SLUG_ALIASES.get(pathNorm);
-    if (aliasDest) {
-        res.redirect(301, aliasDest);
-        return;
-    }
-    const exactDest = WP_LEGACY_EXACT.get(pathNorm);
-    if (exactDest) {
-        res.redirect(301, exactDest);
-        return;
-    }
-    for (let i = 0; i < WP_LEGACY_PREFIXES.length; i++) {
-        const prefix = WP_LEGACY_PREFIXES[i][0];
-        const dest = WP_LEGACY_PREFIXES[i][1];
-        if (pathNorm === prefix || pathNorm.startsWith(`${prefix}/`)) {
-            res.redirect(301, dest);
-            return;
-        }
     }
     next();
 });
@@ -792,35 +704,6 @@ app.get('/mobile/android', (req, res) => {
 });
 app.get('/mobile/android/', (req, res) => {
     res.redirect(301, '/mobile');
-});
-
-/** Legacy bonuses directory → Malaysia bonus hub. */
-app.get('/bonuses', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/welcome', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/welcome/', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/free-spins', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/free-spins/', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/no-deposit', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses/no-deposit/', (req, res) => {
-    res.redirect(301, '/bonus');
-});
-app.get('/bonuses.html', (req, res) => {
-    res.redirect(301, '/bonus');
 });
 
 app.get('/games/live-casino', (req, res) => {
