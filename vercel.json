@@ -6,20 +6,6 @@
       "maxDuration": 60
     }
   },
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.888reviews.com" }],
-      "destination": "https://888reviews.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [{ "type": "host", "value": "cms.888reviews.com" }],
-      "destination": "https://888reviews.com/:path*",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/((?!assets/|components/).*)",
@@ -27,3 +13,4 @@
     }
   ]
 }
+

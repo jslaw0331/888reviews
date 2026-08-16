@@ -530,6 +530,7 @@ const PAGE_CONFIG = {
     provider: {
         file: 'provider.html',
         pathSeg: 'provider',
+        hubPath: '/slots',
         idPrefix: 'pv',
         endpoint: 'providers',
         notFoundTitle: 'Provider not found | 888reviews',
@@ -555,6 +556,7 @@ const PAGE_CONFIG = {
     slot: {
         file: 'slot.html',
         pathSeg: 'slot',
+        hubPath: '/slots',
         idPrefix: 'sv',
         endpoint: 'slots',
         notFoundTitle: 'Slot not found | 888reviews',
@@ -579,6 +581,7 @@ const PAGE_CONFIG = {
     bonus: {
         file: 'bonus.html',
         pathSeg: 'bonus',
+        hubPath: '/bonus',
         idPrefix: 'bd',
         endpoint: 'bonuses',
         notFoundTitle: 'Bonus not found | 888reviews',
@@ -605,6 +608,7 @@ const PAGE_CONFIG = {
     guide: {
         file: 'post.html',
         pathSeg: 'guide',
+        hubPath: '/guides',
         idPrefix: 'gp',
         endpoint: 'blog-posts',
         allowedCategories: ['guide', 'strategy'],
@@ -662,6 +666,7 @@ const PAGE_CONFIG = {
     news: {
         file: 'post.html',
         pathSeg: 'news',
+        hubPath: '/news',
         idPrefix: 'gp',
         endpoint: 'blog-posts',
         allowedCategories: ['news'],
@@ -719,6 +724,7 @@ const PAGE_CONFIG = {
     casino: {
         file: 'casino.html',
         pathSeg: 'casino',
+        hubPath: '/reviews',
         idPrefix: 'cr',
         endpoint: 'casinos',
         notFoundTitle: 'Casino review not found | 888reviews',
@@ -1002,6 +1008,11 @@ async function sendDetailPage(res, rootDir, pageType, slug, siteOrigin) {
             attr = await fetchEntryBySlug(pageType, slug);
         }
         if (!attr) {
+            // Missing CMS slug (retired WP content, unpublished, etc.) → hub, not a soft 404.
+            if (cfg.hubPath && process.env.STRAPI_API_URL && process.env.STRAPI_API_TOKEN) {
+                res.redirect(301, cfg.hubPath);
+                return;
+            }
             const html = injectDetailPageHtml(raw, pageType, slug, siteOrigin, null, { notFound: true });
             res.status(404).type('html').send(html);
             return;

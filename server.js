@@ -240,7 +240,9 @@ const WP_LEGACY_EXACT = new Map([
     ['/mega888-review', '/reviews'],
     ['/qqclub-review', '/reviews'],
     ['/ali88win-review', '/reviews'],
+    ['/all88win-review', '/reviews'],
     ['/mylvking-review', '/reviews'],
+    ['/mytvking-review', '/reviews'],
     ['/wgw93-review', '/reviews'],
     ['/xe88-casino-games', '/reviews'],
     ['/king855-casino-games', '/reviews'],
@@ -289,8 +291,11 @@ const WP_LEGACY_PREFIXES = [
     ['/real-money-casinos', '/reviews'],
     ['/bonuses', '/bonus'],
     ['/category', '/reviews'],
+    ['/online-casino-guides-2', '/guides'],
     ['/2023', '/news'],
     ['/wp-content', '/'],
+    ['/wp-admin', '/'],
+    ['/page', '/'],
 ];
 
 /** Soft 404 / legacy detail slug aliases → current CMS slugs or hubs. */
@@ -302,9 +307,14 @@ const DETAIL_SLUG_ALIASES = new Map([
     ['/casino/qqclub-review', '/reviews'],
     ['/casino/918kiss', '/reviews'],
     ['/casino/play88', '/reviews'],
+    ['/guide/baccarat-strategy-malaysia-guide', '/baccarat'],
+    ['/guide/roulette-strategy-malaysia-guide', '/roulette'],
+    ['/guide/live-casino-malaysia-growth-2026', '/live'],
+    ['/guide/online-casino-bonus-guide-malaysia', '/bonus'],
+    ['/provider/pragmatic-play', '/slots'],
 ]);
 
-/** Legacy / junk query keys that should never be indexed as separate URLs. */
+/** Legacy / junk query keys that should never be indexed as separate URLs (utm_* / ad click ids stripped in server-canonical). */
 const JUNK_QUERY_KEYS = new Set(['archives-list', 'reviews-page', 'byp455']);
 
 const CANONICAL_OPTS = {

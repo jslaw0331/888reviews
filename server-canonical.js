@@ -1,7 +1,30 @@
 /**
  * Single-hop URL canonicalization for legacy WP paths, trailing slashes, and junk query keys.
- * Keeps GSC from seeing slash-strip → legacy chains (Redirect error).
+ * Keeps GSC from seeing slash-strip → legacy chains (Redirect error) or
+ * "Alternate page with proper canonical tag" for tracking/junk query variants.
  */
+
+/** Tracking / campaign keys that should never create an indexable URL variant. */
+const TRACKING_QUERY_KEYS = new Set([
+    'fbclid',
+    'gclid',
+    'gclsrc',
+    'dclid',
+    'msclkid',
+    'mc_cid',
+    'mc_eid',
+    '_ga',
+    '_gl',
+]);
+
+function isJunkQueryKey(key, junkKeys) {
+    const k = String(key || '').toLowerCase();
+    if (!k) return false;
+    if (junkKeys && junkKeys.has(k)) return true;
+    if (junkKeys && junkKeys.has(key)) return true;
+    if (k.startsWith('utm_')) return true;
+    return TRACKING_QUERY_KEYS.has(k);
+}
 
 function normalizeLegacyPath(pathname) {
     let p = String(pathname || '/').split('?')[0];
@@ -51,7 +74,7 @@ function resolveCanonicalUrl(originalUrl, opts) {
 
     let junkRemoved = false;
     for (const key of [...params.keys()]) {
-        if (opts.junkKeys.has(key)) {
+        if (isJunkQueryKey(key, opts.junkKeys)) {
             params.delete(key);
             junkRemoved = true;
         }
@@ -70,6 +93,7 @@ module.exports = {
     normalizeLegacyPath,
     legacyDestForPath,
     resolveCanonicalUrl,
+    isJunkQueryKey,
 };
 
 if (require.main === module) {
@@ -86,6 +110,8 @@ if (require.main === module) {
             ['/casino-reviews', '/reviews'],
             ['/category/casino-top-10', '/reviews'],
             ['/casino-top-10', '/reviews'],
+            ['/wp-admin', '/'],
+            ['/page', '/'],
         ],
         junkKeys: new Set(['archives-list', 'reviews-page', 'byp455']),
     };
@@ -105,5 +131,26 @@ if (require.main === module) {
     assert.strictEqual(resolveCanonicalUrl('/reviews/', opts).href, '/reviews');
     assert.strictEqual(resolveCanonicalUrl('/reviews?archives-list=1', opts).href, '/reviews');
     assert.strictEqual(resolveCanonicalUrl('/about?p=12', opts).href, '/');
+    assert.strictEqual(
+        resolveCanonicalUrl(
+            '/reviews?utm_source=rss&utm_medium=rss&utm_campaign=ali88win-review',
+            opts
+        ).href,
+        '/reviews'
+    );
+    assert.strictEqual(
+        resolveCanonicalUrl(
+            '/reviews?utm_source=rss&utm_medium=rss&utm_campaign=ali88win-review',
+            opts
+        ).changed,
+        true
+    );
+    assert.strictEqual(resolveCanonicalUrl('/guides?fbclid=abc', opts).href, '/guides');
+    assert.strictEqual(
+        resolveCanonicalUrl('/casino-reviews/aw8/?reviews-page=5', opts).href,
+        '/reviews'
+    );
+    assert.strictEqual(resolveCanonicalUrl('/page/6/', opts).href, '/');
+    assert.strictEqual(resolveCanonicalUrl('/wp-admin/', opts).href, '/');
     console.log('server-canonical: ok');
 }
