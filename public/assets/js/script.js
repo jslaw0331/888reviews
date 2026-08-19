@@ -1686,7 +1686,7 @@ const CONTENT_EMPTY_MESSAGES = {
     slots: 'No slots found yet.',
     bonuses: 'No bonuses published yet.',
     guides: 'No guides yet. Check back soon.',
-    news: 'No news posts yet. Check back soon.',
+    news: 'No published news articles are available at this time.',
     default: 'Nothing to show here yet. Check back soon.',
 };
 
@@ -5279,7 +5279,7 @@ function malaysiaBonusPartsDisplay(attr) {
         };
     }
     const line = malaysiaBonusLineDisplay(attr);
-    if (!line) return { intro: '', amount: '—', extra: '' };
+    if (!line) return { intro: 'Bonus terms', amount: 'Check the current offer and restrictions', extra: '' };
     const weeklyMatch = line.match(/^(Weekly giveaways up to)\s*(.+)$/i);
     if (weeklyMatch) return { intro: weeklyMatch[1], amount: weeklyMatch[2], extra: '' };
     const pctMatch = line.match(/^(\d+% up to)\s*(.+)$/i);
@@ -5354,7 +5354,7 @@ function casinoVisitSiteLabel(attr) {
     const slug = firstNonEmptyAttr(attr, ['Slug', 'slug']);
     if (slug) return `Visit ${slug.replace(/-/g, '.')}`;
     const name = firstNonEmptyAttr(attr, ['Name', 'name']);
-    return name ? `Visit ${name}` : 'Visit site';
+    return 'Visit operator';
 }
 
 function malaysiaTableRowClass(listPos) {
@@ -5458,10 +5458,10 @@ function renderMalaysiaOperatorCard(entry, listPos) {
         : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
     const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
     const bonusParts = malaysiaBonusPartsDisplay(attr);
-    const bonusIntro = escapeHtml(bonusParts.intro || 'Up to');
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus terms');
     const bonusAmount = escapeHtml(bonusParts.amount);
     const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
-    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || 'Games, payments, bonus terms and limitations');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
     const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
@@ -5469,7 +5469,7 @@ function renderMalaysiaOperatorCard(entry, listPos) {
         ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
         : '';
     return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
-        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Visit operator: ${name}"><span class="sr-only">Visit operator: ${name}</span></a>
         <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
         <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
         <div class="malaysia-operator-row__stats">
@@ -5482,12 +5482,12 @@ function renderMalaysiaOperatorCard(entry, listPos) {
                 <strong class="malaysia-operator-row__bonus-amount">${bonusAmount}</strong>${bonusExtraHtml}
             </div>
             <div class="malaysia-operator-row__highlight">
-                <span class="malaysia-operator-row__field-label">Casino Highlight</span>
+                <span class="malaysia-operator-row__field-label">Review focus</span>
                 <p><span class="malaysia-operator-row__highlight-tag"><i data-lucide="check-circle-2" class="malaysia-operator-row__check" aria-hidden="true"></i><span>${highlight}</span></span></p>
             </div>
         </div>
         <div class="malaysia-operator-row__cta">
-            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Visit operator</a>
             <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
         </div>
     </article>`;
@@ -5502,7 +5502,7 @@ function renderMalaysiaTableRow(entry, listPos) {
         : `<span class="malaysia-table__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
     const rating = escapeHtml(formatRatingScoreLine(attr, formatRatingSlashFive(5 - (listPos - 1) * 0.1)));
     const bonus = escapeHtml(malaysiaBonusLineDisplay(attr) || '—');
-    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || 'Games, payments, bonus terms and limitations');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
     return `<tr class="malaysia-table__row${malaysiaTableRowClass(listPos)}">
@@ -5510,7 +5510,7 @@ function renderMalaysiaTableRow(entry, listPos) {
         <td data-label="Rating">${rating}</td>
         <td data-label="Bonus">${bonus}</td>
         <td data-label="Highlight">${highlight}</td>
-        <td data-label="Link"><a href="${visitHref}" class="btn btn-primary btn-small"${visitRel}>Visit site</a></td>
+        <td data-label="Link"><a href="${visitHref}" class="btn btn-primary btn-small"${visitRel}>Visit operator</a></td>
     </tr>`;
 }
 
@@ -5722,7 +5722,7 @@ function renderHomepageFeaturedOperatorRow(block, attr, options = {}) {
     const bonusParts = malaysiaBonusPartsDisplay(attr);
     const offerLabel = escapeHtml(
         options.offerLabel ||
-            String(override.intro || bonusParts.intro || 'Up to').trim(),
+            String(override.intro || bonusParts.intro || 'Bonus terms').trim(),
     );
     const bonusAmount = escapeHtml(
         String(override.amount || '').trim() || bonusParts.amount || malaysiaBonusLineDisplay(attr) || '—',
@@ -6283,13 +6283,13 @@ function renderLiveCasinoOperatorRow(item, listPos, options = {}) {
         : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
     const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
     const bonusParts = malaysiaBonusPartsDisplay(attr);
-    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus terms');
     const bonusAmount = escapeHtml(bonusParts.amount);
     const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
     const highlight =
         options.highlightValue != null && options.highlightValue !== ''
             ? escapeHtml(String(options.highlightValue))
-            : escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+            : escapeHtml(malaysiaHighlightDisplay(attr) || 'Games, payments, bonus terms and limitations');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
     const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
@@ -6297,7 +6297,7 @@ function renderLiveCasinoOperatorRow(item, listPos, options = {}) {
         ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
         : '';
     return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
-        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Visit operator: ${name}"><span class="sr-only">Visit operator: ${name}</span></a>
         <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
         <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
         <div class="malaysia-operator-row__stats">
@@ -6315,7 +6315,7 @@ function renderLiveCasinoOperatorRow(item, listPos, options = {}) {
             </div>
         </div>
         <div class="malaysia-operator-row__cta">
-            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Visit operator</a>
             <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
         </div>
     </article>`;
@@ -6788,10 +6788,10 @@ function renderReviewsOperatorRow(item, listPos, slugMap) {
         : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
     const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
     const bonusParts = malaysiaBonusPartsDisplay(attr);
-    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus terms');
     const bonusAmount = escapeHtml(bonusParts.amount);
     const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
-    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || 'Games, payments, bonus terms and limitations');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
     const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
@@ -6799,7 +6799,7 @@ function renderReviewsOperatorRow(item, listPos, slugMap) {
         ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
         : '';
     return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
-        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Visit operator: ${name}"><span class="sr-only">Visit operator: ${name}</span></a>
         <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
         <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
         <div class="malaysia-operator-row__stats">
@@ -6817,7 +6817,7 @@ function renderReviewsOperatorRow(item, listPos, slugMap) {
             </div>
         </div>
         <div class="malaysia-operator-row__cta">
-            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Visit operator</a>
             <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
         </div>
     </article>`;
@@ -6826,10 +6826,10 @@ function renderReviewsOperatorRow(item, listPos, slugMap) {
 function applyReviewsMeta(page) {
     if (!page) return;
     const title =
-        page.metaTitle || 'Online Casino Reviews Directory Malaysia 2026 | Full Site Reviews | 888reviews';
+        page.metaTitle || 'Online Casino Reviews Malaysia 2026 | 888reviews';
     const desc =
         page.metaDescription ||
-        'Browse our full directory of independent online casino reviews for Malaysian players: hands-on testing, per-site ratings, bonus guides, and payment method checks. 18+ only.';
+        'Browse independent casino reviews for Malaysian readers, covering operator details, bonus terms, games, payments, withdrawals, support and important limitations.';
     document.title = title;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', desc);
@@ -8049,10 +8049,10 @@ function slotPageFeaturedToAttr(block, slugMap) {
 function applySlotPageMeta(page) {
     if (!page) return;
     const title =
-        page.metaTitle || 'Best Slot Sites Malaysia 2026 | Top Online Slots | 888reviews';
+        page.metaTitle || 'Online Slot Site Reviews Malaysia 2026 | 888reviews';
     const desc =
         page.metaDescription ||
-        'Compare the best online slot sites in Malaysia for 2026: expert rankings, MYR bonuses, top slot games, and trusted payment methods. Independent reviews. 18+ only.';
+        'Compare online slot site reviews for Malaysian players, including providers, game selection, RTP information, bonus terms, payments, mobile access and limitations.';
     document.title = title;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', desc);
@@ -9854,10 +9854,10 @@ function renderMobileOperatorRow(item, listPos) {
         : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
     const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
     const bonusParts = malaysiaBonusPartsDisplay(attr);
-    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus terms');
     const bonusAmount = escapeHtml(bonusParts.amount);
     const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
-    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || 'Games, payments, bonus terms and limitations');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
     const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
@@ -9865,7 +9865,7 @@ function renderMobileOperatorRow(item, listPos) {
         ? `<span class="malaysia-operator-row__bonus-extra">${bonusExtra}</span>`
         : '';
     return `<article class="malaysia-operator-row${malaysiaOperatorRowClass(listPos)}" role="listitem">
-        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Play at ${name}"><span class="sr-only">Play at ${name}</span></a>
+        <a href="${visitHref}" class="malaysia-operator-row__overlay-link"${visitRel} aria-label="Visit operator: ${name}"><span class="sr-only">Visit operator: ${name}</span></a>
         <div class="malaysia-operator-row__rank" aria-hidden="true">${listPos}</div>
         <div class="malaysia-operator-row__logo-wrap">${logoHtml}<h3 class="sr-only">${name}</h3></div>
         <div class="malaysia-operator-row__stats">
@@ -9883,7 +9883,7 @@ function renderMobileOperatorRow(item, listPos) {
             </div>
         </div>
         <div class="malaysia-operator-row__cta">
-            <a href="${visitHref}" class="btn-play-here"${visitRel}>Play Here!</a>
+            <a href="${visitHref}" class="btn-play-here"${visitRel}>Visit operator</a>
             <a href="${visitHref}" class="malaysia-operator-row__visit-link"${visitRel}><i data-lucide="globe" aria-hidden="true"></i><span>${visitLabel}</span></a>
         </div>
     </article>`;
@@ -10299,10 +10299,10 @@ function renderBonusOperatorRow(item, listPos, slugMap) {
         : `<span class="malaysia-operator-row__logo-fallback" aria-hidden="true">${escapeHtml((name.charAt(0) || 'C').toUpperCase())}</span>`;
     const ratingHtml = malaysiaOperatorRatingHtml(attr, listPos);
     const bonusParts = malaysiaBonusPartsDisplay(attr);
-    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus amount');
+    const bonusIntro = escapeHtml(bonusParts.intro || 'Bonus terms');
     const bonusAmount = escapeHtml(bonusParts.amount);
     const bonusExtra = bonusParts.extra ? escapeHtml(bonusParts.extra) : '';
-    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || '—');
+    const highlight = escapeHtml(malaysiaHighlightDisplay(attr) || 'Games, payments, bonus terms and limitations');
     const visitHref = escapeHtml(casinoVisitSiteHref(attr));
     const visitLabel = escapeHtml(casinoVisitSiteLabel(attr));
     const visitRel = casinoVisitSiteIsExternal(attr) ? ' rel="nofollow noopener" target="_blank"' : ' rel="nofollow noopener"';
