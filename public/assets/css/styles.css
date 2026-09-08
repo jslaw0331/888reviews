@@ -20550,17 +20550,27 @@ body.page-guide-post {
 
 .page-malaysia .malaysia-picks-item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.65rem;
   min-width: 0;
 }
 
 .page-malaysia .malaysia-picks-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  width: 1.25rem;
-  font-size: 1rem;
-  line-height: 1.45;
-  text-align: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.45rem;
+  background: rgba(51, 190, 179, 0.12);
+  color: var(--primary, #33beb3);
+}
+
+.page-malaysia .malaysia-picks-item__icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 2.25;
 }
 
 .page-malaysia .malaysia-picks-item__line {
@@ -20571,7 +20581,7 @@ body.page-guide-post {
 }
 
 .page-malaysia .malaysia-picks-item__label {
-  font-style: italic;
+  font-style: normal;
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -21292,8 +21302,9 @@ body.page-guide-post {
   gap: 0.35rem;
   height: 100%;
   min-height: 6.75rem;
-  padding: 1.25rem 1.35rem;
+  padding: 1.25rem 1.35rem 1.25rem 1.25rem;
   border: 1px solid var(--border-light, #e2e8f0);
+  border-left: 3px solid var(--primary, #33beb3);
   border-radius: 1rem;
   background: linear-gradient(180deg, #fff 0%, #f8fcfd 100%);
   box-shadow:
@@ -21319,6 +21330,15 @@ body.page-guide-post {
   font-weight: 700;
   line-height: 1.35;
   color: #1e3a5f;
+}
+
+.page-malaysia .malaysia-payout-card__casino a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page-malaysia .malaysia-payout-card__casino a:hover {
+  color: var(--primary, #33beb3);
 }
 
 .page-malaysia .malaysia-payout-card__rtp {
