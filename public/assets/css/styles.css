@@ -30610,6 +30610,10 @@ body.page-guide-post {
   padding-top: 1.15rem;
 }
 
+section#malaysia-operators {
+  padding-top: 0;
+}
+
 .page-about.page-malaysia .about-article>p:first-of-type {
   margin: 0 0 calc(1.15rem - var(--section-gap));
   padding-bottom: 0.85rem;
@@ -30687,9 +30691,19 @@ body.page-guide-post {
   line-height: 1.5;
 }
 
-#malaysia-glance,
+#malaysia-glance {
+  padding-top: 30px;
+  padding-bottom: 15px;
+}
+
 #malaysia-trust {
   background: #f3f6fa;
+  padding-top: 15px;
+  padding-bottom: 30px;
+}
+
+#malaysia-operators.malaysia-section {
+  padding-top: 0;
 }
 
 #malaysia-glance .malaysia-glance__card,
