@@ -17658,7 +17658,7 @@ body.page-guide-post {
 .page-about .about-article__grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: clamp(1rem, 2vw, 1.25rem);
+  gap: var(--section-gap);
 }
 
 @media (min-width: 768px) {
@@ -19707,6 +19707,10 @@ body.page-guide-post {
   padding-top: 1.25rem;
 }
 
+.page-malaysia .malaysia-section>p+p {
+  margin-top: 1rem;
+}
+
 .page-malaysia .malaysia-listing-meta {
   width: 100%;
   margin: 0;
@@ -19748,13 +19752,14 @@ body.page-guide-post {
   color: #ffffff;
 }
 
+.page-malaysia .malaysia-listing-meta time,
 .page-malaysia .malaysia-listing-meta__updated-date {
   display: block;
   margin: 0;
   font-size: 0.8125rem;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.2;
-  color: #94a3b8;
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
 }
 
@@ -19772,13 +19777,13 @@ body.page-guide-post {
   font-size: 0.6875rem;
   font-weight: 400;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .page-malaysia .malaysia-listing-meta__disclosure-sep {
   font-size: 0.6875rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .page-malaysia .malaysia-listing-meta__disclosure-link {
@@ -20022,8 +20027,8 @@ body.page-guide-post {
 .page-malaysia .malaysia-operator-list {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  margin-top: 1.25rem;
+  gap: clamp(1.25rem, 2vw, 1.75rem);
+  margin-top: var(--section-gap);
 }
 
 .page-malaysia .malaysia-operator-row {
@@ -29737,6 +29742,7 @@ th.slot-top-games-table__th.slot-top-games-table__th--play {
 }
 
 @media (min-width: 640px) {
+
   .page-baccarat-hub .baccarat-guide-block__body,
   .page-baccarat-hub .baccarat-guide-block p.baccarat-guide-block__body {
     padding-left: 3.25rem;
@@ -30130,6 +30136,7 @@ body.page-guide-post {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: none;
@@ -30275,6 +30282,7 @@ body.page-guide-post {
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: none;
@@ -30442,6 +30450,7 @@ body.page-guide-post {
 }
 
 @media (max-width: 980px) {
+
   .page-guide-post .post-layout--guide-read,
   .page-guide-post .post-layout--guide-read:has(.gp-toc:not([hidden])) {
     grid-template-columns: minmax(0, 1fr);
@@ -30571,5 +30580,396 @@ body.page-guide-post {
 @media (max-width: 700px) {
   .page-guide-post .post-hero--guide-fit .ph-hero-cover-img {
     aspect-ratio: 16 / 10;
+  }
+}
+
+/* Guide articles reuse the about-page card grid. Stack them so tables and notes stay full width. */
+.page-about.page-malaysia .guides-hero .gh-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.page-about.page-malaysia .guides-hero .gh-desc {
+  max-width: 44rem;
+  font-size: clamp(1.05rem, 0.35vw + 1rem, 1.2rem);
+  line-height: 1.7;
+  color: #334155;
+}
+
+.page-about.page-malaysia .guides-hero .terms-last-updated time {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.page-about.page-malaysia .about-article {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap);
+  padding-top: 1.15rem;
+}
+
+.page-about.page-malaysia .about-article>p:first-of-type {
+  margin: 0 0 calc(1.15rem - var(--section-gap));
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.page-about.page-malaysia .about-article__grid {
+  grid-template-columns: 1fr;
+  gap: var(--section-gap);
+  min-width: 0;
+}
+
+.page-about.page-malaysia .about-section--card {
+  min-width: 0;
+}
+
+.page-about.page-malaysia .about-section--card>p {
+  margin-bottom: 0.85rem;
+}
+
+.page-about.page-malaysia .about-section--card>p:last-child {
+  margin-bottom: 0;
+}
+
+.page-about.page-malaysia .about-section--card .live-casino-table-wrap {
+  margin: 0.15rem 0 0;
+  max-width: 100%;
+}
+
+.page-about.page-malaysia .about-section--card .live-casino-table-wrap+p {
+  margin-top: 1rem;
+}
+
+.page-about.page-malaysia .live-casino-data-table {
+  min-width: 36rem;
+}
+
+@media (max-width: 720px) {
+  .page-about.page-malaysia .live-casino-data-table {
+    min-width: 0;
+  }
+
+  .page-about.page-malaysia .live-casino-data-table thead th {
+    white-space: normal;
+  }
+}
+
+.page-about.page-malaysia .live-casino-data-table td {
+  vertical-align: top;
+  line-height: 1.55;
+}
+
+.page-about.page-malaysia .live-casino-data-table tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, 0.95);
+}
+
+.page-about.page-malaysia .live-casino-data-table tbody td:first-child {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.page-about.page-malaysia .about-section--card ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.page-about.page-malaysia .about-section--card li {
+  margin: 0;
+  line-height: 1.5;
+}
+
+#malaysia-glance,
+#malaysia-trust {
+  background: #f3f6fa;
+}
+
+#malaysia-glance .malaysia-glance__card,
+#malaysia-trust .malaysia-trust__card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(15, 23, 42, 0.07);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 18px 40px rgba(15, 23, 42, 0.06);
+  animation: home-band-in 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#malaysia-trust .malaysia-trust__card {
+  animation-delay: 0.12s;
+}
+
+#malaysia-glance .malaysia-glance__card::before,
+#malaysia-trust .malaysia-trust__card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, #5eead4 0%, #0f766e 100%);
+}
+
+#malaysia-glance h2,
+#malaysia-trust h2 {
+  position: relative;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.95rem;
+}
+
+#malaysia-glance h2::after,
+#malaysia-trust h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.6rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #33beb3, #0f766e);
+}
+
+#malaysia-glance .malaysia-glance__card {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.55rem, 2.6vw, 2.05rem);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+}
+
+#malaysia-glance .malaysia-glance__card>p:first-of-type {
+  max-width: 68rem;
+  margin-bottom: 1rem;
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: #334155;
+}
+
+#malaysia-glance .terms-last-updated {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0 0 1.15rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 0.875rem;
+}
+
+#malaysia-glance .malaysia-listing-meta__updated-label {
+  display: inline;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#malaysia-glance .terms-last-updated time {
+  font-weight: 600;
+  color: #0f766e;
+}
+
+#malaysia-glance .malaysia-glance__start {
+  margin: 0 0 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+#malaysia-glance .malaysia-glance__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+#malaysia-glance .malaysia-glance__links a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f766e;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: translate 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  animation: home-band-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(1) {
+  animation-delay: 0.16s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(4) {
+  animation-delay: 0.28s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(6) {
+  animation-delay: 0.36s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(7) {
+  animation-delay: 0.4s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(8) {
+  animation-delay: 0.44s;
+}
+
+#malaysia-glance .malaysia-glance__links a:nth-child(9) {
+  animation-delay: 0.48s;
+}
+
+#malaysia-glance .malaysia-glance__links a:hover {
+  translate: 0 -2px;
+  background: rgba(51, 190, 179, 0.12);
+  border-color: rgba(51, 190, 179, 0.45);
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+}
+
+#malaysia-trust .malaysia-trust__card {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.55rem, 2.6vw, 2.05rem);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+}
+
+#malaysia-trust .malaysia-trust__card>p {
+  margin-bottom: 1.15rem;
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: #334155;
+}
+
+#malaysia-trust .malaysia-listing-meta {
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+#malaysia-trust .malaysia-listing-meta__inner {
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+#malaysia-trust .malaysia-listing-meta__trust {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  justify-content: stretch;
+  justify-self: stretch;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge {
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.9rem 0.75rem;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-weight: 600;
+  transition: translate 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  animation: home-band-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge:nth-child(1) {
+  animation-delay: 0.28s;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge:nth-child(2) {
+  animation-delay: 0.36s;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge:nth-child(3) {
+  animation-delay: 0.44s;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge:hover {
+  translate: 0 -3px;
+  background: #fff;
+  border-color: rgba(51, 190, 179, 0.45);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.12);
+}
+
+#malaysia-trust .malaysia-listing-meta__badge-icon {
+  background: rgba(15, 118, 110, 0.12);
+  transition: scale 0.22s ease;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge:hover .malaysia-listing-meta__badge-icon {
+  scale: 1.08;
+}
+
+#malaysia-trust .malaysia-listing-meta__badge-icon :is(i, svg) {
+  color: #0f766e;
+  stroke: #0f766e;
+}
+
+@media (max-width: 640px) {
+  #malaysia-trust .malaysia-listing-meta__trust {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes home-band-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  #malaysia-glance .malaysia-glance__card,
+  #malaysia-trust .malaysia-trust__card,
+  #malaysia-glance .malaysia-glance__links a,
+  #malaysia-trust .malaysia-listing-meta__badge {
+    animation: none;
+  }
+
+  #malaysia-glance .malaysia-glance__links a:hover,
+  #malaysia-trust .malaysia-listing-meta__badge:hover,
+  #malaysia-trust .malaysia-listing-meta__badge:hover .malaysia-listing-meta__badge-icon {
+    translate: none;
+    scale: none;
   }
 }

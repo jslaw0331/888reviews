@@ -912,9 +912,16 @@ function injectDetailPageHtml(html, pageType, slug, siteOrigin, seoMeta, options
     out = replaceTwitterMetaContent(out, `${p}-twitter-description`, meta.description);
     out = replaceTwitterMetaContent(out, `${p}-twitter-image`, ogImage);
     if (!html.includes('og:locale')) {
-        out = out.replace(/<\/head>/i, '    <meta property="og:locale" content="en_US">\n</head>');
+        out = out.replace(/<\/head>/i, '    <meta property="og:locale" content="en_MY">\n</head>');
     } else {
-        out = replaceMetaPropertyContentNoId(out, 'og:locale', 'en_US');
+        out = replaceMetaPropertyContentNoId(out, 'og:locale', 'en_MY');
+    }
+    if (!out.includes('hreflang')) {
+        const href = escapeHtmlAttr(meta.canonical);
+        out = out.replace(
+            /<\/head>/i,
+            `    <link rel="alternate" hreflang="en-MY" href="${href}">\n    <link rel="alternate" hreflang="x-default" href="${href}">\n</head>`,
+        );
     }
     const pageTitle = options.notFound ? cfg.notFoundTitle : meta.title;
     out = out.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtmlText(pageTitle)}</title>`);
@@ -1139,6 +1146,38 @@ const HUB_PATHS = [
     '/terms',
     '/contact',
     '/how-we-rate',
+    '/editorial-team',
+    '/online-casino-malaysia-legal',
+    '/best-online-casino-malaysia-ringgit',
+    '/fpx-casino-malaysia',
+    '/duitnow-casino-malaysia',
+    '/touch-n-go-casino-malaysia',
+    '/crypto-casino-malaysia',
+    '/no-deposit-bonus-malaysia',
+    '/welcome-bonus-malaysia',
+    '/fast-withdrawal-casino-malaysia',
+    '/mahjong-ways',
+    '/pg-soft-slots-malaysia',
+    '/slot-demo-malaysia',
+    '/sic-bo-malaysia',
+    '/dragon-tiger-malaysia',
+    '/4d-lottery-malaysia',
+    '/sportsbook-casino-malaysia',
+    '/casino-apps-malaysia',
+    '/mega888-918kiss-alternatives',
+    '/complaints',
+    '/glossary',
+    '/responsible-gambling-malaysia',
+    '/vs/bk8-vs-m88',
+    '/vs/1xbet-vs-bc-game',
+    '/vs/bk8-vs-1xbet',
+    '/vs/m88-vs-j8de',
+    '/vs/bc-game-vs-20bet',
+    '/alternatives/bk8-alternatives',
+    '/alternatives/m88-alternatives',
+    '/alternatives/1xbet-alternatives',
+    '/alternatives/bc-game-alternatives',
+    '/alternatives/j8de-alternatives',
 ];
 
 /**
@@ -1154,7 +1193,7 @@ async function collectSitemapUrlLines(req, escapeXml, sitePublicOrigin) {
     for (const p of HUB_PATHS) {
         const loc = `${base}${p === '/' ? '/' : p}`;
         const priority = p === '/' ? '1.0' : '0.8';
-        lines.push(sitemapUrlLine(escapeXml, loc, priority, ''));
+        lines.push(sitemapUrlLine(escapeXml, loc, priority, '2026-10-11'));
     }
 
     if (!process.env.STRAPI_API_URL || !process.env.STRAPI_API_TOKEN) {

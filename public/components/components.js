@@ -365,3 +365,19 @@ class SiteSidebar extends HTMLElement {
     }
 }
 customElements.define('site-sidebar', SiteSidebar);
+
+document.addEventListener('click', (event) => {
+    const link = event.target && event.target.closest ? event.target.closest('a') : null;
+    if (!link) return;
+    const href = link.getAttribute('href') || '';
+    if (!href || href === '#' || href.startsWith('#') || href.startsWith('/')) return;
+    const rel = (link.getAttribute('rel') || '').toLowerCase();
+    if (!rel.includes('nofollow') && !rel.includes('sponsored')) return;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: 'affiliate_click',
+        link_url: href,
+        link_text: (link.textContent || '').trim().slice(0, 80),
+        page_path: window.location.pathname,
+    });
+});

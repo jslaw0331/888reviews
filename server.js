@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 /** override: true — stale shell/IDE STRAPI_* vars must not block .env (fixes local 401 proxy). */
 require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
 const express = require('express');
@@ -91,11 +92,43 @@ function sitemapHubOnlyBody(req) {
         '/terms',
         '/contact',
         '/how-we-rate',
+        '/editorial-team',
+        '/online-casino-malaysia-legal',
+        '/best-online-casino-malaysia-ringgit',
+        '/fpx-casino-malaysia',
+        '/duitnow-casino-malaysia',
+        '/touch-n-go-casino-malaysia',
+        '/crypto-casino-malaysia',
+        '/no-deposit-bonus-malaysia',
+        '/welcome-bonus-malaysia',
+        '/fast-withdrawal-casino-malaysia',
+        '/mahjong-ways',
+        '/pg-soft-slots-malaysia',
+        '/slot-demo-malaysia',
+        '/sic-bo-malaysia',
+        '/dragon-tiger-malaysia',
+        '/4d-lottery-malaysia',
+        '/sportsbook-casino-malaysia',
+        '/casino-apps-malaysia',
+        '/mega888-918kiss-alternatives',
+        '/complaints',
+        '/glossary',
+        '/responsible-gambling-malaysia',
+        '/vs/bk8-vs-m88',
+        '/vs/1xbet-vs-bc-game',
+        '/vs/bk8-vs-1xbet',
+        '/vs/m88-vs-j8de',
+        '/vs/bc-game-vs-20bet',
+        '/alternatives/bk8-alternatives',
+        '/alternatives/m88-alternatives',
+        '/alternatives/1xbet-alternatives',
+        '/alternatives/bc-game-alternatives',
+        '/alternatives/j8de-alternatives',
     ];
     const lines = hubPaths.map((p) => {
         const loc = `${base}${p === '/' ? '/' : p}`;
         const priority = p === '/' ? '1.0' : '0.8';
-        return `  <url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
+        return `  <url><loc>${escapeXml(loc)}</loc><lastmod>2026-10-11</lastmod><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
     });
     return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join(
         '\n',
@@ -138,6 +171,28 @@ const ROOT_HTML = [
     'terms.html',
     'contact.html',
     'how-we-rate.html',
+    'editorial-team.html',
+    'online-casino-malaysia-legal.html',
+    'best-online-casino-malaysia-ringgit.html',
+    'fpx-casino-malaysia.html',
+    'duitnow-casino-malaysia.html',
+    'touch-n-go-casino-malaysia.html',
+    'crypto-casino-malaysia.html',
+    'no-deposit-bonus-malaysia.html',
+    'welcome-bonus-malaysia.html',
+    'fast-withdrawal-casino-malaysia.html',
+    'mahjong-ways.html',
+    'pg-soft-slots-malaysia.html',
+    'slot-demo-malaysia.html',
+    'sic-bo-malaysia.html',
+    'dragon-tiger-malaysia.html',
+    '4d-lottery-malaysia.html',
+    'sportsbook-casino-malaysia.html',
+    'casino-apps-malaysia.html',
+    'mega888-918kiss-alternatives.html',
+    'complaints.html',
+    'glossary.html',
+    'responsible-gambling-malaysia.html',
 ];
 
 /**
@@ -536,6 +591,12 @@ app.get('/api/:endpoint', async (req, res) => {
 // On Vercel, express.static is ignored — files must live in public/ for CDN serving.
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const ASSETS_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+app.get('/llms.txt', (req, res) => {
+    res.type('text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(PUBLIC_DIR, 'llms.txt'));
+});
+
 app.use(
     '/assets',
     express.static(path.join(PUBLIC_DIR, 'assets'), { maxAge: ASSETS_MAX_AGE_MS }),
@@ -894,6 +955,28 @@ app.get('/casinos/malaysia/touch-n-go/', (req, res) => {
 
 app.get(['/casinos', '/casinos/'], (req, res) => {
     res.redirect(301, '/reviews');
+});
+
+function sendNestedHtml(subdir, slug, res) {
+    if (!/^[a-z0-9-]+$/i.test(String(slug || ''))) {
+        res.status(404).send('Not found');
+        return;
+    }
+    const file = path.join(PUBLIC_DIR, subdir, `${slug}.html`);
+    fs.access(file, fs.constants.R_OK, (err) => {
+        if (err) {
+            res.status(404).send('Not found');
+            return;
+        }
+        res.sendFile(file);
+    });
+}
+
+app.get('/vs/:slug', (req, res) => sendNestedHtml('vs', req.params.slug, res));
+app.get('/alternatives/:slug', (req, res) => sendNestedHtml('alternatives', req.params.slug, res));
+app.get('/ms/:slug', (req, res) => {
+    res.setHeader('X-Robots-Tag', 'noindex, follow');
+    sendNestedHtml('ms', req.params.slug, res);
 });
 
 ROOT_HTML.filter((name) => name !== 'index.html').forEach((name) => {
